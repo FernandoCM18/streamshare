@@ -13,6 +13,7 @@ const createServiceSchema = z.object({
   icon_url: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   persona_ids: z.string().optional(),
+  custom_amounts: z.string().optional(),
 });
 
 const updateServiceSchema = z.object({
@@ -37,7 +38,7 @@ export async function createService(formData: FormData) {
   const input = createServiceSchema.safeParse(raw);
   if (!input.success) return { success: false, error: input.error.message };
 
-  const { persona_ids, ...serviceData } = input.data;
+  const { persona_ids, custom_amounts, ...serviceData } = input.data;
 
   const { data: service, error } = await supabase
     .from("services")
@@ -54,13 +55,21 @@ export async function createService(formData: FormData) {
 
   // Add service members if persona_ids provided (comma-separated)
   if (persona_ids) {
-    const ids = persona_ids.split(",").filter(Boolean);
+    const ids = [...new Set(persona_ids.split(",").filter(Boolean))];
     if (ids.length > 0) {
+      const amounts: Record<string, number> = custom_amounts
+        ? JSON.parse(custom_amounts)
+        : {};
+
       const members = ids.map((persona_id) => ({
         service_id: service.id,
         persona_id,
         owner_id: user.id,
         is_active: true,
+        custom_amount:
+          serviceData.split_type === "custom" && amounts[persona_id]
+            ? amounts[persona_id]
+            : null,
       }));
       await supabase.from("service_members").insert(members);
     }
@@ -131,6 +140,132 @@ export async function toggleServiceStatus(serviceId: string) {
 
   revalidatePath("/servicios");
   return { success: true, newStatus };
+}
+
+const quickPersonaSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido"),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+});
+
+export async function createQuickPersona(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false as const, error: "No autorizado" };
+
+  const raw = Object.fromEntries(formData);
+  const input = quickPersonaSchema.safeParse(raw);
+  if (!input.success)
+    return { success: false as const, error: input.error.message };
+
+  const nameNormalized = input.data.name.trim().toLowerCase();
+  const emailNormalized = input.data.email?.trim().toLowerCase() || null;
+
+  // Check for existing persona with same name or email
+  let query = supabase
+    .from("personas")
+    .select("id, name, email")
+    .eq("owner_id", user.id);
+
+  if (emailNormalized) {
+    query = query.or(
+      `name.ilike.${nameNormalized},email.ilike.${emailNormalized}`,
+    );
+  } else {
+    query = query.ilike("name", nameNormalized);
+  }
+
+  const { data: existing } = await query.limit(1).maybeSingle();
+
+  if (existing) {
+    return { success: true as const, persona: existing, duplicate: true };
+  }
+
+  const { data: persona, error } = await supabase
+    .from("personas")
+    .insert({
+      name: input.data.name.trim(),
+      email: emailNormalized,
+      owner_id: user.id,
+    })
+    .select("id, name, email")
+    .single();
+
+  if (error) return { success: false as const, error: error.message };
+
+  revalidatePath("/servicios");
+  return { success: true as const, persona, duplicate: false };
+}
+
+export async function addServiceMember(
+  serviceId: string,
+  personaId: string,
+  customAmount?: number | null,
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "No autorizado" };
+
+  const { data: member, error } = await supabase
+    .from("service_members")
+    .insert({
+      service_id: serviceId,
+      persona_id: personaId,
+      owner_id: user.id,
+      is_active: true,
+      custom_amount: customAmount ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/servicios");
+  return { success: true, memberId: member.id };
+}
+
+export async function removeServiceMember(memberId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "No autorizado" };
+
+  const { error } = await supabase
+    .from("service_members")
+    .delete()
+    .eq("id", memberId)
+    .eq("owner_id", user.id);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/servicios");
+  return { success: true };
+}
+
+export async function updateMemberAmount(
+  memberId: string,
+  customAmount: number | null,
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "No autorizado" };
+
+  const { error } = await supabase
+    .from("service_members")
+    .update({ custom_amount: customAmount })
+    .eq("id", memberId)
+    .eq("owner_id", user.id);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/servicios");
+  return { success: true };
 }
 
 export async function deleteService(serviceId: string) {

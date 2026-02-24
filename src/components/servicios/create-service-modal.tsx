@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import { es } from "react-day-picker/locale";
 import {
   createService,
   updateService,
+  createQuickPersona,
 } from "@/app/(dashboard)/servicios/actions";
 import { formatCurrency } from "@/types/database";
 import type { Service, Persona } from "@/types/database";
@@ -165,15 +166,21 @@ function getInitials(name: string) {
     .slice(0, 2);
 }
 
+function dedupeById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 interface CreateServiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   service?: Service;
   personas: Pick<Persona, "id" | "name" | "email">[];
 }
-
-// TODO: remove before production — pre-fills modal with fake data for visual testing
-const __DEV_PREFILL__ = true;
 
 export default function CreateServiceModal({
   open,
@@ -183,28 +190,38 @@ export default function CreateServiceModal({
 }: CreateServiceModalProps) {
   const isEdit = !!service;
 
-  const devTemplate = __DEV_PREFILL__ ? SERVICE_TEMPLATES[0] : null;
-
-  const [selectedPersonas, setSelectedPersonas] = useState<string[]>(
-    __DEV_PREFILL__ ? personas.slice(0, 3).map((p) => p.id) : [],
+  const [localPersonas, setLocalPersonas] = useState(() =>
+    dedupeById(personas),
+  );
+  useEffect(() => {
+    setLocalPersonas((prev) => {
+      const serverIds = new Set(personas.map((p) => p.id));
+      const localOnly = prev.filter((p) => !serverIds.has(p.id));
+      return dedupeById([...personas, ...localOnly]);
+    });
+  }, [personas]);
+  const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
+  const [customAmounts, setCustomAmounts] = useState<Record<string, number>>(
+    {},
   );
   const [submitting, setSubmitting] = useState(false);
-  const [activeTemplate, setActiveTemplate] = useState<string | null>(
-    __DEV_PREFILL__ ? devTemplate!.name : null,
-  );
-  const [selectedPlanIndex, setSelectedPlanIndex] = useState(
-    __DEV_PREFILL__ ? 2 : 0,
-  );
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMemberName, setNewMemberName] = useState("");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
     "monthly",
   );
+  const [searchQuery, setSearchQuery] = useState("");
 
   const activeService = SERVICE_TEMPLATES.find(
     (t) => t.name === activeTemplate,
   );
 
-  const initialDay = service?.billing_day ?? (__DEV_PREFILL__ ? 15 : 1);
+  const initialDay = service?.billing_day ?? 1;
   const now = new Date();
   const [billingDate, setBillingDate] = useState<Date>(
     new Date(now.getFullYear(), now.getMonth(), initialDay),
@@ -221,17 +238,12 @@ export default function CreateServiceModal({
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: service?.name ?? (__DEV_PREFILL__ ? devTemplate!.name : ""),
-      color:
-        service?.color ??
-        (__DEV_PREFILL__ ? devTemplate!.color : COLOR_OPTIONS[0].value),
-      monthly_cost:
-        service?.monthly_cost ??
-        (__DEV_PREFILL__ ? devTemplate!.plans[2].price : 0),
-      billing_day: service?.billing_day ?? (__DEV_PREFILL__ ? 15 : 1),
+      name: service?.name ?? "",
+      color: service?.color ?? COLOR_OPTIONS[0].value,
+      monthly_cost: service?.monthly_cost ?? 0,
+      billing_day: service?.billing_day ?? 1,
       split_type: service?.split_type ?? "equal",
-      icon_url:
-        service?.icon_url ?? (__DEV_PREFILL__ ? devTemplate!.icon : null),
+      icon_url: service?.icon_url ?? null,
     },
   });
 
@@ -247,6 +259,23 @@ export default function CreateServiceModal({
       : watchedCost;
   const perPersonAmount =
     watchedSplit === "equal" && monthlyCost > 0 ? monthlyCost / memberCount : 0;
+
+  // Custom amounts validation
+  const customTotal = Object.entries(customAmounts)
+    .filter(([id]) => selectedPersonas.includes(id))
+    .reduce((sum, [, amount]) => sum + (amount || 0), 0);
+  const ownerCustomAmount =
+    watchedSplit === "custom" ? monthlyCost - customTotal : 0;
+
+  // Filter personas by search query, excluding already selected
+  const filteredPersonas = localPersonas.filter((p) => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      p.name.toLowerCase().includes(query) ||
+      (p.email && p.email.toLowerCase().includes(query))
+    );
+  });
 
   function applyTemplate(template: ServiceTemplate) {
     const wasActive = activeTemplate === template.name;
@@ -281,7 +310,87 @@ export default function CreateServiceModal({
     );
   }
 
+  function setCustomAmount(personaId: string, amount: number) {
+    setCustomAmounts((prev) => ({ ...prev, [personaId]: amount }));
+  }
+
+  async function handleAddMember() {
+    if (!newMemberName.trim()) return;
+
+    // Check for duplicates by name (case-insensitive)
+    const nameNormalized = newMemberName.trim().toLowerCase();
+    const emailNormalized = newMemberEmail.trim().toLowerCase();
+    const duplicate = localPersonas.find(
+      (p) =>
+        p.name.toLowerCase() === nameNormalized ||
+        (emailNormalized && p.email?.toLowerCase() === emailNormalized),
+    );
+
+    if (duplicate) {
+      // Auto-select the existing persona instead of creating a new one
+      if (!selectedPersonas.includes(duplicate.id)) {
+        setSelectedPersonas((prev) => [...prev, duplicate.id]);
+      }
+      setNewMemberName("");
+      setNewMemberEmail("");
+      setShowAddMember(false);
+      toast.info(`${duplicate.name} ya existe, se seleccionó automáticamente`);
+      return;
+    }
+
+    setAddingMember(true);
+    try {
+      const fd = new FormData();
+      fd.set("name", newMemberName.trim());
+      if (newMemberEmail.trim()) fd.set("email", newMemberEmail.trim());
+
+      const result = await createQuickPersona(fd);
+      if (result.success) {
+        const p = result.persona;
+        setLocalPersonas((prev) => {
+          if (prev.some((lp) => lp.id === p.id)) return prev;
+          return [...prev, p];
+        });
+        setSelectedPersonas((prev) => {
+          if (prev.includes(p.id)) return prev;
+          return [...prev, p.id];
+        });
+        setNewMemberName("");
+        setNewMemberEmail("");
+        setShowAddMember(false);
+        toast.success(
+          result.duplicate
+            ? `${p.name} ya existe, se seleccionó automáticamente`
+            : `${p.name} agregado`,
+        );
+      } else {
+        toast.error(result.error ?? "Error al agregar miembro");
+      }
+    } finally {
+      setAddingMember(false);
+    }
+  }
+
   async function onSubmit(values: FormValues) {
+    // Validate custom amounts if split_type is custom
+    if (values.split_type === "custom" && selectedPersonas.length > 0) {
+      const hasEmptyAmounts = selectedPersonas.some(
+        (id) => !customAmounts[id] || customAmounts[id] <= 0,
+      );
+      if (hasEmptyAmounts) {
+        toast.error(
+          "Asigna un monto a cada miembro en la división personalizada",
+        );
+        return;
+      }
+      if (customTotal > monthlyCost) {
+        toast.error(
+          "La suma de los montos personalizados excede el costo total",
+        );
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const fd = new FormData();
@@ -301,8 +410,13 @@ export default function CreateServiceModal({
         fd.set("id", service.id);
         result = await updateService(fd);
       } else {
-        if (selectedPersonas.length > 0) {
-          fd.set("persona_ids", selectedPersonas.join(","));
+        const uniquePersonas = [...new Set(selectedPersonas)];
+        if (uniquePersonas.length > 0) {
+          fd.set("persona_ids", uniquePersonas.join(","));
+          // Pass custom amounts as JSON if split is custom
+          if (values.split_type === "custom") {
+            fd.set("custom_amounts", JSON.stringify(customAmounts));
+          }
         }
         result = await createService(fd);
       }
@@ -312,8 +426,13 @@ export default function CreateServiceModal({
         onOpenChange(false);
         form.reset();
         setSelectedPersonas([]);
+        setCustomAmounts({});
         setActiveTemplate(null);
         setBillingCycle("monthly");
+        setShowAddMember(false);
+        setNewMemberName("");
+        setNewMemberEmail("");
+        setSearchQuery("");
       } else {
         toast.error(result.error ?? "Error al guardar");
       }
@@ -691,68 +810,209 @@ export default function CreateServiceModal({
                             {formatCurrency(perPersonAmount)}
                           </span>
                         )}
+                        {watchedSplit === "custom" && monthlyCost > 0 && (
+                          <span
+                            className={cn(
+                              "text-sm font-mono",
+                              ownerCustomAmount < 0
+                                ? "text-red-400"
+                                : "text-neutral-400",
+                            )}
+                          >
+                            {formatCurrency(Math.max(0, ownerCustomAmount))}
+                          </span>
+                        )}
                         <div className="w-9 h-5 rounded-full bg-emerald-500 relative flex items-center shrink-0">
                           <span className="w-4 h-4 rounded-full bg-white absolute shadow-sm translate-x-[18px]" />
                         </div>
                       </div>
                     </div>
 
+                    {/* Search bar for existing personas */}
+                    {localPersonas.length > 3 && (
+                      <div className="relative">
+                        <Icon
+                          icon="solar:magnifer-linear"
+                          width={16}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+                        />
+                        <input
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Buscar persona..."
+                          className="w-full h-9 bg-neutral-900/40 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl pl-9 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
+                        />
+                      </div>
+                    )}
+
                     {/* Persona toggles */}
-                    {personas.map((p) => {
+                    {filteredPersonas.map((p) => {
                       const isSelected = selectedPersonas.includes(p.id);
                       return (
-                        <button
+                        <div
                           key={p.id}
-                          type="button"
-                          onClick={() => togglePersona(p.id)}
-                          className="w-full flex items-center justify-between p-3 rounded-xl bg-neutral-900/30 border border-neutral-800/80"
+                          className="rounded-xl bg-neutral-900/30 border border-neutral-800/80 overflow-hidden"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-xs font-medium text-neutral-400">
-                              {getInitials(p.name)}
-                            </div>
-                            <span className="text-sm font-medium text-neutral-200">
-                              {p.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            {isSelected &&
-                              watchedSplit === "equal" &&
-                              perPersonAmount > 0 && (
-                                <span className="text-sm font-mono text-neutral-400">
-                                  {formatCurrency(perPersonAmount)}
+                          <button
+                            type="button"
+                            onClick={() => togglePersona(p.id)}
+                            className="w-full flex items-center justify-between p-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-xs font-medium text-neutral-400">
+                                {getInitials(p.name)}
+                              </div>
+                              <div className="text-left">
+                                <span className="text-sm font-medium text-neutral-200 block">
+                                  {p.name}
                                 </span>
-                              )}
-                            <div
-                              className={cn(
-                                "w-9 h-5 rounded-full relative flex items-center shrink-0 transition-colors",
-                                isSelected
-                                  ? "bg-emerald-500"
-                                  : "bg-neutral-700",
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "w-4 h-4 rounded-full bg-white absolute shadow-sm transition-transform",
-                                  isSelected
-                                    ? "translate-x-[18px]"
-                                    : "translate-x-[2px]",
+                                {p.email && (
+                                  <span className="text-[10px] text-neutral-500 block">
+                                    {p.email}
+                                  </span>
                                 )}
-                              />
+                              </div>
                             </div>
-                          </div>
-                        </button>
+                            <div className="flex items-center gap-3">
+                              {isSelected &&
+                                watchedSplit === "equal" &&
+                                perPersonAmount > 0 && (
+                                  <span className="text-sm font-mono text-neutral-400">
+                                    {formatCurrency(perPersonAmount)}
+                                  </span>
+                                )}
+                              <div
+                                className={cn(
+                                  "w-9 h-5 rounded-full relative flex items-center shrink-0 transition-colors",
+                                  isSelected
+                                    ? "bg-emerald-500"
+                                    : "bg-neutral-700",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "w-4 h-4 rounded-full bg-white absolute shadow-sm transition-transform",
+                                    isSelected
+                                      ? "translate-x-[18px]"
+                                      : "translate-x-[2px]",
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          </button>
+
+                          {/* Custom amount input — shown when selected + custom split */}
+                          {isSelected && watchedSplit === "custom" && (
+                            <div className="px-3 pb-3 pt-0">
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-medium">
+                                  $
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="Monto asignado"
+                                  value={customAmounts[p.id] || ""}
+                                  onChange={(e) =>
+                                    setCustomAmount(
+                                      p.id,
+                                      parseFloat(e.target.value) || 0,
+                                    )
+                                  }
+                                  className="w-full h-8 bg-neutral-950/50 border border-neutral-700 focus:border-neutral-500 focus:ring-0 rounded-lg pl-7 pr-3 text-sm font-mono text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
 
+                    {/* No results */}
+                    {searchQuery && filteredPersonas.length === 0 && (
+                      <p className="text-xs text-neutral-500 text-center py-3">
+                        No se encontraron personas con &quot;{searchQuery}&quot;
+                      </p>
+                    )}
+
+                    {/* Custom split summary */}
+                    {watchedSplit === "custom" &&
+                      selectedPersonas.length > 0 &&
+                      monthlyCost > 0 && (
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-900/50 border border-neutral-800/50">
+                          <span className="text-[11px] text-neutral-500">
+                            Total asignado
+                          </span>
+                          <span
+                            className={cn(
+                              "text-xs font-mono font-medium",
+                              customTotal > monthlyCost
+                                ? "text-red-400"
+                                : customTotal === monthlyCost
+                                  ? "text-emerald-400"
+                                  : "text-orange-400",
+                            )}
+                          >
+                            {formatCurrency(
+                              customTotal + Math.max(0, ownerCustomAmount),
+                            )}{" "}
+                            / {formatCurrency(monthlyCost)}
+                          </span>
+                        </div>
+                      )}
+
                     {/* Add Member Action */}
-                    <button
-                      type="button"
-                      className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-neutral-700 hover:border-neutral-500 hover:bg-neutral-900/50 text-neutral-400 hover:text-neutral-200 transition-all text-sm font-medium focus:outline-none"
-                    >
-                      <Icon icon="solar:user-plus-linear" width={18} />
-                      Agregar miembro
-                    </button>
+                    {showAddMember ? (
+                      <div className="p-3 rounded-xl border border-neutral-700 bg-neutral-900/30 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-neutral-300">
+                            Nuevo miembro
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddMember(false);
+                              setNewMemberName("");
+                              setNewMemberEmail("");
+                            }}
+                            className="text-neutral-500 hover:text-neutral-300 transition-colors focus:outline-none"
+                          >
+                            <Icon icon="solar:close-circle-linear" width={16} />
+                          </button>
+                        </div>
+                        <input
+                          value={newMemberName}
+                          onChange={(e) => setNewMemberName(e.target.value)}
+                          placeholder="Nombre *"
+                          className="w-full h-9 bg-neutral-900/40 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-lg px-3 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
+                        />
+                        <input
+                          value={newMemberEmail}
+                          onChange={(e) => setNewMemberEmail(e.target.value)}
+                          placeholder="Email (opcional)"
+                          type="email"
+                          className="w-full h-9 bg-neutral-900/40 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-lg px-3 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddMember}
+                          disabled={!newMemberName.trim() || addingMember}
+                          className="w-full h-9 rounded-lg text-xs font-medium bg-white text-black hover:bg-neutral-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none"
+                        >
+                          {addingMember ? "Agregando..." : "Agregar"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setShowAddMember(true)}
+                        className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-neutral-700 hover:border-neutral-500 hover:bg-neutral-900/50 text-neutral-400 hover:text-neutral-200 transition-all text-sm font-medium focus:outline-none"
+                      >
+                        <Icon icon="solar:user-plus-linear" width={18} />
+                        Agregar miembro
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

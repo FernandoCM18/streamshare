@@ -166,6 +166,16 @@ export interface UserSettings {
 // VISTAS — View types
 // ============================================================
 
+export interface ServiceMemberInfo {
+  member_id: string;
+  persona_id: string;
+  custom_amount: number | null;
+  is_active: boolean;
+  name: string;
+  email: string | null;
+  avatar_url: string | null;
+}
+
 export interface ServiceSummary {
   id: string;
   owner_id: string;
@@ -177,6 +187,7 @@ export interface ServiceSummary {
   split_type: SplitType;
   status: ServiceStatus;
   member_count: number;
+  members: ServiceMemberInfo[];
   pending_amount: number; // por cobrar este mes
   collected_amount: number; // cobrado este mes
 }

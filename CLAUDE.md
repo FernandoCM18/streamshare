@@ -182,38 +182,46 @@ supabase.rpc('register_payment', { p_payment_id, p_amount_paid })
 
 **Dark-mode only.** Never add light mode classes.
 
-### Color Tokens (defined in globals.css with OKLCH)
+### Color Tokens (Tailwind neutral-* palette)
 
 **Backgrounds:**
 ```
-bg-[#0a0a0f]   → app background (deepest)
-bg-[#0f0f18]   → card background
-bg-[#141420]   → elevated elements
-bg-[#1a1a2e]   → inputs and controls
+bg-neutral-950   → app background (deepest), modals
+bg-neutral-900/30 → card background (default)
+bg-neutral-900/50 → card background (hover)
+bg-neutral-900/10 → inactive card background
+bg-neutral-900    → icon boxes (inactive), elevated inputs
+bg-neutral-800/40 → action buttons
+bg-neutral-700/60 → action buttons (hover)
+bg-black          → icon boxes (active)
 ```
 
 **Borders:**
 ```
-border-[#1e1e30] → subtle border
-border-[#252540] → visible border
-border-[#2d2d50] → active element border
+border-neutral-800    → default card/element border
+border-neutral-700    → badge borders (inactive), input borders
+border-neutral-600    → hover border (cards, buttons)
+border-neutral-800/50 → subtle separators (card dividers)
+border-neutral-900    → avatar borders (stacked)
 ```
 
 **Text:**
 ```
-text-white       → primary text
-text-white/70    → secondary text
-text-white/50    → tertiary / placeholders
-text-white/30    → very subtle text
+text-white / text-neutral-100  → primary text (headings)
+text-neutral-200               → secondary text (names, labels)
+text-neutral-400               → tertiary text (descriptions, button labels)
+text-neutral-500               → muted text (subtitles, dates)
+text-neutral-600               → very muted text (inactive descriptions)
 ```
 
 **Status (semantic — always use these):**
 ```
-emerald-400 → active, confirmed, paid   (bg-emerald-400/10 border-emerald-400/20)
-orange-400  → pending, partial          (bg-orange-400/10  border-orange-400/20)
-red-400     → overdue                   (bg-red-400/10     border-red-400/20)
-violet-400/500 → accent, CTA, primary actions
-blue-400    → info, links
+emerald-400/500 → active, confirmed, paid  (bg-emerald-500/10 border-emerald-500/20 text-emerald-400)
+orange-400      → pending, partial         (bg-orange-400/10  border-orange-400/20  text-orange-400)
+red-400/500     → overdue                  (bg-red-500/10     border-red-500/20     text-red-400)
+violet-400/500  → accent, CTA, primary actions
+blue-400        → info, links
+neutral-500     → inactive/paused          (bg-neutral-800    border-neutral-700    text-neutral-500)
 ```
 
 ### Custom CSS Classes (defined in globals.css)
@@ -231,22 +239,55 @@ blue-400    → info, links
 
 ### Key Component Patterns
 
-**Service Card with color glow:**
+**Service Card (active) with hover glow + inline actions:**
 ```tsx
-<div className="relative rounded-2xl bg-[#0f0f18] border border-[#1e1e30] p-4 overflow-hidden">
-  <div
-    className="absolute -top-8 -left-8 w-32 h-32 rounded-full opacity-20 blur-2xl"
-    style={{ backgroundColor: service.color }}
-  />
-  {/* content */}
+<div className="group relative flex flex-col justify-between p-5 rounded-[1.5rem] bg-neutral-900/30 border border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/50 transition-all cursor-pointer backdrop-blur-sm">
+  {/* Hover glow — fades in on hover */}
+  <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-[50px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+    style={{ backgroundColor: `${service.color}0d` }} />
+  {/* Icon box with colored shadow */}
+  <div className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300"
+    style={{ boxShadow: `0 4px 14px ${service.color}1a` }}>
+    <Icon icon={service.icon_url} width={24} style={{ color: service.color }} />
+  </div>
+  {/* ... middle section with members + status badge ... */}
+  {/* Inline action buttons (grid cols-5) */}
+  <div className="grid grid-cols-5 gap-2 pt-3 border-t border-neutral-800/50">
+    <Button variant="ghost" className="col-span-2 card-action-btn">Editar</Button>
+    <Button variant="ghost" className="col-span-2 card-action-btn">Pausar</Button>
+    <Button variant="ghost" size="icon" className="col-span-1 card-action-btn">...</Button>
+  </div>
 </div>
+```
+
+**Inactive card modifier:** add `bg-neutral-900/10 border-dashed border-neutral-800 opacity-70 hover:opacity-100 hover:border-neutral-600 hover:bg-neutral-900/30` + `grayscale group-hover:grayscale-0` on icon box, `bg-neutral-900` instead of `bg-black`
+
+**Card action button base style:**
+```
+h-8 rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-[10px] font-medium text-neutral-400 hover:text-white
 ```
 
 **Status Badge:**
 ```tsx
-<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
-  • Activo
+{/* Active */}
+<span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium text-emerald-400 flex items-center gap-1.5">
+  <Icon icon="solar:check-circle-bold" width={10} /> Al día
 </span>
+{/* Overdue */}
+<span className="px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] font-medium text-red-400 flex items-center gap-1.5">
+  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Vence pronto
+</span>
+{/* Inactive */}
+<span className="px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-[10px] font-medium text-neutral-500">
+  Inactivo
+</span>
+```
+
+**Stacked member avatars:**
+```tsx
+<div className="flex -space-x-2">
+  <div className="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-900 flex items-center justify-center text-[8px] text-neutral-400">MK</div>
+</div>
 ```
 
 **Primary CTA Button:**
@@ -258,13 +299,24 @@ blue-400    → info, links
 
 **Input:**
 ```tsx
-<input className="w-full bg-[#1a1a2e] border border-[#252540] rounded-xl px-4 py-3 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-colors" />
+<input className="w-full bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 rounded-xl px-4 py-3 text-neutral-200 placeholder:text-neutral-600 text-sm focus:outline-none focus:ring-0 transition-all" />
+```
+
+**Modal / Dialog:**
+```tsx
+<AlertDialogContent className="bg-neutral-950 border-neutral-800">
+  <AlertDialogTitle className="text-neutral-100">...</AlertDialogTitle>
+  <AlertDialogDescription className="text-neutral-400">...</AlertDialogDescription>
+  <AlertDialogCancel className="bg-neutral-900 border-neutral-800 text-neutral-200 hover:bg-neutral-800 hover:text-white">
+    Cancelar
+  </AlertDialogCancel>
+</AlertDialogContent>
 ```
 
 **Bottom Dock Nav:**
 ```tsx
 <nav className="fixed bottom-0 inset-x-0 pb-safe">
-  <div className="mx-4 mb-4 rounded-2xl bg-[#141420]/80 backdrop-blur-xl border border-[#252540] px-6 py-3 flex justify-around">
+  <div className="mx-4 mb-4 rounded-2xl bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 px-6 py-3 flex justify-around">
     {/* Home | Servicios | Personas | Config */}
   </div>
 </nav>
@@ -272,7 +324,7 @@ blue-400    → info, links
 
 **Page wrapper:**
 ```tsx
-<main className="min-h-screen bg-[#0a0a0f] pb-24 px-4">
+<main className="min-h-screen bg-neutral-950 pb-24 px-4">
 ```
 
 ---

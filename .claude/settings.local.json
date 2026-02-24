@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__linear-server__list_issues",
+      "mcp__linear-server__list_projects",
+      "mcp__linear-server__get_project",
+      "mcp__linear-server__get_issue",
+      "Bash(echo NO_SUPABASE_CLI:*)",
+      "mcp__supabase__list_tables",
+      "mcp__linear-server__update_issue",
+      "mcp__linear-server__list_milestones"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true
+  }
+}

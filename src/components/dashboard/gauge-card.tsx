@@ -9,12 +9,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { mockDashboardData, mockPendingDebtors } from "@/lib/mock-data";
 import { formatCurrency } from "@/types/database";
+import type { DashboardSummary } from "@/types/database";
 import { Badge } from "../ui/badge";
 
-export function GaugeCard() {
-  const data = mockDashboardData;
+export interface PendingDebtor {
+  id: string;
+  name: string;
+  initials: string;
+  status: "overdue" | "pending";
+  amount: number;
+  serviceName: string;
+}
+
+interface GaugeCardProps {
+  dashboard: DashboardSummary;
+  pendingDebtors: PendingDebtor[];
+}
+
+export function GaugeCard({ dashboard, pendingDebtors }: GaugeCardProps) {
+  const data = dashboard;
   const remaining = data.total_month_receivable - data.total_month_collected;
 
   return (
@@ -64,7 +78,7 @@ export function GaugeCard() {
             3
           </Badge>
         </div>
-        <PendingList debtors={mockPendingDebtors} />
+        <PendingList debtors={pendingDebtors} />
       </CardFooter>
     </Card>
   );

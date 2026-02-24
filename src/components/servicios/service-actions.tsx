@@ -2,13 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,30 +18,32 @@ import {
   deleteService,
 } from "@/app/(dashboard)/servicios/actions";
 import { toast } from "sonner";
-import type { ServiceStatus } from "@/types/database";
+import EditServiceDrawer from "./edit-service-drawer";
+import type { ServiceSummary, Persona } from "@/types/database";
 
 interface ServiceActionsProps {
-  serviceId: string;
-  serviceName: string;
-  status: ServiceStatus;
+  service: ServiceSummary;
+  personas: Pick<Persona, "id" | "name" | "email">[];
 }
 
-export function ServiceActions({
-  serviceId,
-  serviceName,
-  status,
-}: ServiceActionsProps) {
+const cardBtn =
+  "h-8 rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-[10px] font-medium text-neutral-400 hover:text-white";
+
+export function ServiceActions({ service, personas }: ServiceActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDrawer, setShowEditDrawer] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const isActive = service.status === "active";
 
   function handleToggleStatus() {
     startTransition(async () => {
-      const result = await toggleServiceStatus(serviceId);
+      const result = await toggleServiceStatus(service.id);
       if (result.success) {
         toast.success(
           result.newStatus === "active"
-            ? `${serviceName} activado`
-            : `${serviceName} pausado`,
+            ? `${service.name} activado`
+            : `${service.name} pausado`,
         );
       } else {
         toast.error(result.error);
@@ -57,9 +53,9 @@ export function ServiceActions({
 
   function handleDelete() {
     startTransition(async () => {
-      const result = await deleteService(serviceId);
+      const result = await deleteService(service.id);
       if (result.success) {
-        toast.success(`${serviceName} eliminado`);
+        toast.success(`${service.name} eliminado`);
       } else {
         toast.error(result.error);
       }
@@ -69,73 +65,82 @@ export function ServiceActions({
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            className="p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
-            aria-label="Acciones del servicio"
-          >
-            <Icon icon="solar:menu-dots-bold" width={18} />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="w-44 bg-[#141420] border-[#252540]"
+      {/* Edit button */}
+      <Button
+        variant="ghost"
+        className={`col-span-2 ${cardBtn}`}
+        onClick={() => setShowEditDrawer(true)}
+      >
+        <Icon icon="solar:pen-linear" width={12} />
+        Editar
+      </Button>
+
+      {/* Toggle status button */}
+      <Button
+        variant="ghost"
+        className={`col-span-2 ${cardBtn}`}
+        onClick={handleToggleStatus}
+        disabled={isPending}
+      >
+        {isActive ? (
+          <>
+            <Icon icon="solar:pause-linear" width={12} />
+            Pausar
+          </>
+        ) : (
+          <>
+            <Icon icon="solar:play-linear" width={12} />
+            Activar
+          </>
+        )}
+      </Button>
+
+      {/* Delete / Share button */}
+      {isActive ? (
+        <Button
+          variant="ghost"
+          className={`col-span-1 ${cardBtn}`}
+          title="Compartir"
         >
-          <DropdownMenuItem
-            disabled
-            className="text-white/70 focus:text-white focus:bg-white/5"
-          >
-            <Icon icon="solar:pen-bold" className="mr-2" width={16} />
-            Editar
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handleToggleStatus}
-            disabled={isPending}
-            className="text-white/70 focus:text-white focus:bg-white/5"
-          >
-            {status === "active" ? (
-              <>
-                <Icon icon="solar:pause-bold" className="mr-2" width={16} />
-                Pausar
-              </>
-            ) : (
-              <>
-                <Icon icon="solar:play-bold" className="mr-2" width={16} />
-                Activar
-              </>
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-[#252540]" />
-          <DropdownMenuItem
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-red-400 focus:text-red-400 focus:bg-red-400/10"
-          >
-            <Icon
-              icon="solar:trash-bin-trash-bold"
-              className="mr-2"
-              width={16}
-            />
-            Eliminar
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <Icon icon="solar:share-linear" width={12} />
+        </Button>
+      ) : (
+        <Button
+          variant="ghost"
+          className={`col-span-1 ${cardBtn} hover:text-red-400 hover:border-red-400/20`}
+          title="Eliminar"
+          onClick={() => setShowDeleteDialog(true)}
+          disabled={isPending}
+        >
+          <Icon icon="solar:trash-bin-trash-linear" width={12} />
+        </Button>
+      )}
+
+      {/* Edit Drawer */}
+      <EditServiceDrawer
+        open={showEditDrawer}
+        onOpenChange={setShowEditDrawer}
+        service={service}
+        personas={personas}
+      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-[#141420] border-[#252540]">
+        <AlertDialogContent className="bg-neutral-950 border-neutral-800">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">
+            <AlertDialogTitle className="text-neutral-100">
               Eliminar servicio
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-white/50">
+            <AlertDialogDescription className="text-neutral-400">
               ¿Estás seguro de que deseas eliminar{" "}
-              <span className="text-white font-medium">{serviceName}</span>?
-              Esta acción no se puede deshacer. Se eliminarán todos los ciclos
+              <span className="text-neutral-100 font-medium">
+                {service.name}
+              </span>
+              ? Esta acción no se puede deshacer. Se eliminarán todos los ciclos
               de cobro y pagos asociados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-[#1a1a2e] border-[#252540] text-white hover:bg-[#252540] hover:text-white">
+            <AlertDialogCancel className="bg-neutral-900 border-neutral-800 text-neutral-200 hover:bg-neutral-800 hover:text-white">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
