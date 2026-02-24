@@ -1,26 +1,384 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* --- Semantic Status Colors --- */
+  --color-status-active: #10b981;
+  --color-status-pending: #f97316;
+  --color-status-overdue: #ef4444;
+  --color-status-inactive: #737373;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  /* --- Vertical Lines Pattern ---
+     Used on the main app container background.
+     Creates subtle vertical dividers at 25% intervals. */
+  .vertical-lines {
+    background-size: 25% 100%;
+    background-image: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px
+    );
+  }
+
+  /* --- Observ Card ---
+       Subtle diagonal gradient overlay for premium cards.
+       Used on the sidebar gauge card. */
+  .observ-card {
+    background-image: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0.02),
+      rgba(255, 255, 255, 0)
+    );
+    position: relative;
+  }
+
+  /* --- Glass Panel ---
+       Dark translucent panel with backdrop blur.
+       Used on header, bottom dock, and overlays. */
+  .glass-panel {
+    background: var(--color-glass-panel);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* --- Center Dial Gradient ---
+       Conic gradient used for the progress dial decoration. */
+  .center-dial-gradient {
+    background: conic-gradient(
+      from 0deg,
+      #f97316 0%,
+      #fb923c 60%,
+      rgba(64, 64, 64, 0.5) 60%,
+      rgba(64, 64, 64, 0.2) 100%
+    );
+  }
+
+  /* --- CTA Gold Button ---
+       Full styling for the primary call-to-action button.
+       Gradient background + triple shadow (outer glow + 2 insets). */
+  .btn-cta-gold {
+    background: linear-gradient(
+      to right,
+      var(--color-cta-gold-from),
+      var(--color-cta-gold-to)
+    );
+    color: #7c2d12; /* orange-900 */
+    font-weight: 500;
+    font-size: 13px;
+    border-radius: 9999px;
+    padding: 0.625rem 1.25rem;
+    box-shadow: var(--shadow-cta);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    outline: none;
+  }
+
+  .btn-cta-gold:hover {
+    box-shadow:
+      0 15px 33px -12px rgba(255, 162, 42, 1),
+      inset 0 4px 6.3px var(--color-cta-gold-inset-light),
+      inset 0 -5px 6.3px var(--color-cta-gold-inset-dark);
+  }
+
+  .btn-cta-gold:active {
+    transform: scale(0.95);
+  }
+
+  /* Hover overlay sweep effect */
+  .btn-cta-gold::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    border-radius: inherit;
+  }
+
+  .btn-cta-gold:hover::after {
+    transform: translateY(0);
+  }
+
+  /* --- Confirm Button (White) ---
+       Primary confirm action used in modals and verification. */
+  .btn-confirm {
+    background-color: #ffffff;
+    color: #000000;
+    font-weight: 600;
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: var(--shadow-confirm);
+    transition: all 0.2s ease;
+  }
+
+  .btn-confirm:hover {
+    background-color: #e5e5e5; /* neutral-200 */
+  }
+
+  /* Small confirm button variant (used in verification cards) */
+  .btn-confirm-sm {
+    background-color: #ffffff;
+    color: #000000;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: var(--shadow-confirm-sm);
+    transition: all 0.2s ease;
+  }
+
+  .btn-confirm-sm:hover {
+    background-color: #e5e5e5;
+  }
+
+  /* --- Service Color Glow ---
+       Absolute positioned blur circle in card corners.
+       Apply with data-glow-color attribute or per-service class. */
+  .service-glow {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10rem;
+    height: 10rem;
+    border-radius: 9999px;
+    filter: blur(60px);
+    opacity: 0.05;
+    pointer-events: none;
+  }
+
+  .service-glow-netflix {
+    background-color: var(--color-service-netflix);
+  }
+
+  .service-glow-spotify {
+    background-color: var(--color-service-spotify);
+    filter: blur(50px);
+  }
+
+  .service-glow-youtube {
+    background-color: var(--color-service-youtube);
+  }
+
+  .service-glow-prime {
+    background-color: var(--color-service-prime);
+  }
+
+  /* --- Status Badge Variants ---
+       Consistent badge styling for payment/service states. */
+  .badge-active {
+    background-color: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    color: #10b981; /* emerald-500 */
+  }
+
+  .badge-pending {
+    background-color: rgba(249, 115, 22, 0.1);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+    color: #fb923c; /* orange-400 */
+  }
+
+  .badge-overdue {
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #f87171; /* red-400 */
+  }
+
+  .badge-inactive {
+    background-color: #262626; /* neutral-800 */
+    border: 1px solid #404040; /* neutral-700 */
+    color: #a3a3a3; /* neutral-400 */
+  }
+
+  /* --- Inactive Card Modifier ---
+       Dashed border + muted for paused/inactive services. */
+  .card-inactive {
+    border-style: dashed;
+    opacity: 0.7;
+  }
+
+  .card-inactive:hover {
+    opacity: 1;
+    filter: grayscale(0);
+  }
+
+  /* --- Gauge SVG glow ---
+       Drop shadow for the SVG progress arc. */
+  .gauge-glow {
+    filter: drop-shadow(var(--shadow-gauge-glow));
+  }
+}
+
+[style*="--border-gradient"] {
+  position: relative;
+}
+
+[style*="--border-gradient"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: var(--border-radius-before, inherit);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  background: var(--border-gradient);
+  pointer-events: none;
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.87 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.371 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+
+  /* CTA Gold Button */
+  --color-cta-gold-from: #ffebb1;
+  --color-cta-gold-to: #ffc438;
+  --color-cta-gold-inset-light: rgba(255, 255, 255, 0.4);
+  --color-cta-gold-inset-dark: rgba(200, 140, 0, 0.3);
+  --shadow-cta:
+    0 10px 25px -8px rgba(255, 162, 42, 0.7),
+    inset 0 4px 6.3px rgba(255, 255, 255, 0.4),
+    inset 0 -5px 6.3px rgba(200, 140, 0, 0.3);
+
+  /* Glass Panel */
+  --color-glass-panel: rgba(10, 10, 10, 0.8);
+
+  /* Gauge Glow */
+  --shadow-gauge-glow: 0 0 8px rgba(16, 185, 129, 0.4);
+
+  /* Confirm Buttons */
+  --shadow-confirm:
+    0 4px 12px rgba(255, 255, 255, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-confirm-sm:
+    0 2px 8px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.2);
+
+  /* Service Colors */
+  --color-service-netflix: #e50914;
+  --color-service-spotify: #1db954;
+  --color-service-youtube: #ff0000;
+  --color-service-prime: #00a8e1;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
