@@ -13,6 +13,14 @@ interface ServiciosHeaderProps {
   personas: Pick<Persona, "id" | "name" | "email">[];
 }
 
+const FAKE_PERSONAS: Pick<Persona, "id" | "name" | "email">[] = [
+  { id: "fake-1", name: "Ana García", email: "ana@gmail.com" },
+  { id: "fake-2", name: "Carlos López", email: "carlos@hotmail.com" },
+  { id: "fake-3", name: "María Rodríguez", email: "maria@outlook.com" },
+  { id: "fake-4", name: "Diego Hernández", email: "diego@gmail.com" },
+  { id: "fake-5", name: "Sofía Martínez", email: "sofia@icloud.com" },
+];
+
 export default function ServiciosHeader({
   serviceCount,
   activeCount,
@@ -20,6 +28,7 @@ export default function ServiciosHeader({
   personas,
 }: ServiciosHeaderProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const devPersonas = personas.length > 0 ? personas : FAKE_PERSONAS;
 
   return (
     <>
@@ -58,7 +67,7 @@ export default function ServiciosHeader({
       <CreateServiceModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        personas={personas}
+        personas={devPersonas}
       />
     </>
   );

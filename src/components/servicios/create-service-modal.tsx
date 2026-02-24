@@ -6,7 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogClose,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -167,6 +172,9 @@ interface CreateServiceModalProps {
   personas: Pick<Persona, "id" | "name" | "email">[];
 }
 
+// TODO: remove before production — pre-fills modal with fake data for visual testing
+const __DEV_PREFILL__ = true;
+
 export default function CreateServiceModal({
   open,
   onOpenChange,
@@ -174,10 +182,19 @@ export default function CreateServiceModal({
   personas,
 }: CreateServiceModalProps) {
   const isEdit = !!service;
-  const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
+
+  const devTemplate = __DEV_PREFILL__ ? SERVICE_TEMPLATES[0] : null;
+
+  const [selectedPersonas, setSelectedPersonas] = useState<string[]>(
+    __DEV_PREFILL__ ? personas.slice(0, 3).map((p) => p.id) : [],
+  );
   const [submitting, setSubmitting] = useState(false);
-  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
-  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+  const [activeTemplate, setActiveTemplate] = useState<string | null>(
+    __DEV_PREFILL__ ? devTemplate!.name : null,
+  );
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(
+    __DEV_PREFILL__ ? 2 : 0,
+  );
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
     "monthly",
@@ -187,8 +204,7 @@ export default function CreateServiceModal({
     (t) => t.name === activeTemplate,
   );
 
-  // Build initial date from billing_day
-  const initialDay = service?.billing_day ?? 1;
+  const initialDay = service?.billing_day ?? (__DEV_PREFILL__ ? 15 : 1);
   const now = new Date();
   const [billingDate, setBillingDate] = useState<Date>(
     new Date(now.getFullYear(), now.getMonth(), initialDay),
@@ -205,12 +221,17 @@ export default function CreateServiceModal({
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: service?.name ?? "",
-      color: service?.color ?? COLOR_OPTIONS[0].value,
-      monthly_cost: service?.monthly_cost ?? 0,
-      billing_day: service?.billing_day ?? 1,
+      name: service?.name ?? (__DEV_PREFILL__ ? devTemplate!.name : ""),
+      color:
+        service?.color ??
+        (__DEV_PREFILL__ ? devTemplate!.color : COLOR_OPTIONS[0].value),
+      monthly_cost:
+        service?.monthly_cost ??
+        (__DEV_PREFILL__ ? devTemplate!.plans[2].price : 0),
+      billing_day: service?.billing_day ?? (__DEV_PREFILL__ ? 15 : 1),
       split_type: service?.split_type ?? "equal",
-      icon_url: service?.icon_url ?? null,
+      icon_url:
+        service?.icon_url ?? (__DEV_PREFILL__ ? devTemplate!.icon : null),
     },
   });
 
@@ -315,9 +336,9 @@ export default function CreateServiceModal({
 
         {/* Modal Header */}
         <div className="sm:px-6 flex shrink-0 bg-neutral-950/80 border-neutral-800/80 border-b pt-3 pr-5 pb-4 pl-5 sm:pt-4 backdrop-blur-xl items-center justify-between">
-          <h2 className="text-lg font-medium text-white tracking-tight">
+          <DialogTitle className="text-lg font-medium text-white tracking-tight">
             {isEdit ? "Editar Servicio" : "Agregar Servicio"}
-          </h2>
+          </DialogTitle>
           <DialogClose className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors focus:outline-none">
             <Icon icon="solar:close-circle-linear" width={20} />
           </DialogClose>
