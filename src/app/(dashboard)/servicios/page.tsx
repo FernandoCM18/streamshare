@@ -1,16 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
-import { Icon } from "@iconify/react";
 import { ServiceCard } from "@/components/servicios/service-card";
+import { Icon } from "@iconify/react";
+import ServiciosHeader from "@/components/servicios/servicios-header";
 import type { ServiceSummary } from "@/types/database";
-import { Badge } from "@/components/ui/badge";
 
 export default async function ServiciosPage() {
   const supabase = await createClient();
 
-  const { data: services } = await supabase
-    .from("service_summary")
-    .select("*")
-    .order("name");
+  const [{ data: services }, { data: personas }] = await Promise.all([
+    supabase.from("service_summary").select("*").order("name"),
+    supabase.from("personas").select("id, name, email"),
+  ]);
 
   const serviceList = (services ?? []) as ServiceSummary[];
   const activeCount = serviceList.filter((s) => s.status === "active").length;
@@ -19,34 +19,12 @@ export default async function ServiciosPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold text-white">
-              Gestión de Servicios
-            </h1>
-            <Badge className="text-[10px] font-medium text-neutral-400 bg-neutral-800 border-neutral-700 border rounded-full pt-0.5 pr-2.5 pb-0.5 pl-2.5">
-              Total: {serviceList.length}
-            </Badge>
-          </div>
-          <p className="text-neutral-500 text-sm mt-1">
-            Visualiza el estado de tus suscripciones. Tienes
-            <span className="text-neutral-300">
-              {" "}
-              {activeCount} activa{activeCount !== 1 ? "s" : ""}{" "}
-            </span>
-            y{" "}
-            <span className="text-neutral-400">
-              {inactiveCount} inactiva{inactiveCount !== 1 ? "s" : ""}
-            </span>
-            .
-          </p>
-        </div>
-        <button className="btn-cta-gold flex items-center gap-2 shrink-0">
-          <Icon icon="solar:add-circle-bold" width={18} />
-          <span className="relative z-10">Nuevo Servicio</span>
-        </button>
-      </div>
+      <ServiciosHeader
+        serviceCount={serviceList.length}
+        activeCount={activeCount}
+        inactiveCount={inactiveCount}
+        personas={personas ?? []}
+      />
 
       {/* Grid */}
       {serviceList.length > 0 ? (
