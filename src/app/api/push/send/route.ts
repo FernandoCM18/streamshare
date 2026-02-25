@@ -30,9 +30,12 @@ export async function POST(request: NextRequest) {
 
   const { profileId, title, body, url, tag } = await request.json();
 
-  if (!profileId || !title || !body) {
+  // Default to current user if no profileId specified
+  const targetProfileId = profileId || user.id;
+
+  if (!title || !body) {
     return NextResponse.json(
-      { error: "Faltan campos: profileId, title, body" },
+      { error: "Faltan campos: title, body" },
       { status: 400 },
     );
   }
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
   const { data: subscriptions } = await supabase
     .from("push_subscriptions")
     .select("endpoint, p256dh, auth")
-    .eq("profile_id", profileId);
+    .eq("profile_id", targetProfileId);
 
   if (!subscriptions || subscriptions.length === 0) {
     return NextResponse.json(
@@ -88,5 +91,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ results });
+  const sent = results.filter((r) => r.success).length;
+  return NextResponse.json({ results, sent });
 }
