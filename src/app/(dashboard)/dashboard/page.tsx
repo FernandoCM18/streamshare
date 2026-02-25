@@ -41,7 +41,7 @@ export default async function DashboardPage() {
       supabase
         .from("payments")
         .select(
-          "id, cycle_id, service_id, persona_id, amount_due, amount_paid, accumulated_debt, status, due_date, paid_at, confirmed_at, requires_confirmation, personas!inner(id, name, email, avatar_url, profile_id), billing_cycles!inner(period_start, period_end)",
+          "id, cycle_id, service_id, persona_id, amount_due, amount_paid, accumulated_debt, status, due_date, paid_at, confirmed_at, requires_confirmation, personas!inner(id, name, email, phone, avatar_url, profile_id), billing_cycles!inner(period_start, period_end)",
         )
         .eq("owner_id", user!.id)
         .order("status", { ascending: true }),
@@ -112,11 +112,7 @@ export default async function DashboardPage() {
       ) : (
         <div className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/20 p-12 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10">
-            <Icon
-              icon="solar:tv-bold"
-              width={28}
-              className="text-violet-400"
-            />
+            <Icon icon="solar:tv-bold" width={28} className="text-violet-400" />
           </div>
           <h3 className="text-sm font-medium text-white mb-1">
             No tienes servicios aún

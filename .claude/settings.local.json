@@ -8,7 +8,8 @@
       "Bash(echo NO_SUPABASE_CLI:*)",
       "mcp__supabase__list_tables",
       "mcp__linear-server__update_issue",
-      "mcp__linear-server__list_milestones"
+      "mcp__linear-server__list_milestones",
+      "mcp__claude_ai_Linear__list_issues"
     ]
   },
   "enableAllProjectMcpServers": true,
