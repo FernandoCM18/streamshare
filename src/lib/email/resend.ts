@@ -14,4 +14,4 @@ export function getResend(): Resend {
 }
 
 export const EMAIL_FROM =
-  process.env.EMAIL_FROM ?? "StreamShare <noreply@streamshare.app>";
+  process.env.EMAIL_FROM ?? "StreamShare <onboarding@resend.dev>";
