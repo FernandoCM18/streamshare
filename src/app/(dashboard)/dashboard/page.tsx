@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DashboardServiceCard } from "@/components/dashboard/dashboard-service-card";
+import { PushBanner } from "@/components/dashboard/push-banner";
 import { Icon } from "@iconify/react";
 import type { ServiceSummary } from "@/types/database";
 
@@ -71,6 +72,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Push notification banner */}
+      <PushBanner />
+
       {/* Greeting + date */}
       <div>
         <h1 className="text-2xl font-semibold text-white">
