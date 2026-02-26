@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/types/database";
@@ -72,7 +73,7 @@ export function ServiceCard({ service, personas, isOwner }: ServiceCardProps) {
 
       {/* Header: icon + name */}
       <div className="flex items-start justify-between relative z-10">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
           <div
             className={cn(
               "w-12 h-12 rounded-xl border flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300",
@@ -129,6 +130,14 @@ export function ServiceCard({ service, personas, isOwner }: ServiceCardProps) {
             )}
           </div>
         </div>
+        <Link
+          href={`/servicios/${service.id}`}
+          className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-colors shrink-0"
+          title="Ver detalle"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon icon="solar:alt-arrow-right-linear" width={16} />
+        </Link>
       </div>
 
       {/* Middle: members + status badge */}

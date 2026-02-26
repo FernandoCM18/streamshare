@@ -116,6 +116,12 @@ export function MyPaymentCard({
           <p className="text-xl font-semibold text-neutral-100">
             {formatCurrency(Math.max(0, remaining))}
           </p>
+          {status === "partial" && amountPaid > 0 && (
+            <p className="text-[10px] text-orange-400 mt-0.5">
+              Pagado: {formatCurrency(amountPaid)} de{" "}
+              {formatCurrency(amountDue + accumulatedDebt)}
+            </p>
+          )}
         </div>
         <p className="text-xs text-neutral-500">Vence: {formatDate(dueDate)}</p>
       </div>

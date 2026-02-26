@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner";
 import {
   registerPayment,
+  registerAndConfirmPayment,
   confirmPayment,
   rejectPaymentClaim,
 } from "@/app/(dashboard)/dashboard/actions";
@@ -218,30 +219,31 @@ const memberStatusConfig: Record<
 
 const guestStatusConfig: Record<
   PaymentStatus,
-  { label: string; textClass: string; iconName: string }
+  { label: (p: MemberPayment) => string; textClass: string; iconName: string }
 > = {
   confirmed: {
-    label: "Confirmado",
+    label: () => "Confirmado",
     textClass: "text-emerald-500",
     iconName: "solar:check-circle-bold",
   },
   paid: {
-    label: "Esperando confirmación",
+    label: () => "Esperando confirmación",
     textClass: "text-emerald-500",
     iconName: "solar:hourglass-bold",
   },
   pending: {
-    label: "Pendiente de pago",
+    label: () => "Pendiente de pago",
     textClass: "text-orange-400",
     iconName: "solar:clock-circle-bold",
   },
   partial: {
-    label: "Pago parcial",
+    label: (p) =>
+      `Pago parcial — ${formatCurrency(p.amount_paid)} de ${formatCurrency(Number(p.amount_due) + Number(p.accumulated_debt))}`,
     textClass: "text-orange-400",
     iconName: "solar:clock-circle-bold",
   },
   overdue: {
-    label: "Vencido",
+    label: () => "Vencido",
     textClass: "text-red-400",
     iconName: "solar:danger-circle-bold",
   },
@@ -521,16 +523,21 @@ function MemberPaymentRow({
   const config = memberStatusConfig[payment.status];
   const totalOwed =
     Number(payment.amount_due) + Number(payment.accumulated_debt);
-  const isPendingOrOverdue =
-    payment.status === "pending" || payment.status === "overdue";
+  const isActionable =
+    payment.status === "pending" ||
+    payment.status === "partial" ||
+    payment.status === "overdue";
 
-  function handleMarkPaid(amount: number) {
+  function handleRegister(amount: number) {
     startTransition(async () => {
-      const result = await registerPayment(payment.id, amount);
+      const result = await registerAndConfirmPayment(payment.id, amount);
       if (result.success) {
-        toast.success(`Pago de ${persona!.name} registrado`, {
-          description: `${formatCurrency(amount)} en ${serviceName}`,
-        });
+        toast.success(
+          result.confirmed
+            ? `Pago de ${persona!.name} confirmado`
+            : `Pago parcial de ${persona!.name} registrado`,
+          { description: `${formatCurrency(amount)} en ${serviceName}` },
+        );
         if (result.result?.credit_generated) {
           toast.info(
             `Crédito generado: ${formatCurrency(result.result.credit_amount)}`,
@@ -545,19 +552,23 @@ function MemberPaymentRow({
     });
   }
 
+  function handleMarkFullPaid() {
+    handleRegister(totalOwed);
+  }
+
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-2",
+        "flex flex-col gap-2",
         "p-3 rounded-xl",
         "bg-neutral-900/50",
         "border border-neutral-800/50",
-        isPendingOrOverdue && "hover:bg-neutral-800/40 transition-colors",
+        isActionable && "hover:bg-neutral-800/40 transition-colors",
         isPending && "opacity-60 pointer-events-none",
       )}
     >
-      {/* Avatar + name + status */}
-      <div className="flex items-center justify-between">
+      {/* Top row: Avatar + name + status + amount */}
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <Avatar size="lg" className="shrink-0">
             {persona.avatar_url ? (
@@ -604,38 +615,54 @@ function MemberPaymentRow({
             </p>
           </div>
         </div>
+        <span className="text-xs font-mono text-neutral-500 shrink-0">
+          {formatCurrency(totalOwed)}
+        </span>
       </div>
 
-      {/* Actions */}
-      {isPendingOrOverdue && (
-        <div className="flex items-center justify-end gap-1.5 pl-13">
-          <span className="text-xs font-mono text-neutral-500">
-            {formatCurrency(totalOwed)}
-          </span>
+      {/* Action buttons */}
+      {isActionable && (
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="ghost"
+            size="xs"
+            className={cn(
+              "flex-1 px-2.5 py-1 text-[10px] font-medium",
+              "bg-emerald-500/10 hover:bg-emerald-500/20",
+              "text-emerald-400",
+              "border border-emerald-500/20",
+            )}
+            type="button"
+            disabled={isPending}
+            onClick={handleMarkFullPaid}
+          >
+            {isPending ? (
+              <Icon icon="solar:refresh-bold" width={12} className="animate-spin" />
+            ) : (
+              <Icon icon="solar:check-circle-bold" width={12} />
+            )}
+            Pagó todo
+          </Button>
           <AmountPopover
             defaultAmount={totalOwed}
             label={`¿Cuánto pagó ${persona.name}?`}
-            onConfirm={handleMarkPaid}
+            onConfirm={handleRegister}
             isPending={isPending}
           >
             <Button
               variant="ghost"
               size="xs"
               className={cn(
-                "px-2.5 py-1 text-[10px] font-medium",
-                "bg-emerald-500/10 hover:bg-emerald-500/20",
-                "text-emerald-400",
-                "border border-emerald-500/20",
+                "flex-1 px-2.5 py-1 text-[10px] font-medium",
+                "bg-violet-500/10 hover:bg-violet-500/20",
+                "text-violet-400",
+                "border border-violet-500/20",
               )}
               type="button"
               disabled={isPending}
             >
-              {isPending ? (
-                <Icon icon="solar:refresh-bold" width={12} className="animate-spin" />
-              ) : (
-                <Icon icon="solar:check-circle-bold" width={12} />
-              )}
-              Pagó
+              <Icon icon="solar:pen-new-square-bold" width={12} />
+              Otro monto
             </Button>
           </AmountPopover>
           <RemindDrawer
@@ -647,9 +674,9 @@ function MemberPaymentRow({
           >
             <Button
               variant="ghost"
-              size="xs"
+              size="icon-xs"
               className={cn(
-                "px-2.5 py-1 text-[10px] font-medium",
+                "px-1.5 py-1",
                 "bg-orange-500/10 hover:bg-orange-500/20",
                 "text-orange-400",
                 "border border-orange-500/20",
@@ -657,15 +684,14 @@ function MemberPaymentRow({
               type="button"
             >
               <Icon icon="solar:bell-bold" width={12} />
-              Recordar
             </Button>
           </RemindDrawer>
         </div>
       )}
 
       {/* Confirmed/paid amount (non-actionable states) */}
-      {!isPendingOrOverdue && (
-        <div className="flex items-center gap-2 shrink-0">
+      {!isActionable && (
+        <div className="flex items-center gap-2 justify-end">
           {(payment.status === "confirmed" || payment.status === "paid") && (
             <Icon
               icon="solar:check-circle-bold"
@@ -673,9 +699,6 @@ function MemberPaymentRow({
               width={16}
             />
           )}
-          <span className="text-xs font-mono text-neutral-500">
-            {formatCurrency(totalOwed)}
-          </span>
         </div>
       )}
     </div>
@@ -737,18 +760,19 @@ function GuestPaymentRow({
         </div>
         <div className="min-w-0">
           <p className={cn("text-xs font-medium", config.textClass)}>
-            {config.label}
+            {config.label(payment)}
           </p>
           <p className="text-[10px] text-neutral-500">
-            {formatCurrency(totalOwed)} • Vence{" "}
-            {formatPaymentDate(payment.due_date)}
+            {payment.status === "partial"
+              ? `Restante: ${formatCurrency(totalOwed - Number(payment.amount_paid))} • Vence ${formatPaymentDate(payment.due_date)}`
+              : `${formatCurrency(totalOwed)} • Vence ${formatPaymentDate(payment.due_date)}`}
           </p>
         </div>
       </div>
 
       {canPay ? (
         <AmountPopover
-          defaultAmount={totalOwed}
+          defaultAmount={payment.status === "partial" ? totalOwed - Number(payment.amount_paid) : totalOwed}
           label="¿Cuánto pagaste?"
           onConfirm={handleMarkPaid}
           isPending={isPending}
@@ -818,10 +842,9 @@ function VerificationClaimRow({
     Number(payment.amount_due) + Number(payment.accumulated_debt);
   const claimedAmount = Number(payment.amount_paid);
 
-  function handleConfirm(amount: number) {
+  function handleConfirm() {
     startTransition(async () => {
-      // Always reject claim first (resets to pending + amount_paid = 0),
-      // then register with the confirmed amount so reconciliation runs properly
+      // Reject claim first (resets to pending), then register + confirm
       const rejectResult = await rejectPaymentClaim(payment.id);
       if (!rejectResult.success) {
         toast.error("Error al procesar", {
@@ -829,9 +852,13 @@ function VerificationClaimRow({
         });
         return;
       }
-      const registerResult = await registerPayment(payment.id, amount);
+
+      const registerResult = await registerAndConfirmPayment(
+        payment.id,
+        claimedAmount,
+      );
       if (!registerResult.success) {
-        toast.error("Error al registrar pago", {
+        toast.error("Error al confirmar pago", {
           description: registerResult.error,
         });
         return;
@@ -844,12 +871,9 @@ function VerificationClaimRow({
         );
       }
 
-      toast.success(
-        Math.abs(amount - claimedAmount) > 0.01
-          ? "Pago ajustado y confirmado"
-          : "¡Pago confirmado!",
-        { description: `${persona!.name} — ${formatCurrency(amount)}` },
-      );
+      toast.success("¡Pago confirmado!", {
+        description: `${persona!.name} — ${formatCurrency(claimedAmount)}`,
+      });
 
       // Haptic feedback
       if (navigator.vibrate) navigator.vibrate(200);
@@ -957,32 +981,26 @@ function VerificationClaimRow({
           >
             <Icon icon="solar:close-circle-linear" width={18} />
           </Button>
-          <AmountPopover
-            defaultAmount={claimedAmount}
-            label={`Confirmar pago de ${persona.name}`}
-            onConfirm={handleConfirm}
-            isPending={isPending}
+          <Button
+            size="sm"
+            className={cn(
+              "h-8 px-3 rounded-lg",
+              "bg-white text-black",
+              "text-[10px] font-semibold",
+              "hover:bg-neutral-200",
+              "border-transparent",
+              "shadow-[0_0_10px_rgba(255,255,255,0.1)]",
+            )}
+            type="button"
+            disabled={isPending}
+            onClick={handleConfirm}
           >
-            <Button
-              size="sm"
-              className={cn(
-                "h-8 px-3 rounded-lg",
-                "bg-white text-black",
-                "text-[10px] font-semibold",
-                "hover:bg-neutral-200",
-                "border-transparent",
-                "shadow-[0_0_10px_rgba(255,255,255,0.1)]",
-              )}
-              type="button"
-              disabled={isPending}
-            >
-              {isPending ? (
-                <Icon icon="solar:refresh-bold" width={14} className="animate-spin" />
-              ) : (
-                "Confirmar"
-              )}
-            </Button>
-          </AmountPopover>
+            {isPending ? (
+              <Icon icon="solar:refresh-bold" width={14} className="animate-spin" />
+            ) : (
+              "Confirmar"
+            )}
+          </Button>
         </div>
       </div>
     </div>
