@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,7 +22,6 @@ import { es } from "react-day-picker/locale";
 import {
   createService,
   updateService,
-  createQuickPersona,
 } from "@/app/(dashboard)/servicios/actions";
 import { formatCurrency } from "@/types/database";
 import type { Service, Persona } from "@/types/database";
@@ -166,15 +165,6 @@ function getInitials(name: string) {
     .slice(0, 2);
 }
 
-function dedupeById<T extends { id: string }>(items: T[]): T[] {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    if (seen.has(item.id)) return false;
-    seen.add(item.id);
-    return true;
-  });
-}
-
 interface CreateServiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -190,25 +180,11 @@ export default function CreateServiceModal({
 }: CreateServiceModalProps) {
   const isEdit = !!service;
 
-  const [localPersonas, setLocalPersonas] = useState(() =>
-    dedupeById(personas),
-  );
-  useEffect(() => {
-    setLocalPersonas((prev) => {
-      const serverIds = new Set(personas.map((p) => p.id));
-      const localOnly = prev.filter((p) => !serverIds.has(p.id));
-      return dedupeById([...personas, ...localOnly]);
-    });
-  }, [personas]);
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
   const [customAmounts, setCustomAmounts] = useState<Record<string, number>>(
     {},
   );
   const [submitting, setSubmitting] = useState(false);
-  const [showAddMember, setShowAddMember] = useState(false);
-  const [newMemberName, setNewMemberName] = useState("");
-  const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [addingMember, setAddingMember] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -268,7 +244,7 @@ export default function CreateServiceModal({
     watchedSplit === "custom" ? monthlyCost - customTotal : 0;
 
   // Filter personas by search query, excluding already selected
-  const filteredPersonas = localPersonas.filter((p) => {
+  const filteredPersonas = personas.filter((p) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
     return (
@@ -312,63 +288,6 @@ export default function CreateServiceModal({
 
   function setCustomAmount(personaId: string, amount: number) {
     setCustomAmounts((prev) => ({ ...prev, [personaId]: amount }));
-  }
-
-  async function handleAddMember() {
-    if (!newMemberName.trim()) return;
-
-    // Check for duplicates by name (case-insensitive)
-    const nameNormalized = newMemberName.trim().toLowerCase();
-    const emailNormalized = newMemberEmail.trim().toLowerCase();
-    const duplicate = localPersonas.find(
-      (p) =>
-        p.name.toLowerCase() === nameNormalized ||
-        (emailNormalized && p.email?.toLowerCase() === emailNormalized),
-    );
-
-    if (duplicate) {
-      // Auto-select the existing persona instead of creating a new one
-      if (!selectedPersonas.includes(duplicate.id)) {
-        setSelectedPersonas((prev) => [...prev, duplicate.id]);
-      }
-      setNewMemberName("");
-      setNewMemberEmail("");
-      setShowAddMember(false);
-      toast.info(`${duplicate.name} ya existe, se seleccionó automáticamente`);
-      return;
-    }
-
-    setAddingMember(true);
-    try {
-      const fd = new FormData();
-      fd.set("name", newMemberName.trim());
-      if (newMemberEmail.trim()) fd.set("email", newMemberEmail.trim());
-
-      const result = await createQuickPersona(fd);
-      if (result.success) {
-        const p = result.persona;
-        setLocalPersonas((prev) => {
-          if (prev.some((lp) => lp.id === p.id)) return prev;
-          return [...prev, p];
-        });
-        setSelectedPersonas((prev) => {
-          if (prev.includes(p.id)) return prev;
-          return [...prev, p.id];
-        });
-        setNewMemberName("");
-        setNewMemberEmail("");
-        setShowAddMember(false);
-        toast.success(
-          result.duplicate
-            ? `${p.name} ya existe, se seleccionó automáticamente`
-            : `${p.name} agregado`,
-        );
-      } else {
-        toast.error(result.error ?? "Error al agregar miembro");
-      }
-    } finally {
-      setAddingMember(false);
-    }
   }
 
   async function onSubmit(values: FormValues) {
@@ -429,9 +348,6 @@ export default function CreateServiceModal({
         setCustomAmounts({});
         setActiveTemplate(null);
         setBillingCycle("monthly");
-        setShowAddMember(false);
-        setNewMemberName("");
-        setNewMemberEmail("");
         setSearchQuery("");
       } else {
         toast.error(result.error ?? "Error al guardar");
@@ -829,7 +745,7 @@ export default function CreateServiceModal({
                     </div>
 
                     {/* Search bar for existing personas */}
-                    {localPersonas.length > 3 && (
+                    {personas.length > 3 && (
                       <div className="relative">
                         <Icon
                           icon="solar:magnifer-linear"
@@ -962,56 +878,17 @@ export default function CreateServiceModal({
                         </div>
                       )}
 
-                    {/* Add Member Action */}
-                    {showAddMember ? (
-                      <div className="p-3 rounded-xl border border-neutral-700 bg-neutral-900/30 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-neutral-300">
-                            Nuevo miembro
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowAddMember(false);
-                              setNewMemberName("");
-                              setNewMemberEmail("");
-                            }}
-                            className="text-neutral-500 hover:text-neutral-300 transition-colors focus:outline-none"
-                          >
-                            <Icon icon="solar:close-circle-linear" width={16} />
-                          </button>
-                        </div>
-                        <input
-                          value={newMemberName}
-                          onChange={(e) => setNewMemberName(e.target.value)}
-                          placeholder="Nombre *"
-                          className="w-full h-9 bg-neutral-900/40 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-lg px-3 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
-                        />
-                        <input
-                          value={newMemberEmail}
-                          onChange={(e) => setNewMemberEmail(e.target.value)}
-                          placeholder="Email (opcional)"
-                          type="email"
-                          className="w-full h-9 bg-neutral-900/40 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-lg px-3 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleAddMember}
-                          disabled={!newMemberName.trim() || addingMember}
-                          className="w-full h-9 rounded-lg text-xs font-medium bg-white text-black hover:bg-neutral-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none"
-                        >
-                          {addingMember ? "Agregando..." : "Agregar"}
-                        </button>
+                    {/* Empty state — guide to Personas section */}
+                    {personas.length === 0 && (
+                      <div className="p-4 rounded-xl border border-dashed border-neutral-700 bg-neutral-900/20 text-center space-y-1">
+                        <p className="text-xs text-neutral-400">
+                          No tienes personas registradas
+                        </p>
+                        <p className="text-[11px] text-neutral-600">
+                          Crea personas en la sección de Personas para poder
+                          agregarlas a tus servicios
+                        </p>
                       </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setShowAddMember(true)}
-                        className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-neutral-700 hover:border-neutral-500 hover:bg-neutral-900/50 text-neutral-400 hover:text-neutral-200 transition-all text-sm font-medium focus:outline-none"
-                      >
-                        <Icon icon="solar:user-plus-linear" width={18} />
-                        Agregar miembro
-                      </button>
                     )}
                   </div>
                 </div>

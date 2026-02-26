@@ -75,7 +75,7 @@ export function GaugeCard({ dashboard, pendingDebtors }: GaugeCardProps) {
             pendientes
           </h3>
           <Badge className="text-[9px] font-medium text-neutral-500 bg-neutral-900 border-neutral-800 border">
-            3
+            {pendingDebtors.length}
           </Badge>
         </div>
         <PendingList debtors={pendingDebtors} />

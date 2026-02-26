@@ -19,7 +19,6 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
-
 // ─── Push Notifications ────────────────────────────────────
 
 self.addEventListener("push", (event) => {

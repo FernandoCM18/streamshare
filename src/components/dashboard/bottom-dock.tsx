@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
 
-const tabs = [
+const ownerTabs = [
   {
     href: "/dashboard",
     icon: "solar:widget-linear",
@@ -28,8 +28,23 @@ const tabs = [
   },
 ];
 
-export function BottomDock() {
+export function BottomDock({
+  hasLinkedPersona,
+}: {
+  hasLinkedPersona: boolean;
+}) {
   const pathname = usePathname();
+  const tabs = hasLinkedPersona
+    ? [
+        ...ownerTabs.slice(0, 3),
+        {
+          href: "/mis-pagos",
+          icon: "solar:wallet-money-linear",
+          label: "Mis pagos",
+        },
+        ownerTabs[3],
+      ]
+    : ownerTabs;
 
   return (
     <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">

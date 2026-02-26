@@ -6,14 +6,14 @@ import { z } from "zod";
 
 const createPersonaSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  email: z.string().email("Email inválido"),
   phone: z.string().optional().or(z.literal("")),
 });
 
 const updatePersonaSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1, "El nombre es requerido"),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  email: z.string().email("Email inválido"),
   phone: z.string().optional().or(z.literal("")),
 });
 
@@ -32,7 +32,7 @@ export async function createPersona(formData: FormData) {
     .from("personas")
     .insert({
       name: input.data.name.trim(),
-      email: input.data.email?.trim() || null,
+      email: input.data.email.trim().toLowerCase(),
       phone: input.data.phone?.trim() || null,
       owner_id: user.id,
     })
@@ -63,7 +63,7 @@ export async function updatePersona(formData: FormData) {
     .from("personas")
     .update({
       name: updateData.name.trim(),
-      email: updateData.email?.trim() || null,
+      email: updateData.email.trim().toLowerCase(),
       phone: updateData.phone?.trim() || null,
     })
     .eq("id", id)

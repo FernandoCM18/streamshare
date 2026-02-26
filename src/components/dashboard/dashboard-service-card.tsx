@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import confetti from "canvas-confetti";
 import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
@@ -21,13 +21,106 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { toast } from "sonner";
 import {
   registerPayment,
   confirmPayment,
   rejectPaymentClaim,
 } from "@/app/(dashboard)/dashboard/actions";
+import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
 import { RemindDrawer } from "@/components/dashboard/remind-drawer";
+
+// ─── Amount Popover ──────────────────────────────────────────
+
+function AmountPopover({
+  defaultAmount,
+  label,
+  onConfirm,
+  isPending,
+  children,
+}: {
+  defaultAmount: number;
+  label: string;
+  onConfirm: (amount: number) => void;
+  isPending: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleOpen(nextOpen: boolean) {
+    if (nextOpen) {
+      setAmount(defaultAmount.toFixed(2));
+    }
+    setOpen(nextOpen);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = parseFloat(amount);
+    if (isNaN(parsed) || parsed <= 0) {
+      toast.error("Ingresa un monto válido");
+      return;
+    }
+    setOpen(false);
+    onConfirm(parsed);
+  }
+
+  return (
+    <Popover open={open} onOpenChange={handleOpen}>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent
+        align="end"
+        className="w-56 bg-neutral-950 border-neutral-800 p-3"
+      >
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <p className="text-[11px] font-medium text-neutral-400">{label}</p>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500">
+              $
+            </span>
+            <input
+              ref={inputRef}
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              autoFocus
+              className="w-full bg-neutral-900 border border-neutral-700 focus:border-neutral-500 rounded-lg pl-7 pr-3 py-2 text-sm text-neutral-200 font-mono placeholder:text-neutral-600 focus:outline-none focus:ring-0 transition-colors"
+            />
+          </div>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isPending}
+            className={cn(
+              "w-full h-8 rounded-lg text-[11px] font-semibold",
+              "bg-emerald-500/20 hover:bg-emerald-500/30",
+              "text-emerald-400 border border-emerald-500/30",
+            )}
+          >
+            {isPending ? (
+              <Icon
+                icon="solar:refresh-bold"
+                width={12}
+                className="animate-spin"
+              />
+            ) : (
+              "Confirmar"
+            )}
+          </Button>
+        </form>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function getInitials(name: string): string {
   return name
@@ -123,6 +216,37 @@ const memberStatusConfig: Record<
   },
 };
 
+const guestStatusConfig: Record<
+  PaymentStatus,
+  { label: string; textClass: string; iconName: string }
+> = {
+  confirmed: {
+    label: "Confirmado",
+    textClass: "text-emerald-500",
+    iconName: "solar:check-circle-bold",
+  },
+  paid: {
+    label: "Esperando confirmación",
+    textClass: "text-emerald-500",
+    iconName: "solar:hourglass-bold",
+  },
+  pending: {
+    label: "Pendiente de pago",
+    textClass: "text-orange-400",
+    iconName: "solar:clock-circle-bold",
+  },
+  partial: {
+    label: "Pago parcial",
+    textClass: "text-orange-400",
+    iconName: "solar:clock-circle-bold",
+  },
+  overdue: {
+    label: "Vencido",
+    textClass: "text-red-400",
+    iconName: "solar:danger-circle-bold",
+  },
+};
+
 function getServiceStatusBadge(
   dueDate: string | undefined,
   hasOverdue: boolean,
@@ -180,11 +304,13 @@ function getServiceStatusBadge(
 interface DashboardServiceCardProps {
   service: ServiceSummary;
   payments: MemberPayment[];
+  isOwner?: boolean;
 }
 
 export function DashboardServiceCard({
   service,
   payments,
+  isOwner = true,
 }: DashboardServiceCardProps) {
   const normalize = (val: unknown) =>
     Array.isArray(val) ? (val[0] ?? null) : (val ?? null);
@@ -241,6 +367,20 @@ export function DashboardServiceCard({
               {" " + formatCurrency(service.monthly_cost)}
               /mes
             </p>
+            <span
+              className={cn(
+                "mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium",
+                isOwner
+                  ? "bg-violet-500/10 border border-violet-500/20 text-violet-400"
+                  : "bg-blue-500/10 border border-blue-500/20 text-blue-400",
+              )}
+            >
+              <Icon
+                icon={isOwner ? "solar:crown-bold" : "solar:user-bold"}
+                width={9}
+              />
+              {isOwner ? "Propietario" : "Miembro"}
+            </span>
           </div>
         </div>
 
@@ -269,46 +409,66 @@ export function DashboardServiceCard({
         )}
       </CardHeader>
 
-      {/* Members grid */}
+      {/* Content — different for owner vs guest */}
       <CardContent className="p-6">
-        {isIndividual ? (
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-900/50 border border-neutral-800/50">
-            <Icon
-              icon="solar:calendar-bold"
-              width={16}
-              className="text-neutral-500"
-            />
-            <p className="text-xs text-neutral-400">
-              Próximo cobro:{" "}
-              <span className="text-neutral-200 font-medium">
-                {firstDueDate
-                  ? formatPaymentDate(firstDueDate)
-                  : `${service.billing_day} de cada mes`}
-              </span>
-            </p>
-          </div>
-        ) : payments.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {regularPayments.map((payment) => (
-              <MemberPaymentRow
-                key={payment.id}
-                payment={payment}
-                normalize={normalize}
-                serviceName={service.name}
+        {isOwner ? (
+          // ── Owner view: show all members + their payment status ──
+          isIndividual ? (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-900/50 border border-neutral-800/50">
+              <Icon
+                icon="solar:calendar-bold"
+                width={16}
+                className="text-neutral-500"
               />
-            ))}
-          </div>
+              <p className="text-xs text-neutral-400">
+                Próximo cobro:{" "}
+                <span className="text-neutral-200 font-medium">
+                  {firstDueDate
+                    ? formatPaymentDate(firstDueDate)
+                    : `${service.billing_day} de cada mes`}
+                </span>
+              </p>
+            </div>
+          ) : payments.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {regularPayments.map((payment) => (
+                <MemberPaymentRow
+                  key={payment.id}
+                  payment={payment}
+                  normalize={normalize}
+                  serviceName={service.name}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-neutral-500 text-center py-3">
+              {(service.members ?? []).length > 0
+                ? "Sin ciclo de cobro activo"
+                : "Sin miembros asignados"}
+            </p>
+          )
         ) : (
-          <p className="text-xs text-neutral-500 text-center py-3">
-            {(service.members ?? []).length > 0
-              ? "Sin ciclo de cobro activo"
-              : "Sin miembros asignados"}
-          </p>
+          // ── Guest view: show only your own payment ──
+          payments.length > 0 ? (
+            <div className="space-y-3">
+              {payments.map((payment) => (
+                <GuestPaymentRow
+                  key={payment.id}
+                  payment={payment}
+                  serviceName={service.name}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-neutral-500 text-center py-3">
+              Sin pagos pendientes este mes
+            </p>
+          )
         )}
       </CardContent>
 
-      {/* Verification request section */}
-      {pendingVerifications.length > 0 && (
+      {/* Verification request section — owner only */}
+      {isOwner && pendingVerifications.length > 0 && (
         <CardFooter
           className={cn(
             "flex-col items-stretch gap-0 p-0",
@@ -364,12 +524,12 @@ function MemberPaymentRow({
   const isPendingOrOverdue =
     payment.status === "pending" || payment.status === "overdue";
 
-  function handleMarkPaid() {
+  function handleMarkPaid(amount: number) {
     startTransition(async () => {
-      const result = await registerPayment(payment.id, totalOwed);
+      const result = await registerPayment(payment.id, amount);
       if (result.success) {
         toast.success(`Pago de ${persona!.name} registrado`, {
-          description: `${formatCurrency(totalOwed)} en ${serviceName}`,
+          description: `${formatCurrency(amount)} en ${serviceName}`,
         });
         if (result.result?.credit_generated) {
           toast.info(
@@ -449,38 +609,35 @@ function MemberPaymentRow({
       {/* Actions */}
       {isPendingOrOverdue && (
         <div className="flex items-center justify-end gap-1.5 pl-13">
-          <div className="flex items-center gap-2 shrink-0">
-            {payment.status === "confirmed" && (
-              <Icon
-                icon="solar:check-circle-bold"
-                className="text-emerald-500"
-                width={16}
-              />
-            )}
-            <span className="text-xs font-mono text-neutral-500">
-              {formatCurrency(totalOwed)}
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="xs"
-            className={cn(
-              "px-2.5 py-1 text-[10px] font-medium",
-              "bg-emerald-500/10 hover:bg-emerald-500/20",
-              "text-emerald-400",
-              "border border-emerald-500/20",
-            )}
-            type="button"
-            disabled={isPending}
-            onClick={handleMarkPaid}
+          <span className="text-xs font-mono text-neutral-500">
+            {formatCurrency(totalOwed)}
+          </span>
+          <AmountPopover
+            defaultAmount={totalOwed}
+            label={`¿Cuánto pagó ${persona.name}?`}
+            onConfirm={handleMarkPaid}
+            isPending={isPending}
           >
-            {isPending ? (
-              <Icon icon="solar:refresh-bold" width={12} className="animate-spin" />
-            ) : (
-              <Icon icon="solar:check-circle-bold" width={12} />
-            )}
-            Pagó
-          </Button>
+            <Button
+              variant="ghost"
+              size="xs"
+              className={cn(
+                "px-2.5 py-1 text-[10px] font-medium",
+                "bg-emerald-500/10 hover:bg-emerald-500/20",
+                "text-emerald-400",
+                "border border-emerald-500/20",
+              )}
+              type="button"
+              disabled={isPending}
+            >
+              {isPending ? (
+                <Icon icon="solar:refresh-bold" width={12} className="animate-spin" />
+              ) : (
+                <Icon icon="solar:check-circle-bold" width={12} />
+              )}
+              Pagó
+            </Button>
+          </AmountPopover>
           <RemindDrawer
             personaName={persona.name}
             personaPhone={persona.phone}
@@ -525,6 +682,117 @@ function MemberPaymentRow({
   );
 }
 
+// ─── Guest Payment Row (member view) ─────────────────────────
+
+function GuestPaymentRow({
+  payment,
+  serviceName,
+}: {
+  payment: MemberPayment;
+  serviceName: string;
+}) {
+  const [isPending, startTransition] = useTransition();
+
+  const totalOwed =
+    Number(payment.amount_due) + Number(payment.accumulated_debt);
+  const config = guestStatusConfig[payment.status];
+  const canPay =
+    payment.status === "pending" ||
+    payment.status === "partial" ||
+    payment.status === "overdue";
+
+  function handleMarkPaid(amount: number) {
+    startTransition(async () => {
+      const result = await markMyPaymentAsPaid(payment.id, amount);
+      if (result.success) {
+        toast.success("¡Pago registrado!", {
+          description: `${formatCurrency(amount)} en ${serviceName}`,
+        });
+      } else {
+        toast.error("Error al registrar pago", {
+          description: result.error,
+        });
+      }
+    });
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3",
+        "p-3 rounded-xl",
+        "bg-neutral-900/50",
+        "border border-neutral-800/50",
+        isPending && "opacity-60 pointer-events-none",
+      )}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className={cn(
+            "w-8 h-8 shrink-0 rounded-lg flex items-center justify-center",
+            "bg-neutral-800 border border-neutral-700",
+          )}
+        >
+          <Icon icon={config.iconName} width={16} className={config.textClass} />
+        </div>
+        <div className="min-w-0">
+          <p className={cn("text-xs font-medium", config.textClass)}>
+            {config.label}
+          </p>
+          <p className="text-[10px] text-neutral-500">
+            {formatCurrency(totalOwed)} • Vence{" "}
+            {formatPaymentDate(payment.due_date)}
+          </p>
+        </div>
+      </div>
+
+      {canPay ? (
+        <AmountPopover
+          defaultAmount={totalOwed}
+          label="¿Cuánto pagaste?"
+          onConfirm={handleMarkPaid}
+          isPending={isPending}
+        >
+          <Button
+            variant="ghost"
+            size="xs"
+            className={cn(
+              "px-3 py-1.5 text-[10px] font-medium shrink-0",
+              "bg-violet-500/10 hover:bg-violet-500/20",
+              "text-violet-400",
+              "border border-violet-500/20",
+            )}
+            type="button"
+            disabled={isPending}
+          >
+            {isPending ? (
+              <Icon
+                icon="solar:refresh-bold"
+                width={12}
+                className="animate-spin"
+              />
+            ) : (
+              <Icon icon="solar:hand-money-bold" width={12} />
+            )}
+            Ya pagué
+          </Button>
+        </AmountPopover>
+      ) : (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Icon
+            icon="solar:check-circle-bold"
+            className="text-emerald-500"
+            width={14}
+          />
+          <span className="text-[10px] font-medium text-emerald-400">
+            {payment.status === "paid" ? "Enviado" : "Listo"}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Verification Claim Row ────────────────────────────────
 
 function VerificationClaimRow({
@@ -548,30 +816,51 @@ function VerificationClaimRow({
 
   const totalOwed =
     Number(payment.amount_due) + Number(payment.accumulated_debt);
+  const claimedAmount = Number(payment.amount_paid);
 
-  function handleConfirm() {
+  function handleConfirm(amount: number) {
     startTransition(async () => {
-      const result = await confirmPayment(payment.id);
-      if (result.success) {
-        // Haptic feedback
-        if (navigator.vibrate) navigator.vibrate(200);
-
-        // Confetti burst
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.7 },
-          colors: ["#34d399", "#6ee7b7", "#a78bfa", "#ffffff"],
+      // Always reject claim first (resets to pending + amount_paid = 0),
+      // then register with the confirmed amount so reconciliation runs properly
+      const rejectResult = await rejectPaymentClaim(payment.id);
+      if (!rejectResult.success) {
+        toast.error("Error al procesar", {
+          description: rejectResult.error,
         });
-
-        toast.success("¡Pago confirmado! ✨", {
-          description: `${persona!.name} — ${formatCurrency(totalOwed)}`,
-        });
-      } else {
-        toast.error("Error al confirmar", {
-          description: result.error,
-        });
+        return;
       }
+      const registerResult = await registerPayment(payment.id, amount);
+      if (!registerResult.success) {
+        toast.error("Error al registrar pago", {
+          description: registerResult.error,
+        });
+        return;
+      }
+
+      if (registerResult.result?.credit_generated) {
+        toast.info(
+          `Crédito generado: ${formatCurrency(registerResult.result.credit_amount)}`,
+          { description: `Se aplicará al próximo ciclo de ${persona!.name}` },
+        );
+      }
+
+      toast.success(
+        Math.abs(amount - claimedAmount) > 0.01
+          ? "Pago ajustado y confirmado"
+          : "¡Pago confirmado!",
+        { description: `${persona!.name} — ${formatCurrency(amount)}` },
+      );
+
+      // Haptic feedback
+      if (navigator.vibrate) navigator.vibrate(200);
+
+      // Confetti burst
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.7 },
+        colors: ["#34d399", "#6ee7b7", "#a78bfa", "#ffffff"],
+      });
     });
   }
 
@@ -601,7 +890,7 @@ function VerificationClaimRow({
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
           <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">
-            {persona.name} reclama pago
+            {persona.name} indica que pagó
           </span>
         </div>
         {payment.paid_at && (
@@ -644,7 +933,11 @@ function VerificationClaimRow({
               {persona.name}
             </p>
             <p className="text-[10px] text-neutral-500">
-              Transferencia • {formatCurrency(totalOwed)}
+              Dice que pagó{" "}
+              <span className="text-neutral-300 font-medium">
+                {formatCurrency(claimedAmount)}
+              </span>
+              {" "}de {formatCurrency(totalOwed)}
             </p>
           </div>
         </div>
@@ -664,26 +957,32 @@ function VerificationClaimRow({
           >
             <Icon icon="solar:close-circle-linear" width={18} />
           </Button>
-          <Button
-            size="sm"
-            className={cn(
-              "h-8 px-3 rounded-lg",
-              "bg-white text-black",
-              "text-[10px] font-semibold",
-              "hover:bg-neutral-200",
-              "border-transparent",
-              "shadow-[0_0_10px_rgba(255,255,255,0.1)]",
-            )}
-            type="button"
-            disabled={isPending}
-            onClick={handleConfirm}
+          <AmountPopover
+            defaultAmount={claimedAmount}
+            label={`Confirmar pago de ${persona.name}`}
+            onConfirm={handleConfirm}
+            isPending={isPending}
           >
-            {isPending ? (
-              <Icon icon="solar:refresh-bold" width={14} className="animate-spin" />
-            ) : (
-              "Confirmar"
-            )}
-          </Button>
+            <Button
+              size="sm"
+              className={cn(
+                "h-8 px-3 rounded-lg",
+                "bg-white text-black",
+                "text-[10px] font-semibold",
+                "hover:bg-neutral-200",
+                "border-transparent",
+                "shadow-[0_0_10px_rgba(255,255,255,0.1)]",
+              )}
+              type="button"
+              disabled={isPending}
+            >
+              {isPending ? (
+                <Icon icon="solar:refresh-bold" width={14} className="animate-spin" />
+              ) : (
+                "Confirmar"
+              )}
+            </Button>
+          </AmountPopover>
         </div>
       </div>
     </div>

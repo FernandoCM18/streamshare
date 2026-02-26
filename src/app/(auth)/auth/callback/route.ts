@@ -31,6 +31,18 @@ export async function GET(request: Request) {
           },
           { onConflict: "id" },
         );
+
+        // Auto-link personas created by owners using this email.
+        if (user.email) {
+          await supabase
+            .from("personas")
+            .update({
+              profile_id: user.id,
+              link_attempted: true,
+            })
+            .ilike("email", user.email)
+            .is("profile_id", null);
+        }
       }
 
       return NextResponse.redirect(`${origin}${next}`);

@@ -24,10 +24,13 @@ import {
   addServiceMember,
   removeServiceMember,
   updateMemberAmount,
-  createQuickPersona,
 } from "@/app/(dashboard)/servicios/actions";
 import { formatCurrency } from "@/types/database";
-import type { ServiceSummary, ServiceMemberInfo, Persona } from "@/types/database";
+import type {
+  ServiceSummary,
+  ServiceMemberInfo,
+  Persona,
+} from "@/types/database";
 import { cn } from "@/lib/utils";
 import IconEmojiPicker from "@/components/servicios/icon-emoji-picker";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -84,10 +87,6 @@ export default function EditServiceDrawer({
   );
   const [memberAction, setMemberAction] = useState<string | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
-  const [showNewPersona, setShowNewPersona] = useState(false);
-  const [newPersonaName, setNewPersonaName] = useState("");
-  const [newPersonaEmail, setNewPersonaEmail] = useState("");
-  const [addingPersona, setAddingPersona] = useState(false);
   const [localPersonas, setLocalPersonas] = useState(personas);
   const [editingAmountFor, setEditingAmountFor] = useState<string | null>(null);
   const [editAmountValue, setEditAmountValue] = useState("");
@@ -126,7 +125,6 @@ export default function EditServiceDrawer({
       );
       setLocalPersonas(personas);
       setShowAddMember(false);
-      setShowNewPersona(false);
       setEditingAmountFor(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,7 +154,9 @@ export default function EditServiceDrawer({
     }).format(date);
   }
 
-  async function handleAddMember(persona: Pick<Persona, "id" | "name" | "email">) {
+  async function handleAddMember(
+    persona: Pick<Persona, "id" | "name" | "email">,
+  ) {
     setMemberAction(persona.id);
     try {
       const result = await addServiceMember(service.id, persona.id);
@@ -203,9 +203,7 @@ export default function EditServiceDrawer({
   }
 
   async function handleSaveCustomAmount(member: ServiceMemberInfo) {
-    const amount = editAmountValue.trim()
-      ? parseFloat(editAmountValue)
-      : null;
+    const amount = editAmountValue.trim() ? parseFloat(editAmountValue) : null;
     if (editAmountValue.trim() && (isNaN(amount!) || amount! < 0)) {
       toast.error("Cantidad inválida");
       return;
@@ -229,41 +227,6 @@ export default function EditServiceDrawer({
       }
     } finally {
       setMemberAction(null);
-    }
-  }
-
-  async function handleCreatePersona() {
-    if (!newPersonaName.trim()) return;
-    setAddingPersona(true);
-    try {
-      const fd = new FormData();
-      fd.set("name", newPersonaName.trim());
-      if (newPersonaEmail.trim()) fd.set("email", newPersonaEmail.trim());
-
-      const result = await createQuickPersona(fd);
-      if (result.success) {
-        const p = result.persona;
-        if (result.duplicate) {
-          if (!localPersonas.some((lp) => lp.id === p.id)) {
-            setLocalPersonas((prev) => [...prev, p]);
-          }
-          toast.info(`${p.name} ya existe`);
-        } else {
-          setLocalPersonas((prev) => [...prev, p]);
-        }
-        setNewPersonaName("");
-        setNewPersonaEmail("");
-        setShowNewPersona(false);
-        if (!members.some((m) => m.persona_id === p.id)) {
-          await handleAddMember(p);
-        } else {
-          toast.info(`${p.name} ya es miembro de este servicio`);
-        }
-      } else {
-        toast.error(result.error ?? "Error al crear persona");
-      }
-    } finally {
-      setAddingPersona(false);
     }
   }
 
@@ -406,15 +369,17 @@ export default function EditServiceDrawer({
                   {form.formState.errors.monthly_cost.message}
                 </p>
               )}
-              {watchedCost > 0 && members.length > 0 && watchedSplit === "equal" && (
-                <p className="text-[11px] text-neutral-500">
-                  Cada miembro paga{" "}
-                  <span className="text-neutral-300">
-                    {formatCurrency(perPersonAmount)}
-                  </span>{" "}
-                  ({totalPersons} personas)
-                </p>
-              )}
+              {watchedCost > 0 &&
+                members.length > 0 &&
+                watchedSplit === "equal" && (
+                  <p className="text-[11px] text-neutral-500">
+                    Cada miembro paga{" "}
+                    <span className="text-neutral-300">
+                      {formatCurrency(perPersonAmount)}
+                    </span>{" "}
+                    ({totalPersons} personas)
+                  </p>
+                )}
             </div>
 
             {/* Billing Day */}
@@ -590,16 +555,11 @@ export default function EditServiceDrawer({
                             </div>
                             <button
                               type="button"
-                              onClick={() =>
-                                handleSaveCustomAmount(member)
-                              }
+                              onClick={() => handleSaveCustomAmount(member)}
                               disabled={memberAction === member.member_id}
                               className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/20 transition-colors focus:outline-none disabled:opacity-50"
                             >
-                              <Icon
-                                icon="solar:check-read-linear"
-                                width={14}
-                              />
+                              <Icon icon="solar:check-read-linear" width={14} />
                             </button>
                             <button
                               type="button"
@@ -649,10 +609,7 @@ export default function EditServiceDrawer({
                         disabled={memberAction === member.member_id}
                         className="w-7 h-7 rounded-lg opacity-0 group-hover/member:opacity-100 bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all focus:outline-none disabled:opacity-50"
                       >
-                        <Icon
-                          icon="solar:trash-bin-trash-linear"
-                          width={12}
-                        />
+                        <Icon icon="solar:trash-bin-trash-linear" width={12} />
                       </button>
                     </div>
                   </div>
@@ -667,10 +624,7 @@ export default function EditServiceDrawer({
                       </span>
                       <button
                         type="button"
-                        onClick={() => {
-                          setShowAddMember(false);
-                          setShowNewPersona(false);
-                        }}
+                        onClick={() => setShowAddMember(false)}
                         className="text-neutral-500 hover:text-neutral-300 transition-colors focus:outline-none"
                       >
                         <Icon icon="solar:close-circle-linear" width={16} />
@@ -711,62 +665,12 @@ export default function EditServiceDrawer({
                       </div>
                     )}
 
-                    {availablePersonas.length > 0 && (
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 border-t border-neutral-800" />
-                        <span className="text-[10px] text-neutral-600">O</span>
-                        <div className="flex-1 border-t border-neutral-800" />
-                      </div>
-                    )}
-
-                    {/* Create new persona inline */}
-                    {showNewPersona ? (
-                      <div className="space-y-2.5">
-                        <input
-                          value={newPersonaName}
-                          onChange={(e) => setNewPersonaName(e.target.value)}
-                          placeholder="Nombre *"
-                          className="w-full h-9 bg-neutral-900/40 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-lg px-3 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
-                          autoFocus
-                        />
-                        <input
-                          value={newPersonaEmail}
-                          onChange={(e) => setNewPersonaEmail(e.target.value)}
-                          placeholder="Email (opcional)"
-                          type="email"
-                          className="w-full h-9 bg-neutral-900/40 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-lg px-3 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowNewPersona(false);
-                              setNewPersonaName("");
-                              setNewPersonaEmail("");
-                            }}
-                            className="flex-1 h-9 rounded-lg text-xs font-medium bg-neutral-800/40 text-neutral-400 hover:text-white transition-colors focus:outline-none"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleCreatePersona}
-                            disabled={!newPersonaName.trim() || addingPersona}
-                            className="flex-1 h-9 rounded-lg text-xs font-medium bg-white text-black hover:bg-neutral-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none"
-                          >
-                            {addingPersona ? "Creando..." : "Crear y agregar"}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPersona(true)}
-                        className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed border-neutral-700 hover:border-neutral-500 hover:bg-neutral-900/50 text-neutral-400 hover:text-neutral-200 transition-all text-xs font-medium focus:outline-none"
-                      >
-                        <Icon icon="solar:user-plus-linear" width={16} />
-                        Crear nueva persona
-                      </button>
+                    {/* Empty state when no available personas */}
+                    {availablePersonas.length === 0 && (
+                      <p className="text-[11px] text-neutral-500 text-center py-2">
+                        Crea personas en la sección de Personas para agregarlas
+                        aquí
+                      </p>
                     )}
                   </div>
                 )}

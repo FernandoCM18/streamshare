@@ -97,8 +97,9 @@ export function PersonaModal({
             <input
               name="email"
               type="email"
-              placeholder="Email (opcional)"
+              placeholder="Email"
               defaultValue={editingPersona?.email ?? ""}
+              required
               className={cn(
                 "w-full h-11 bg-neutral-900/20 border border-neutral-800",
                 "focus:border-neutral-600 rounded-xl pl-10 pr-4",
@@ -133,7 +134,7 @@ export function PersonaModal({
             disabled={isPending}
             className={cn(
               "w-full py-3.5 rounded-2xl font-semibold text-white text-sm",
-              "bg-gradient-to-r from-violet-600 to-violet-500",
+              "bg-linear-to-r from-violet-600 to-violet-500",
               "shadow-[0_0_20px_rgba(139,92,246,0.4),0_4px_15px_rgba(139,92,246,0.3),0_1px_3px_rgba(0,0,0,0.5)]",
               "active:scale-[0.98] transition-transform",
               "disabled:opacity-60 disabled:pointer-events-none",

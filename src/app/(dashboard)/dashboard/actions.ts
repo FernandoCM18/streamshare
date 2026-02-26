@@ -55,9 +55,9 @@ export async function rejectPaymentClaim(paymentId: string) {
   if (!user) return { success: false, error: "No autorizado" };
 
   // Reset payment back to pending via raw SQL to handle enum cast
-  const { error } = await supabase.rpc("reject_payment_claim" as string, {
+  const { error } = await supabase.rpc("reject_payment_claim", {
     p_payment_id: paymentId,
-  }) as { error: { message: string } | null };
+  });
 
   if (error) return { success: false, error: error.message };
 

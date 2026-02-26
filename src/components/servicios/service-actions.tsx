@@ -24,12 +24,13 @@ import type { ServiceSummary, Persona } from "@/types/database";
 interface ServiceActionsProps {
   service: ServiceSummary;
   personas: Pick<Persona, "id" | "name" | "email">[];
+  isOwner: boolean;
 }
 
 const cardBtn =
   "h-8 rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-[10px] font-medium text-neutral-400 hover:text-white";
 
-export function ServiceActions({ service, personas }: ServiceActionsProps) {
+export function ServiceActions({ service, personas, isOwner }: ServiceActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDrawer, setShowEditDrawer] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -61,6 +62,14 @@ export function ServiceActions({ service, personas }: ServiceActionsProps) {
       }
       setShowDeleteDialog(false);
     });
+  }
+
+  if (!isOwner) {
+    return (
+      <span className="col-span-5 text-center text-[10px] text-neutral-500 py-1">
+        Solo lectura
+      </span>
+    );
   }
 
   return (

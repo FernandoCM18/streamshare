@@ -142,62 +142,6 @@ export async function toggleServiceStatus(serviceId: string) {
   return { success: true, newStatus };
 }
 
-const quickPersonaSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido"),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
-});
-
-export async function createQuickPersona(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false as const, error: "No autorizado" };
-
-  const raw = Object.fromEntries(formData);
-  const input = quickPersonaSchema.safeParse(raw);
-  if (!input.success)
-    return { success: false as const, error: input.error.message };
-
-  const nameNormalized = input.data.name.trim().toLowerCase();
-  const emailNormalized = input.data.email?.trim().toLowerCase() || null;
-
-  // Check for existing persona with same name or email
-  let query = supabase
-    .from("personas")
-    .select("id, name, email")
-    .eq("owner_id", user.id);
-
-  if (emailNormalized) {
-    query = query.or(
-      `name.ilike.${nameNormalized},email.ilike.${emailNormalized}`,
-    );
-  } else {
-    query = query.ilike("name", nameNormalized);
-  }
-
-  const { data: existing } = await query.limit(1).maybeSingle();
-
-  if (existing) {
-    return { success: true as const, persona: existing, duplicate: true };
-  }
-
-  const { data: persona, error } = await supabase
-    .from("personas")
-    .insert({
-      name: input.data.name.trim(),
-      email: emailNormalized,
-      owner_id: user.id,
-    })
-    .select("id, name, email")
-    .single();
-
-  if (error) return { success: false as const, error: error.message };
-
-  revalidatePath("/servicios");
-  return { success: true as const, persona, duplicate: false };
-}
-
 export async function addServiceMember(
   serviceId: string,
   personaId: string,
@@ -222,6 +166,11 @@ export async function addServiceMember(
     .single();
 
   if (error) return { success: false, error: error.message };
+
+  await supabase.rpc("add_member_to_active_cycles", {
+    p_service_id: serviceId,
+    p_persona_id: personaId,
+  });
 
   revalidatePath("/servicios");
   return { success: true, memberId: member.id };

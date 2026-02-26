@@ -47,9 +47,10 @@ function getInitials(name: string): string {
 interface ServiceCardProps {
   service: ServiceSummary;
   personas: Pick<Persona, "id" | "name" | "email">[];
+  isOwner: boolean;
 }
 
-export function ServiceCard({ service, personas }: ServiceCardProps) {
+export function ServiceCard({ service, personas, isOwner }: ServiceCardProps) {
   const members = service.members ?? [];
   const isInactive = service.status !== "active";
   const status = statusConfig[service.status] ?? statusConfig.pending;
@@ -120,6 +121,12 @@ export function ServiceCard({ service, personas }: ServiceCardProps) {
             >
               Día {service.billing_day} • {formatCurrency(service.monthly_cost)}
             </p>
+            {isOwner && (
+              <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-[9px] font-medium text-violet-400">
+                <Icon icon="solar:crown-bold" width={9} />
+                Propietario
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -178,7 +185,7 @@ export function ServiceCard({ service, personas }: ServiceCardProps) {
 
       {/* Action buttons */}
       <div className="grid grid-cols-5 gap-2 relative z-10 pt-3 border-t border-neutral-800/50">
-        <ServiceActions service={service} personas={personas} />
+        <ServiceActions service={service} personas={personas} isOwner={isOwner} />
       </div>
     </div>
   );

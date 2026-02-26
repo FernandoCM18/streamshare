@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MagicLinkForm } from "@/components/auth/magic-link-form";
+import { EmailPasswordForm } from "@/components/auth/email-password-form";
 import { OAuthButton } from "@/components/auth/oauth-button";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@iconify/react";
@@ -19,11 +19,11 @@ export default function LoginPage() {
         </div>
         <h1 className="text-2xl font-semibold text-white">Iniciar sesión</h1>
         <p className="text-sm text-white/50">
-          Ingresa tu email para recibir un enlace de acceso
+          Ingresa con tu email y contraseña
         </p>
       </div>
 
-      <MagicLinkForm />
+      <EmailPasswordForm />
 
       <div className="flex items-center gap-3">
         <Separator className="flex-1 bg-neutral-800" />

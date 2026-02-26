@@ -19,8 +19,6 @@ export type PaymentStatus =
 
 export type SplitType = "equal" | "custom";
 
-export type InvitationStatus = "pending" | "accepted" | "expired";
-
 export type CreditStatus = "available" | "applied" | "cancelled";
 
 // ============================================================
@@ -128,18 +126,6 @@ export interface PaymentNote {
   content: string;
   is_edited: boolean;
   edited_at: string | null;
-  created_at: string;
-}
-
-export interface Invitation {
-  id: string;
-  owner_id: string;
-  persona_id: string;
-  email: string;
-  token: string;
-  status: InvitationStatus;
-  expires_at: string;
-  accepted_at: string | null;
   created_at: string;
 }
 
@@ -350,7 +336,7 @@ export interface Database {
       profiles: {
         Row: Profile;
         Insert: InsertProfile;
-        Update: Partial<InsertProfile>;
+        Update: Partial<Omit<Profile, "id" | "created_at" | "updated_at">>;
       };
       services: {
         Row: Service;
@@ -389,11 +375,6 @@ export interface Database {
         Insert: InsertPaymentNote;
         Update: UpdatePaymentNote;
       };
-      invitations: {
-        Row: Invitation;
-        Insert: Omit<Invitation, "id" | "token" | "created_at" | "accepted_at">;
-        Update: Partial<Pick<Invitation, "status" | "accepted_at">>;
-      };
       activity_log: {
         Row: ActivityLog;
         Insert: never; // solo se crean via funciones internas
@@ -430,6 +411,10 @@ export interface Database {
         };
         Returns: RegisterPaymentResult;
       };
+      claim_payment: {
+        Args: { p_payment_id: string; p_claimed_amount: number };
+        Returns: void;
+      };
       confirm_payment: {
         Args: { p_payment_id: string };
         Returns: void;
@@ -438,12 +423,19 @@ export interface Database {
         Args: { p_service_id: string; p_persona_id: string };
         Returns: number;
       };
+      add_member_to_active_cycles: {
+        Args: { p_service_id: string; p_persona_id: string };
+        Returns: void;
+      };
+      reject_payment_claim: {
+        Args: { p_payment_id: string };
+        Returns: void;
+      };
     };
     Enums: {
       service_status: ServiceStatus;
       payment_status: PaymentStatus;
       split_type: SplitType;
-      invitation_status: InvitationStatus;
       credit_status: CreditStatus;
     };
   };

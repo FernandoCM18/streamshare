@@ -178,6 +178,16 @@ export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
         </div>
 
         <div className="text-right">
+          <div
+            className={cn(
+              "mb-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-medium",
+              persona.profile_id
+                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                : "border-neutral-700 bg-neutral-800 text-neutral-500",
+            )}
+          >
+            {persona.profile_id ? "Vinculado" : "Sin cuenta"}
+          </div>
           <span
             className={cn(
               "text-xs font-semibold",

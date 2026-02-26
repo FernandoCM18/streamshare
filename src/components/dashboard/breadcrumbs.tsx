@@ -6,6 +6,7 @@ const routeNames: Record<string, string> = {
   "/dashboard": "Panel General",
   "/servicios": "Servicios",
   "/personas": "Personas",
+  "/mis-pagos": "Mis pagos",
   "/configuracion": "Configuración",
 };
 

@@ -33,6 +33,7 @@ export default async function DashboardLayout({
     { data: profile },
     { data: dashboardRows },
     { data: pendingPayments },
+    { data: linkedPersona },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("dashboard_summary").select("*").eq("owner_id", user.id),
@@ -45,6 +46,12 @@ export default async function DashboardLayout({
       .in("status", ["pending", "partial", "overdue"])
       .order("status", { ascending: true })
       .limit(10),
+    supabase
+      .from("personas")
+      .select("id")
+      .eq("profile_id", user.id)
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const displayName =
@@ -126,7 +133,7 @@ export default async function DashboardLayout({
           </main>
         </div>
       </div>
-      <BottomDock />
+      <BottomDock hasLinkedPersona={!!linkedPersona} />
     </div>
   );
 }
