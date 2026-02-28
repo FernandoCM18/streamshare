@@ -93,8 +93,9 @@ export function MemberPaymentRow({
   const config = memberStatusConfig[payment.status];
   const totalOwed =
     Number(payment.amount_due) + Number(payment.accumulated_debt);
-  const remaining =
-    totalOwed - Number(payment.amount_paid);
+  const remaining = Math.round(
+    (totalOwed - Number(payment.amount_paid)) * 100,
+  ) / 100;
   const isActionable =
     payment.status === "pending" ||
     payment.status === "partial" ||

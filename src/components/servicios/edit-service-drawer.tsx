@@ -386,6 +386,12 @@ export default function EditServiceDrawer({
                   step="0.01"
                   min="0"
                   placeholder="0.00"
+                  onInput={(e) => {
+                    const el = e.currentTarget;
+                    const [, dec] = el.value.split(".");
+                    if (dec && dec.length > 2)
+                      el.value = parseFloat(el.value).toFixed(2);
+                  }}
                   className="w-full h-12 bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl pl-8 pr-4 text-sm font-medium text-neutral-200 outline-none transition-all"
                 />
               </div>
@@ -557,9 +563,11 @@ export default function EditServiceDrawer({
                                   step="0.01"
                                   min="0"
                                   value={editAmountValue}
-                                  onChange={(e) =>
-                                    setEditAmountValue(e.target.value)
-                                  }
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (v === "" || /^\d*\.?\d{0,2}$/.test(v))
+                                      setEditAmountValue(v);
+                                  }}
                                   placeholder="0.00"
                                   className="w-20 h-7 bg-neutral-900 border border-neutral-700 focus:border-neutral-500 rounded-lg pl-5 pr-2 text-xs font-mono text-neutral-200 outline-none"
                                   autoFocus

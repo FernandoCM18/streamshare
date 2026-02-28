@@ -39,7 +39,7 @@ export function AmountPopover({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const parsed = parseFloat(amount);
+    const parsed = Math.round(parseFloat(amount) * 100) / 100;
     if (isNaN(parsed) || parsed <= 0) {
       toast.error("Ingresa un monto válido");
       return;
@@ -67,7 +67,10 @@ export function AmountPopover({
               step="0.01"
               min="0.01"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "" || /^\d*\.?\d{0,2}$/.test(v)) setAmount(v);
+              }}
               autoFocus
               className="w-full bg-neutral-900 border border-neutral-700 focus:border-neutral-500 rounded-lg pl-7 pr-3 py-2 text-sm text-neutral-200 font-mono placeholder:text-neutral-600 focus:outline-none focus:ring-0 transition-colors"
             />
