@@ -33,15 +33,9 @@ export function PreferenciasCard({ settings }: PreferenciasCardProps) {
   function handleCurrencyChange(value: string) {
     const formData = new FormData();
     formData.set("default_currency", value);
-    formData.set(
-      "notify_before_days",
-      String(settings.notify_before_days),
-    );
+    formData.set("notify_before_days", String(settings.notify_before_days));
     formData.set("notify_overdue", String(settings.notify_overdue));
-    formData.set(
-      "auto_generate_cycles",
-      String(settings.auto_generate_cycles),
-    );
+    formData.set("auto_generate_cycles", String(settings.auto_generate_cycles));
 
     startTransition(async () => {
       const result = await updateSettings(formData);
@@ -112,9 +106,7 @@ export function PreferenciasCard({ settings }: PreferenciasCardProps) {
           </div>
           <div>
             <p className="text-sm text-neutral-200">Idioma</p>
-            <p className="text-[11px] text-neutral-500">
-              Español (México)
-            </p>
+            <p className="text-[11px] text-neutral-500">Español (México)</p>
           </div>
         </div>
         <span className="text-[11px] text-neutral-600 px-2.5 py-1 rounded-lg bg-neutral-800/40 border border-neutral-700/30">

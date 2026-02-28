@@ -32,10 +32,10 @@ export async function GET(request: Request) {
           { onConflict: "id" },
         );
 
-        // Auto-link personas created by owners using this email.
+        // Auto-link members created by owners using this email.
         if (user.email) {
           await supabase
-            .from("personas")
+            .from("members")
             .update({
               profile_id: user.id,
               link_attempted: true,

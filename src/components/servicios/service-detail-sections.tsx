@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import { cn } from "@/lib/utils";
-import { formatCurrency, formatPeriod } from "@/types/database";
+import { cn, formatCurrency, formatPeriod } from "@/lib/utils";
 import type { PaymentStatus } from "@/types/database";
 
 const paymentStatusConfig: Record<
@@ -205,7 +204,8 @@ export function PaymentHistorySection({ cycles }: PaymentHistorySectionProps) {
                                   &middot;
                                 </span>
                                 <span className="text-red-400">
-                                  Acum: {formatCurrency(payment.accumulatedDebt)}
+                                  Acum:{" "}
+                                  {formatCurrency(payment.accumulatedDebt)}
                                 </span>
                               </>
                             )}
@@ -221,12 +221,13 @@ export function PaymentHistorySection({ cycles }: PaymentHistorySectionProps) {
                           </span>
                           {payment.confirmedAt ? (
                             <span className="text-[9px] text-neutral-600">
-                              {new Date(
-                                payment.confirmedAt,
-                              ).toLocaleDateString("es-MX", {
-                                day: "numeric",
-                                month: "short",
-                              })}
+                              {new Date(payment.confirmedAt).toLocaleDateString(
+                                "es-MX",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                },
+                              )}
                             </span>
                           ) : payment.paidAt ? (
                             <span className="text-[9px] text-neutral-600">

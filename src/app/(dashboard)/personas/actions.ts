@@ -2,113 +2,81 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 
-const createPersonaSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido"),
-  email: z.string().email("Email inválido"),
-  phone: z.string().optional().or(z.literal("")),
-});
-
-const updatePersonaSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1, "El nombre es requerido"),
-  email: z.string().email("Email inválido"),
-  phone: z.string().optional().or(z.literal("")),
-});
-
-export async function createPersona(formData: FormData) {
+export async function createPersona(formData: FormData): Promise<{
+  success: boolean;
+  error?: string;
+  persona?: { id: string; name: string; email: string };
+}> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autorizado" };
+  if (!user) return { success: false, error: "No autenticado" };
 
-  const raw = Object.fromEntries(formData);
-  const input = createPersonaSchema.safeParse(raw);
-  if (!input.success) return { success: false, error: input.error.message };
+  const name = formData.get("name") as string;
+  const email = (formData.get("email") as string) || null;
+  const phone = (formData.get("phone") as string) || null;
+  const notes = (formData.get("notes") as string) || null;
 
-  const { data: persona, error } = await supabase
-    .from("personas")
+  const { data, error } = await supabase
+    .from("members")
     .insert({
-      name: input.data.name.trim(),
-      email: input.data.email.trim().toLowerCase(),
-      phone: input.data.phone?.trim() || null,
       owner_id: user.id,
+      name,
+      email,
+      phone,
+      notes,
     })
     .select("id, name, email")
     .single();
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath("/personas");
-  revalidatePath("/servicios");
-  return { success: true, persona };
+  revalidatePath("/", "layout");
+  return {
+    success: true,
+    persona: data
+      ? { id: data.id, name: data.name, email: data.email ?? "" }
+      : undefined,
+  };
 }
 
-export async function updatePersona(formData: FormData) {
+export async function updatePersona(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autorizado" };
+  const personaId = formData.get("id") as string;
 
-  const raw = Object.fromEntries(formData);
-  const input = updatePersonaSchema.safeParse(raw);
-  if (!input.success) return { success: false, error: input.error.message };
-
-  const { id, ...updateData } = input.data;
-
-  const { error } = await supabase
-    .from("personas")
-    .update({
-      name: updateData.name.trim(),
-      email: updateData.email.trim().toLowerCase(),
-      phone: updateData.phone?.trim() || null,
-    })
-    .eq("id", id)
-    .eq("owner_id", user.id);
-
-  if (error) return { success: false, error: error.message };
-
-  revalidatePath("/personas");
-  revalidatePath("/servicios");
-  return { success: true };
-}
-
-export async function deletePersona(personaId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autorizado" };
-
-  // Check if persona has active service memberships
-  const { data: memberships } = await supabase
-    .from("service_members")
-    .select("id")
-    .eq("persona_id", personaId)
-    .eq("owner_id", user.id)
-    .eq("is_active", true)
-    .limit(1);
-
-  if (memberships && memberships.length > 0) {
-    return {
-      success: false,
-      error:
-        "Esta persona tiene servicios activos asignados. Retírala de los servicios primero.",
-    };
+  const updates: Record<string, unknown> = {};
+  const fields = ["name", "email", "phone", "notes"];
+  for (const field of fields) {
+    const val = formData.get(field);
+    if (val !== null) {
+      updates[field] = val === "" ? null : val;
+    }
   }
 
   const { error } = await supabase
-    .from("personas")
-    .delete()
-    .eq("id", personaId)
-    .eq("owner_id", user.id);
+    .from("members")
+    .update(updates)
+    .eq("id", personaId);
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath("/personas");
-  revalidatePath("/servicios");
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function deletePersona(
+  personaId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("members").delete().eq("id", personaId);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/", "layout");
   return { success: true };
 }

@@ -110,9 +110,7 @@ export function NotificacionesCard({ settings }: NotificacionesCardProps) {
             />
           </div>
           <div>
-            <p className="text-sm text-neutral-200">
-              Ciclos automáticos
-            </p>
+            <p className="text-sm text-neutral-200">Ciclos automáticos</p>
             <p className="text-[11px] text-neutral-500">
               Generar cobros mensuales automáticamente
             </p>
@@ -137,9 +135,7 @@ export function NotificacionesCard({ settings }: NotificacionesCardProps) {
             />
           </div>
           <div>
-            <p className="text-sm text-neutral-200">
-              Anticipación de alerta
-            </p>
+            <p className="text-sm text-neutral-200">Anticipación de alerta</p>
             <p className="text-[11px] text-neutral-500">
               Días antes del vencimiento para notificar
             </p>
@@ -181,9 +177,7 @@ export function NotificacionesCard({ settings }: NotificacionesCardProps) {
             />
           </div>
           <div>
-            <p className="text-sm text-neutral-200">
-              Sincronizar Calendario
-            </p>
+            <p className="text-sm text-neutral-200">Sincronizar Calendario</p>
             <p className="text-[11px] text-neutral-500">
               Exportar vencimientos a tu calendario
             </p>

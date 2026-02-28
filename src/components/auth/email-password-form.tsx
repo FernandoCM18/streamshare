@@ -40,7 +40,9 @@ export function EmailPasswordForm({
   const [loading, setLoading] = useState(false);
 
   const schema = isRegister ? registerSchema : loginSchema;
-  type FormValues = typeof isRegister extends true ? RegisterValues : LoginValues;
+  type FormValues = typeof isRegister extends true
+    ? RegisterValues
+    : LoginValues;
 
   const {
     register,
@@ -145,7 +147,9 @@ export function EmailPasswordForm({
             className="w-full rounded-xl border border-[#252540] bg-[#1a1a2e] py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/30 transition-colors focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/20"
           />
         </div>
-        {errors.email && <p className="text-xs text-red-400">{errors.email.message}</p>}
+        {errors.email && (
+          <p className="text-xs text-red-400">{errors.email.message}</p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -199,7 +203,10 @@ export function EmailPasswordForm({
 
       <button type="submit" disabled={loading} className="btn-cta-gold w-full">
         {loading ? (
-          <Icon icon="solar:refresh-bold" className="mx-auto h-4 w-4 animate-spin" />
+          <Icon
+            icon="solar:refresh-bold"
+            className="mx-auto h-4 w-4 animate-spin"
+          />
         ) : isRegister ? (
           "Crear cuenta"
         ) : (

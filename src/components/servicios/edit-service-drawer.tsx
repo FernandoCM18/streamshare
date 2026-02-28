@@ -25,13 +25,13 @@ import {
   removeServiceMember,
   updateMemberAmount,
 } from "@/app/(dashboard)/servicios/actions";
-import { formatCurrency } from "@/types/database";
+import { formatCurrency } from "@/lib/utils";
 import type {
   ServiceSummary,
   ServiceMemberInfo,
-  Persona,
+  Member,
 } from "@/types/database";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import IconEmojiPicker from "@/components/servicios/icon-emoji-picker";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
@@ -55,45 +55,41 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+function getNextBillingDate(billingDay: number): Date {
+  const now = new Date();
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), billingDay);
+  if (thisMonth > now) return thisMonth;
+  return new Date(now.getFullYear(), now.getMonth() + 1, billingDay);
+}
+
 interface EditServiceDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   service: ServiceSummary;
-  personas: Pick<Persona, "id" | "name" | "email">[];
-}
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  members: Pick<Member, "id" | "name" | "email">[];
 }
 
 export default function EditServiceDrawer({
   open,
   onOpenChange,
   service,
-  personas,
+  members,
 }: EditServiceDrawerProps) {
   const isDesktop = useMediaQuery("(min-width: 640px)");
   const [submitting, setSubmitting] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Members — initialized from service.members (from the view)
-  const [members, setMembers] = useState<ServiceMemberInfo[]>(
+  const [serviceMembers, setServiceMembers] = useState<ServiceMemberInfo[]>(
     service.members ?? [],
   );
   const [memberAction, setMemberAction] = useState<string | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
-  const [localPersonas, setLocalPersonas] = useState(personas);
   const [editingAmountFor, setEditingAmountFor] = useState<string | null>(null);
   const [editAmountValue, setEditAmountValue] = useState("");
 
-  const now = new Date();
-  const [billingDate, setBillingDate] = useState<Date>(
-    new Date(now.getFullYear(), now.getMonth(), service.billing_day),
+  const [billingDate, setBillingDate] = useState<Date>(() =>
+    getNextBillingDate(service.billing_day),
   );
 
   const form = useForm<FormValues>({
@@ -119,11 +115,8 @@ export default function EditServiceDrawer({
         split_type: service.split_type,
         icon_url: service.icon_url,
       });
-      setMembers(service.members ?? []);
-      setBillingDate(
-        new Date(now.getFullYear(), now.getMonth(), service.billing_day),
-      );
-      setLocalPersonas(personas);
+      setServiceMembers(service.members ?? []);
+      setBillingDate(getNextBillingDate(service.billing_day));
       setShowAddMember(false);
       setEditingAmountFor(null);
     }
@@ -135,17 +128,15 @@ export default function EditServiceDrawer({
   const watchedCost = form.watch("monthly_cost");
   const watchedSplit = form.watch("split_type");
 
-  const totalPersons = members.length + 1; // +1 for owner
+  const totalPersons = serviceMembers.length + 1; // +1 for owner
   const perPersonAmount =
     watchedSplit === "equal" && watchedCost > 0 && totalPersons > 0
       ? watchedCost / totalPersons
       : 0;
 
   // Personas available to add (not already members)
-  const memberPersonaIds = new Set(members.map((m) => m.persona_id));
-  const availablePersonas = localPersonas.filter(
-    (p) => !memberPersonaIds.has(p.id),
-  );
+  const memberMemberIds = new Set(serviceMembers.map((m) => m.member_id));
+  const availableMembers = members.filter((m) => !memberMemberIds.has(m.id));
 
   function formatBillingDate(date: Date) {
     return new Intl.DateTimeFormat("es-MX", {
@@ -155,26 +146,25 @@ export default function EditServiceDrawer({
   }
 
   async function handleAddMember(
-    persona: Pick<Persona, "id" | "name" | "email">,
+    person: Pick<Member, "id" | "name" | "email">,
   ) {
-    setMemberAction(persona.id);
+    setMemberAction(person.id);
     try {
-      const result = await addServiceMember(service.id, persona.id);
+      const result = await addServiceMember(service.id, person.id);
       if (result.success) {
-        setMembers((prev) => [
+        setServiceMembers((prev) => [
           ...prev,
           {
             member_id: result.memberId!,
-            persona_id: persona.id,
             custom_amount: null,
             is_active: true,
-            name: persona.name,
-            email: persona.email ?? null,
+            name: person.name,
+            email: person.email ?? null,
             avatar_url: null,
           },
         ]);
-        toast.success(`${persona.name} agregado`);
-        if (availablePersonas.length <= 1) {
+        toast.success(`${person.name} agregado`);
+        if (availableMembers.length <= 1) {
           setShowAddMember(false);
         }
       } else {
@@ -190,7 +180,7 @@ export default function EditServiceDrawer({
     try {
       const result = await removeServiceMember(member.member_id);
       if (result.success) {
-        setMembers((prev) =>
+        setServiceMembers((prev) =>
           prev.filter((m) => m.member_id !== member.member_id),
         );
         toast.success(`${member.name} eliminado del servicio`);
@@ -212,7 +202,7 @@ export default function EditServiceDrawer({
     try {
       const result = await updateMemberAmount(member.member_id, amount);
       if (result.success) {
-        setMembers((prev) =>
+        setServiceMembers((prev) =>
           prev.map((m) =>
             m.member_id === member.member_id
               ? { ...m, custom_amount: amount }
@@ -370,7 +360,7 @@ export default function EditServiceDrawer({
                 </p>
               )}
               {watchedCost > 0 &&
-                members.length > 0 &&
+                serviceMembers.length > 0 &&
                 watchedSplit === "equal" && (
                   <p className="text-[11px] text-neutral-500">
                     Cada miembro paga{" "}
@@ -467,7 +457,7 @@ export default function EditServiceDrawer({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium text-neutral-400 tracking-wide">
-                  MIEMBROS ({members.length})
+                  MIEMBROS ({serviceMembers.length})
                 </label>
                 {!showAddMember && (
                   <button
@@ -500,7 +490,7 @@ export default function EditServiceDrawer({
                 </div>
 
                 {/* Current Members */}
-                {members.map((member) => (
+                {serviceMembers.map((member) => (
                   <div
                     key={member.member_id}
                     className="flex items-center justify-between p-3 rounded-xl bg-neutral-900/30 border border-neutral-800/80 group/member"
@@ -631,27 +621,27 @@ export default function EditServiceDrawer({
                       </button>
                     </div>
 
-                    {/* Existing personas to add */}
-                    {availablePersonas.length > 0 && (
+                    {/* Existing members to add */}
+                    {availableMembers.length > 0 && (
                       <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                        {availablePersonas.map((p) => (
+                        {availableMembers.map((m) => (
                           <button
-                            key={p.id}
+                            key={m.id}
                             type="button"
-                            onClick={() => handleAddMember(p)}
-                            disabled={memberAction === p.id}
+                            onClick={() => handleAddMember(m)}
+                            disabled={memberAction === m.id}
                             className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-neutral-800/50 transition-colors text-left focus:outline-none disabled:opacity-50"
                           >
                             <div className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-[10px] font-medium text-neutral-400 shrink-0">
-                              {getInitials(p.name)}
+                              {getInitials(m.name)}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-neutral-200 truncate">
-                                {p.name}
+                                {m.name}
                               </p>
-                              {p.email && (
+                              {m.email && (
                                 <p className="text-[10px] text-neutral-500 truncate">
-                                  {p.email}
+                                  {m.email}
                                 </p>
                               )}
                             </div>
@@ -665,10 +655,10 @@ export default function EditServiceDrawer({
                       </div>
                     )}
 
-                    {/* Empty state when no available personas */}
-                    {availablePersonas.length === 0 && (
+                    {/* Empty state when no available members */}
+                    {availableMembers.length === 0 && (
                       <p className="text-[11px] text-neutral-500 text-center py-2">
-                        Crea personas en la sección de Personas para agregarlas
+                        Crea miembros en la sección de Miembros para agregarlas
                         aquí
                       </p>
                     )}
@@ -676,7 +666,7 @@ export default function EditServiceDrawer({
                 )}
 
                 {/* Empty state */}
-                {members.length === 0 && !showAddMember && (
+                {serviceMembers.length === 0 && !showAddMember && (
                   <button
                     type="button"
                     onClick={() => setShowAddMember(true)}
@@ -698,7 +688,7 @@ export default function EditServiceDrawer({
                 <div>
                   <p className="text-[11px] text-neutral-500">Miembros</p>
                   <p className="text-sm font-medium text-neutral-200">
-                    {members.length}
+                    {serviceMembers.length}
                   </p>
                 </div>
                 <div>

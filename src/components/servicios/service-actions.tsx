@@ -19,18 +19,22 @@ import {
 } from "@/app/(dashboard)/servicios/actions";
 import { toast } from "sonner";
 import EditServiceDrawer from "./edit-service-drawer";
-import type { ServiceSummary, Persona } from "@/types/database";
+import type { ServiceSummary, Member } from "@/types/database";
 
 interface ServiceActionsProps {
   service: ServiceSummary;
-  personas: Pick<Persona, "id" | "name" | "email">[];
+  members: Pick<Member, "id" | "name" | "email">[];
   isOwner: boolean;
 }
 
 const cardBtn =
   "h-8 rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-[10px] font-medium text-neutral-400 hover:text-white";
 
-export function ServiceActions({ service, personas, isOwner }: ServiceActionsProps) {
+export function ServiceActions({
+  service,
+  members,
+  isOwner,
+}: ServiceActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDrawer, setShowEditDrawer] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -130,7 +134,7 @@ export function ServiceActions({ service, personas, isOwner }: ServiceActionsPro
         open={showEditDrawer}
         onOpenChange={setShowEditDrawer}
         service={service}
-        personas={personas}
+        members={members}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

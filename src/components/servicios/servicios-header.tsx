@@ -4,20 +4,20 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/badge";
 import CreateServiceModal from "@/components/servicios/create-service-modal";
-import type { Persona } from "@/types/database";
+import type { Member } from "@/types/database";
 
 interface ServiciosHeaderProps {
   serviceCount: number;
   activeCount: number;
   inactiveCount: number;
-  personas: Pick<Persona, "id" | "name" | "email">[];
+  members: Pick<Member, "id" | "name" | "email">[];
 }
 
 export default function ServiciosHeader({
   serviceCount,
   activeCount,
   inactiveCount,
-  personas,
+  members,
 }: ServiciosHeaderProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -58,7 +58,7 @@ export default function ServiciosHeader({
       <CreateServiceModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        personas={personas}
+        members={members}
       />
     </>
   );

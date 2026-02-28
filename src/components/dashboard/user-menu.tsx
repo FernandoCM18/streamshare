@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { signOut } from "@/app/(dashboard)/configuracion/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -10,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Icon } from "@iconify/react";
+import { SettingIcon } from "../icons/SettingIcon";
+import { LogoutIcon } from "../icons/LogoutIcon";
 
 interface UserMenuProps {
   displayName: string;
@@ -21,11 +22,8 @@ interface UserMenuProps {
 export function UserMenu({ displayName, avatarUrl, email }: UserMenuProps) {
   const router = useRouter();
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+  function handleSignOut() {
+    signOut();
   }
 
   const initials = displayName
@@ -60,7 +58,7 @@ export function UserMenu({ displayName, avatarUrl, email }: UserMenuProps) {
           onClick={() => router.push("/configuracion")}
           className="text-white/70 focus:text-white focus:bg-neutral-800"
         >
-          <Icon icon="solar:settings-linear" className="mr-2 h-4 w-4" />
+          <SettingIcon />
           Configuración
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-neutral-800" />
@@ -68,7 +66,7 @@ export function UserMenu({ displayName, avatarUrl, email }: UserMenuProps) {
           onClick={handleSignOut}
           className="text-red-400 focus:text-red-400 focus:bg-neutral-800"
         >
-          <Icon icon="solar:logout-2-linear" className="mr-2 h-4 w-4" />
+          <LogoutIcon />
           Cerrar sesión
         </DropdownMenuItem>
       </DropdownMenuContent>

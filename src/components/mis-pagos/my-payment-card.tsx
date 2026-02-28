@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/types/database";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
 
 interface MyPaymentCardProps {
@@ -18,13 +18,6 @@ interface MyPaymentCardProps {
   amountDue: number;
   amountPaid: number;
   accumulatedDebt: number;
-}
-
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat("es-MX", {
-    day: "numeric",
-    month: "short",
-  }).format(new Date(date));
 }
 
 export function MyPaymentCard({
@@ -42,7 +35,8 @@ export function MyPaymentCard({
   const [isPending, startTransition] = useTransition();
 
   const remaining = amountDue + accumulatedDebt - amountPaid;
-  const actionable = status === "pending" || status === "partial" || status === "overdue";
+  const actionable =
+    status === "pending" || status === "partial" || status === "overdue";
 
   const statusStyles =
     status === "confirmed"
@@ -94,7 +88,9 @@ export function MyPaymentCard({
             />
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-100">{serviceName}</p>
+            <p className="text-sm font-medium text-neutral-100">
+              {serviceName}
+            </p>
             <p className="text-xs text-neutral-500">Propietario: {ownerName}</p>
           </div>
         </div>
@@ -135,7 +131,10 @@ export function MyPaymentCard({
         >
           {isPending ? (
             <span className="inline-flex items-center gap-2">
-              <Icon icon="solar:refresh-bold" className="h-4 w-4 animate-spin" />
+              <Icon
+                icon="solar:refresh-bold"
+                className="h-4 w-4 animate-spin"
+              />
               Enviando...
             </span>
           ) : (

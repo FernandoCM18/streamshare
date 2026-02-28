@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/types/database";
+import { formatCurrency } from "@/lib/utils";
 import type { PendingDebtor } from "@/components/dashboard/gauge-card";
 
 interface PendingListProps {
@@ -46,7 +46,8 @@ export function PendingList({ debtors }: PendingListProps) {
                   : "text-orange-400",
               )}
             >
-              {debtor.status === "overdue" ? "Vencido" : "Pendiente"} — {debtor.serviceName}
+              {debtor.status === "overdue" ? "Vencido" : "Pendiente"} —{" "}
+              {debtor.serviceName}
             </p>
           </div>
           <span className="text-xs font-medium text-white/70">

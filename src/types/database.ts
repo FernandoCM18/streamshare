@@ -50,7 +50,7 @@ export interface Service {
   updated_at: string;
 }
 
-export interface Persona {
+export interface Member {
   id: string;
   owner_id: string;
   profile_id: string | null; // null si no tiene cuenta en StreamShare
@@ -67,7 +67,7 @@ export interface Persona {
 export interface ServiceMember {
   id: string;
   service_id: string;
-  persona_id: string;
+  member_id: string;
   owner_id: string;
   custom_amount: number | null;
   joined_at: string;
@@ -88,7 +88,7 @@ export interface Payment {
   id: string;
   cycle_id: string;
   service_id: string;
-  persona_id: string;
+  member_id: string;
   owner_id: string;
   amount_due: number;
   amount_paid: number;
@@ -96,7 +96,7 @@ export interface Payment {
   status: PaymentStatus;
   due_date: string; // date: 'YYYY-MM-DD'
   requires_confirmation: boolean;
-  paid_at: string | null; // persona marcó como pagado
+  paid_at: string | null; // miembro marcó como pagado
   confirmed_at: string | null; // dueño confirmó
   credit_applied_id: string | null;
   credit_amount_used: number;
@@ -104,9 +104,9 @@ export interface Payment {
   updated_at: string;
 }
 
-export interface PersonaCredit {
+export interface MemberCredit {
   id: string;
-  persona_id: string;
+  member_id: string;
   service_id: string;
   owner_id: string;
   source_payment_id: string | null;
@@ -132,7 +132,7 @@ export interface PaymentNote {
 export interface ActivityLog {
   id: string;
   owner_id: string;
-  entity_type: "payment" | "service" | "persona" | "credit" | "invitation";
+  entity_type: "payment" | "service" | "member" | "credit" | "invitation";
   entity_id: string;
   action: string;
   metadata: Record<string, unknown> | null;
@@ -154,7 +154,6 @@ export interface UserSettings {
 
 export interface ServiceMemberInfo {
   member_id: string;
-  persona_id: string;
   custom_amount: number | null;
   is_active: boolean;
   name: string;
@@ -181,7 +180,7 @@ export interface ServiceSummary {
 export interface DashboardSummary {
   owner_id: string;
   total_services: number;
-  total_personas: number;
+  total_members: number;
   total_month_receivable: number;
   total_month_collected: number;
   overdue_count: number;
@@ -197,16 +196,37 @@ export interface DebtByMonth {
   due_date: string;
 }
 
-export interface PersonaDebtSummary {
-  persona_id: string;
+export interface MemberDebtSummary {
+  member_id: string;
   service_id: string;
   owner_id: string;
-  persona_name: string;
+  member_name: string;
   service_name: string;
   service_color: string;
   debt_by_month: DebtByMonth[];
   total_debt: number;
   available_credit: number;
+}
+
+export interface MyPayment {
+  id: string;
+  status: PaymentStatus;
+  amount_due: number;
+  amount_paid: number;
+  accumulated_debt: number;
+  due_date: string;
+  paid_at: string | null;
+  confirmed_at: string | null;
+  requires_confirmation: boolean;
+  credit_amount_used: number;
+  service_id: string;
+  service_name: string;
+  service_color: string;
+  service_icon: string | null;
+  owner_name: string;
+  cycle_id: string;
+  period_start: string;
+  period_end: string;
 }
 
 // ============================================================
@@ -223,8 +243,8 @@ export type InsertService = Omit<
   status?: ServiceStatus;
 };
 
-export type InsertPersona = Omit<
-  Persona,
+export type InsertMember = Omit<
+  Member,
   "id" | "created_at" | "updated_at" | "link_attempted"
 > & {
   id?: string;
@@ -260,9 +280,9 @@ export type UpdateService = Partial<
   >
 >;
 
-export type UpdatePersona = Partial<
+export type UpdateMember = Partial<
   Pick<
-    Persona,
+    Member,
     "name" | "email" | "avatar_url" | "phone" | "notes" | "profile_id"
   >
 >;
@@ -289,9 +309,9 @@ export interface RegisterPaymentResult {
 // TIPOS COMPUESTOS — Para el UI (joins frecuentes)
 // ============================================================
 
-// Payment con datos de persona y servicio (para listas)
+// Payment con datos de miembro y servicio (para listas)
 export interface PaymentWithRelations extends Payment {
-  persona: Persona;
+  member: Member;
   service: Pick<Service, "id" | "name" | "color" | "icon_url">;
   billing_cycle: Pick<BillingCycle, "id" | "period_start" | "period_end">;
   notes: PaymentNote[];
@@ -301,15 +321,15 @@ export interface PaymentWithRelations extends Payment {
 export interface ServiceWithMembers extends Service {
   members: Array<
     ServiceMember & {
-      persona: Persona;
+      member: Member;
       current_payment: Payment | null;
       available_credit: number;
     }
   >;
 }
 
-// Persona con todos sus servicios y deuda total (para lista de personas)
-export interface PersonaWithDebt extends Persona {
+// Miembro con todos sus servicios y deuda total (para lista de personas)
+export interface MemberWithDebt extends Member {
   services: Array<{
     service: Pick<Service, "id" | "name" | "color" | "icon_url">;
     current_payment: Payment | null;
@@ -343,10 +363,10 @@ export interface Database {
         Insert: InsertService;
         Update: UpdateService;
       };
-      personas: {
-        Row: Persona;
-        Insert: InsertPersona;
-        Update: UpdatePersona;
+      members: {
+        Row: Member;
+        Insert: InsertMember;
+        Update: UpdateMember;
       };
       service_members: {
         Row: ServiceMember;
@@ -365,10 +385,10 @@ export interface Database {
           Pick<Payment, "status" | "amount_paid" | "paid_at" | "confirmed_at">
         >;
       };
-      persona_credits: {
-        Row: PersonaCredit;
+      member_credits: {
+        Row: MemberCredit;
         Insert: never; // solo se crean via register_payment()
-        Update: Partial<Pick<PersonaCredit, "status" | "notes">>;
+        Update: Partial<Pick<MemberCredit, "status" | "notes">>;
       };
       payment_notes: {
         Row: PaymentNote;
@@ -393,8 +413,11 @@ export interface Database {
       dashboard_summary: {
         Row: DashboardSummary;
       };
-      persona_debt_summary: {
-        Row: PersonaDebtSummary;
+      member_debt_summary: {
+        Row: MemberDebtSummary;
+      };
+      my_payments: {
+        Row: MyPayment;
       };
     };
     Functions: {
@@ -420,11 +443,11 @@ export interface Database {
         Returns: void;
       };
       calculate_member_amount: {
-        Args: { p_service_id: string; p_persona_id: string };
+        Args: { p_service_id: string; p_member_id: string };
         Returns: number;
       };
       add_member_to_active_cycles: {
-        Args: { p_service_id: string; p_persona_id: string };
+        Args: { p_service_id: string; p_member_id: string };
         Returns: void;
       };
       reject_payment_claim: {
@@ -439,68 +462,4 @@ export interface Database {
       credit_status: CreditStatus;
     };
   };
-}
-
-// ============================================================
-// CLIENTE SUPABASE TIPADO — Para usar en tu proyecto
-// Crear en: /lib/supabase/client.ts
-// ============================================================
-
-// import { createBrowserClient } from '@supabase/ssr'
-// import type { Database } from '@/types/database'
-//
-// export function createClient() {
-//   return createBrowserClient<Database>(
-//     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-//     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-//   )
-// }
-
-// ============================================================
-// HELPERS — Funciones de utilidad para el UI
-// ============================================================
-
-// Calcular porcentaje cobrado (para el gauge del home)
-export function calcCollectedPercent(summary: DashboardSummary): number {
-  if (summary.total_month_receivable === 0) return 0;
-  return Math.round(
-    (summary.total_month_collected / summary.total_month_receivable) * 100,
-  );
-}
-
-// Determinar el color de status según el diseño de StreamShare
-export const statusColors: Record<PaymentStatus | ServiceStatus, string> = {
-  active: "text-emerald-400",
-  confirmed: "text-emerald-400",
-  paid: "text-emerald-400",
-  pending: "text-orange-400",
-  partial: "text-orange-400",
-  overdue: "text-red-400",
-};
-
-// Formatear monto en MXN (o la moneda del usuario)
-export function formatCurrency(amount: number, currency = "MXN"): string {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
-}
-
-// Formatear período de ciclo para display
-export function formatPeriod(periodStart: string): string {
-  return new Intl.DateTimeFormat("es-MX", {
-    month: "short",
-    year: "numeric",
-  }).format(new Date(periodStart));
-}
-
-// Verificar si una persona puede usar doble verificación
-export function canUseDoubleVerification(persona: Persona): boolean {
-  return persona.profile_id !== null;
-}
-
-// Verificar si el usuario actual es el autor de una nota
-export function isNoteAuthor(note: PaymentNote, userId: string): boolean {
-  return note.author_id === userId;
 }

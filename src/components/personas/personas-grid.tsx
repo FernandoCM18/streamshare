@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { PersonaCard } from "@/components/personas/persona-card";
 import { PersonaModal } from "@/components/personas/persona-modal";
+import { EmptyStateCard } from "@/components/shared/empty-state-card";
 import type { PersonaCardData } from "@/components/personas/persona-card";
 
 interface PersonasGridProps {
@@ -28,22 +29,18 @@ export function PersonasGrid({ personas }: PersonasGridProps) {
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/20 p-12 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10">
+        <EmptyStateCard
+          icon={
             <Icon
               icon="solar:users-group-rounded-bold"
               width={28}
-              className="text-violet-400"
+              className="text-neutral-400"
             />
-          </div>
-          <h3 className="text-sm font-medium text-white mb-1">
-            No tienes personas aún
-          </h3>
-          <p className="text-xs text-neutral-500 max-w-xs mx-auto">
-            Agrega personas para asignarlas a tus servicios compartidos y
-            gestionar los pagos.
-          </p>
-        </div>
+          }
+          iconContainerClassName="bg-neutral-500/10"
+          title="No tienes personas aún"
+          description="Agrega personas para asignarlas a tus servicios compartidos y gestionar los pagos."
+        />
       )}
 
       <PersonaModal

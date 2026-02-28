@@ -23,9 +23,8 @@ import {
   createService,
   updateService,
 } from "@/app/(dashboard)/servicios/actions";
-import { formatCurrency } from "@/types/database";
-import type { Service, Persona } from "@/types/database";
-import { cn } from "@/lib/utils";
+import type { Service, Member } from "@/types/database";
+import { cn, formatCurrency } from "@/lib/utils";
 import IconEmojiPicker from "@/components/servicios/icon-emoji-picker";
 
 interface ServicePlan {
@@ -134,6 +133,28 @@ const SERVICE_TEMPLATES: ServiceTemplate[] = [
       { label: "Equipos", price: 249 },
     ],
   },
+  {
+    name: "Apple Music",
+    icon: "simple-icons:applemusic",
+    color: "#10a37f",
+    plans: [
+      { label: "Individual", price: 115 },
+      { label: "Duo", price: 149 },
+      { label: "Familiar", price: 199 },
+      { label: "Estudiante", price: 58 },
+    ],
+  },
+  {
+    name: "Apple One",
+    icon: "simple-icons:appleone",
+    color: "#10a37f",
+    plans: [
+      { label: "Individual", price: 115 },
+      { label: "Duo", price: 149 },
+      { label: "Familiar", price: 179 },
+      { label: "Estudiante", price: 58 },
+    ],
+  },
 ];
 
 const COLOR_OPTIONS = [
@@ -169,18 +190,18 @@ interface CreateServiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   service?: Service;
-  personas: Pick<Persona, "id" | "name" | "email">[];
+  members: Pick<Member, "id" | "name" | "email">[];
 }
 
 export default function CreateServiceModal({
   open,
   onOpenChange,
   service,
-  personas,
+  members,
 }: CreateServiceModalProps) {
   const isEdit = !!service;
 
-  const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [customAmounts, setCustomAmounts] = useState<Record<string, number>>(
     {},
   );
@@ -228,7 +249,7 @@ export default function CreateServiceModal({
   const watchedColor = form.watch("color");
   const watchedIcon = form.watch("icon_url");
 
-  const memberCount = selectedPersonas.length + 1;
+  const memberCount = selectedMembers.length + 1;
   const monthlyCost =
     billingCycle === "annual" && watchedCost > 0
       ? watchedCost / 12
@@ -238,18 +259,18 @@ export default function CreateServiceModal({
 
   // Custom amounts validation
   const customTotal = Object.entries(customAmounts)
-    .filter(([id]) => selectedPersonas.includes(id))
+    .filter(([id]) => selectedMembers.includes(id))
     .reduce((sum, [, amount]) => sum + (amount || 0), 0);
   const ownerCustomAmount =
     watchedSplit === "custom" ? monthlyCost - customTotal : 0;
 
   // Filter personas by search query, excluding already selected
-  const filteredPersonas = personas.filter((p) => {
+  const filteredMembers = members.filter((m) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
     return (
-      p.name.toLowerCase().includes(query) ||
-      (p.email && p.email.toLowerCase().includes(query))
+      m.name.toLowerCase().includes(query) ||
+      (m.email && m.email.toLowerCase().includes(query))
     );
   });
 
@@ -280,20 +301,20 @@ export default function CreateServiceModal({
     form.setValue("monthly_cost", activeService.plans[index].price);
   }
 
-  function togglePersona(id: string) {
-    setSelectedPersonas((prev) =>
+  function toggleMember(id: string) {
+    setSelectedMembers((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
     );
   }
 
-  function setCustomAmount(personaId: string, amount: number) {
-    setCustomAmounts((prev) => ({ ...prev, [personaId]: amount }));
+  function setCustomAmount(memberId: string, amount: number) {
+    setCustomAmounts((prev) => ({ ...prev, [memberId]: amount }));
   }
 
   async function onSubmit(values: FormValues) {
     // Validate custom amounts if split_type is custom
-    if (values.split_type === "custom" && selectedPersonas.length > 0) {
-      const hasEmptyAmounts = selectedPersonas.some(
+    if (values.split_type === "custom" && selectedMembers.length > 0) {
+      const hasEmptyAmounts = selectedMembers.some(
         (id) => !customAmounts[id] || customAmounts[id] <= 0,
       );
       if (hasEmptyAmounts) {
@@ -329,9 +350,9 @@ export default function CreateServiceModal({
         fd.set("id", service.id);
         result = await updateService(fd);
       } else {
-        const uniquePersonas = [...new Set(selectedPersonas)];
-        if (uniquePersonas.length > 0) {
-          fd.set("persona_ids", uniquePersonas.join(","));
+        const uniqueMembers = [...new Set(selectedMembers)];
+        if (uniqueMembers.length > 0) {
+          fd.set("member_ids", uniqueMembers.join(","));
           // Pass custom amounts as JSON if split is custom
           if (values.split_type === "custom") {
             fd.set("custom_amounts", JSON.stringify(customAmounts));
@@ -344,7 +365,7 @@ export default function CreateServiceModal({
         toast.success(isEdit ? "Servicio actualizado" : "Servicio creado");
         onOpenChange(false);
         form.reset();
-        setSelectedPersonas([]);
+        setSelectedMembers([]);
         setCustomAmounts({});
         setActiveTemplate(null);
         setBillingCycle("monthly");
@@ -360,7 +381,6 @@ export default function CreateServiceModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        variant="sheet"
         className="max-h-[92vh] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 flex flex-col overflow-hidden sm:max-w-xl sm:max-h-[90vh]"
         showCloseButton={false}
       >
@@ -745,7 +765,7 @@ export default function CreateServiceModal({
                     </div>
 
                     {/* Search bar for existing personas */}
-                    {personas.length > 3 && (
+                    {members.length > 3 && (
                       <div className="relative">
                         <Icon
                           icon="solar:magnifer-linear"
@@ -762,29 +782,29 @@ export default function CreateServiceModal({
                     )}
 
                     {/* Persona toggles */}
-                    {filteredPersonas.map((p) => {
-                      const isSelected = selectedPersonas.includes(p.id);
+                    {filteredMembers.map((m) => {
+                      const isSelected = selectedMembers.includes(m.id);
                       return (
                         <div
-                          key={p.id}
+                          key={m.id}
                           className="rounded-xl bg-neutral-900/30 border border-neutral-800/80 overflow-hidden"
                         >
                           <button
                             type="button"
-                            onClick={() => togglePersona(p.id)}
+                            onClick={() => toggleMember(m.id)}
                             className="w-full flex items-center justify-between p-3"
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-xs font-medium text-neutral-400">
-                                {getInitials(p.name)}
+                                {getInitials(m.name)}
                               </div>
                               <div className="text-left">
                                 <span className="text-sm font-medium text-neutral-200 block">
-                                  {p.name}
+                                  {m.name}
                                 </span>
-                                {p.email && (
+                                {m.email && (
                                   <span className="text-[10px] text-neutral-500 block">
-                                    {p.email}
+                                    {m.email}
                                   </span>
                                 )}
                               </div>
@@ -829,10 +849,10 @@ export default function CreateServiceModal({
                                   step="0.01"
                                   min="0"
                                   placeholder="Monto asignado"
-                                  value={customAmounts[p.id] || ""}
+                                  value={customAmounts[m.id] || ""}
                                   onChange={(e) =>
                                     setCustomAmount(
-                                      p.id,
+                                      m.id,
                                       parseFloat(e.target.value) || 0,
                                     )
                                   }
@@ -846,15 +866,15 @@ export default function CreateServiceModal({
                     })}
 
                     {/* No results */}
-                    {searchQuery && filteredPersonas.length === 0 && (
+                    {searchQuery && filteredMembers.length === 0 && (
                       <p className="text-xs text-neutral-500 text-center py-3">
-                        No se encontraron personas con &quot;{searchQuery}&quot;
+                        No se encontraron miembros con &quot;{searchQuery}&quot;
                       </p>
                     )}
 
                     {/* Custom split summary */}
                     {watchedSplit === "custom" &&
-                      selectedPersonas.length > 0 &&
+                      selectedMembers.length > 0 &&
                       monthlyCost > 0 && (
                         <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-900/50 border border-neutral-800/50">
                           <span className="text-[11px] text-neutral-500">
@@ -879,14 +899,14 @@ export default function CreateServiceModal({
                       )}
 
                     {/* Empty state — guide to Personas section */}
-                    {personas.length === 0 && (
+                    {members.length === 0 && (
                       <div className="p-4 rounded-xl border border-dashed border-neutral-700 bg-neutral-900/20 text-center space-y-1">
                         <p className="text-xs text-neutral-400">
-                          No tienes personas registradas
+                          No tienes miembros registrados
                         </p>
                         <p className="text-[11px] text-neutral-600">
-                          Crea personas en la sección de Personas para poder
-                          agregarlas a tus servicios
+                          Crea miembros en la sección de Miembros para poder
+                          agregarlo a este servicio
                         </p>
                       </div>
                     )}

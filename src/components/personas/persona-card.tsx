@@ -2,13 +2,13 @@
 
 import { useTransition } from "react";
 import { Icon } from "@iconify/react";
-import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/types/database";
+import { cn, formatCurrency } from "@/lib/utils";
 import type { PaymentStatus } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { deletePersona } from "@/app/(dashboard)/personas/actions";
 import { RemindDrawer } from "@/components/dashboard/remind-drawer";
+import Image from "next/image";
 
 function getInitials(name: string): string {
   return name
@@ -92,7 +92,10 @@ export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
   const hasServices = persona.services.length > 0;
   const isInactive = !hasServices;
   const hasPending = persona.services.some(
-    (s) => s.status === "pending" || s.status === "overdue" || s.status === "partial",
+    (s) =>
+      s.status === "pending" ||
+      s.status === "overdue" ||
+      s.status === "partial",
   );
   const genderSuffix = persona.name.endsWith("a") ? "a" : "o";
 
@@ -144,13 +147,17 @@ export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
             )}
           >
             {persona.avatar_url ? (
-              <img
+              <Image
+                width={40}
+                height={40}
                 src={persona.avatar_url}
                 alt={persona.name}
                 className="w-full h-full rounded-full object-cover"
               />
             ) : (
-              getInitials(persona.name)
+              <span className="text-xs font-medium">
+                {getInitials(persona.name)}
+              </span>
             )}
           </div>
           <div>
@@ -315,9 +322,9 @@ export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
           </Button>
         ) : hasPending ? (
           <RemindDrawer
-            personaName={persona.name}
-            personaPhone={persona.phone}
-            personaEmail={persona.email}
+            memberName={persona.name}
+            memberPhone={persona.phone}
+            memberEmail={persona.email}
             serviceName={persona.services.map((s) => s.service_name).join(", ")}
             amount={persona.total_debt || persona.monthly_amount}
           >
