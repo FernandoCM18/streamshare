@@ -35,10 +35,31 @@ export function RemindDrawer({
   const message = `Hola ${memberName}, te recuerdo que tienes pendiente el pago de ${serviceName} por ${formatCurrency(amount)}. ¡Gracias!`;
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(message);
-    toast.success("Mensaje copiado", {
-      description: "Listo para pegar donde quieras",
-    });
+    try {
+      // navigator.clipboard fails silently in iOS PWA standalone mode
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(message);
+      } else {
+        // Fallback for iOS PWA standalone
+        const textarea = document.createElement("textarea");
+        textarea.value = message;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        textarea.style.top = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      toast.success("Mensaje copiado", {
+        description: "Listo para pegar donde quieras",
+      });
+    } catch {
+      toast.error("No se pudo copiar", {
+        description: "Intenta mantener presionado el mensaje para copiarlo",
+      });
+    }
     setOpen(false);
   }
 
@@ -51,7 +72,8 @@ export function RemindDrawer({
     }
     const phone = memberPhone.replace(/[^0-9]/g, "");
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+    // window.open() is blocked in iOS PWA standalone — use location.href
+    window.location.href = url;
     setOpen(false);
   }
 
@@ -64,7 +86,8 @@ export function RemindDrawer({
     }
     const subject = encodeURIComponent(`Recordatorio de pago — ${serviceName}`);
     const body = encodeURIComponent(message);
-    window.open(`mailto:${memberEmail}?subject=${subject}&body=${body}`);
+    // window.open() is blocked in iOS PWA standalone — use location.href
+    window.location.href = `mailto:${memberEmail}?subject=${subject}&body=${body}`;
     setOpen(false);
   }
 
