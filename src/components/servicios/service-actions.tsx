@@ -113,17 +113,8 @@ export function ServiceActions({
         )}
       </Button>
 
-      {/* Delete / Share button */}
-      {isActive ? (
-        <Button
-          variant="ghost"
-          className={`col-span-1 ${cardBtn}`}
-          title="Compartir"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Icon icon="solar:share-linear" width={12} />
-        </Button>
-      ) : (
+      {/* Delete button (only when paused) */}
+      {!isActive && (
         <Button
           variant="ghost"
           className={`col-span-1 ${cardBtn} hover:text-red-400 hover:border-red-400/20`}

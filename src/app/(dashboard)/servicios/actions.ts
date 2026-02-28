@@ -62,10 +62,13 @@ export async function createService(
       });
     }
 
-    // Generate billing cycle for the new service
-    await supabase.rpc("generate_billing_cycle", {
-      p_service_id: data.id,
-    });
+    // Generate billing cycle for the new service (unless opted out)
+    const autoGenerate = formData.get("auto_generate_cycle") !== "false";
+    if (autoGenerate) {
+      await supabase.rpc("generate_billing_cycle", {
+        p_service_id: data.id,
+      });
+    }
   }
 
   revalidatePath("/", "layout");

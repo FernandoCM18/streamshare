@@ -27,12 +27,10 @@ export function DashboardClient({
   // Group payments by service_id
   const paymentsByService = new Map<string, MemberPayment[]>();
   for (const p of payments) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const svcId = (p as any).service_id as string | undefined;
-    if (!svcId) continue;
-    const list = paymentsByService.get(svcId) ?? [];
+    if (!p.service_id) continue;
+    const list = paymentsByService.get(p.service_id) ?? [];
     list.push(p);
-    paymentsByService.set(svcId, list);
+    paymentsByService.set(p.service_id, list);
   }
 
   // Count pending verifications (status = 'paid' means awaiting owner confirmation)

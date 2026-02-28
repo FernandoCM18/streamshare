@@ -3,6 +3,7 @@ import type { PaymentStatus } from "@/types/database";
 
 export interface MemberPayment {
   id: string;
+  service_id: string;
   member_id: string;
   amount_due: number;
   amount_paid: number;

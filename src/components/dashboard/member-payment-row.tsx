@@ -93,6 +93,8 @@ export function MemberPaymentRow({
   const config = memberStatusConfig[payment.status];
   const totalOwed =
     Number(payment.amount_due) + Number(payment.accumulated_debt);
+  const remaining =
+    totalOwed - Number(payment.amount_paid);
   const isActionable =
     payment.status === "pending" ||
     payment.status === "partial" ||
@@ -123,7 +125,7 @@ export function MemberPaymentRow({
   }
 
   function handleMarkFullPaid() {
-    handleRegister(totalOwed);
+    handleRegister(remaining);
   }
 
   return (
@@ -182,7 +184,7 @@ export function MemberPaymentRow({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-neutral-500 shrink-0">
-            {formatCurrency(totalOwed)}
+            {formatCurrency(remaining)}
           </span>
           {/* Confirmed/paid amount (non-actionable states) */}
           {!isActionable && (
@@ -225,10 +227,10 @@ export function MemberPaymentRow({
             ) : (
               <Icon icon="solar:check-circle-bold" width={12} />
             )}
-            Pagó todo
+            {payment.status === "partial" ? "Pagó el resto" : "Pagó todo"}
           </Button>
           <AmountPopover
-            defaultAmount={totalOwed}
+            defaultAmount={remaining}
             label={`¿Cuánto pagó ${member.name}?`}
             onConfirm={handleRegister}
             isPending={isPending}
@@ -254,7 +256,7 @@ export function MemberPaymentRow({
             memberPhone={member.phone}
             memberEmail={member.email}
             serviceName={serviceName}
-            amount={totalOwed}
+            amount={remaining}
           >
             <Button
               variant="ghost"

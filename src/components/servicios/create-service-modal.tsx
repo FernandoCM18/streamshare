@@ -213,6 +213,7 @@ export default function CreateServiceModal({
     "monthly",
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [autoGenerateCycle, setAutoGenerateCycle] = useState(true);
 
   const activeService = SERVICE_TEMPLATES.find(
     (t) => t.name === activeTemplate,
@@ -358,6 +359,7 @@ export default function CreateServiceModal({
             fd.set("custom_amounts", JSON.stringify(customAmounts));
           }
         }
+        fd.set("auto_generate_cycle", autoGenerateCycle ? "true" : "false");
         result = await createService(fd);
       }
 
@@ -370,6 +372,7 @@ export default function CreateServiceModal({
         setActiveTemplate(null);
         setBillingCycle("monthly");
         setSearchQuery("");
+        setAutoGenerateCycle(true);
       } else {
         toast.error(result.error ?? "Error al guardar");
       }
@@ -702,6 +705,52 @@ export default function CreateServiceModal({
                   </p>
                 )}
               </div>
+
+              {/* Auto-generate billing cycle toggle */}
+              {!isEdit && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-neutral-900/30 border border-neutral-800">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
+                      <Icon
+                        icon="solar:calendar-add-bold"
+                        width={16}
+                        className="text-neutral-400"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-neutral-300">
+                        Generar primer ciclo de cobro
+                      </p>
+                      <p className="text-[10px] text-neutral-500 leading-tight">
+                        {autoGenerateCycle
+                          ? "Se crearán los pagos pendientes al guardar"
+                          : "Podrás generarlo manualmente después"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={autoGenerateCycle}
+                    onClick={() => setAutoGenerateCycle(!autoGenerateCycle)}
+                    className={cn(
+                      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-neutral-700 transition-colors",
+                      autoGenerateCycle
+                        ? "bg-violet-600 border-violet-500"
+                        : "bg-neutral-800",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
+                        autoGenerateCycle
+                          ? "translate-x-[15px]"
+                          : "translate-x-0",
+                      )}
+                    />
+                  </button>
+                </div>
+              )}
 
               {/* Members Setup */}
               {!isEdit && (
