@@ -18,13 +18,13 @@ import {
   deleteService,
 } from "@/app/(dashboard)/servicios/actions";
 import { toast } from "sonner";
-import EditServiceDrawer from "./edit-service-drawer";
 import type { ServiceSummary, Member } from "@/types/database";
 
 interface ServiceActionsProps {
   service: ServiceSummary;
   members: Pick<Member, "id" | "name" | "email">[];
   isOwner: boolean;
+  onEdit: () => void;
 }
 
 const cardBtn =
@@ -32,11 +32,10 @@ const cardBtn =
 
 export function ServiceActions({
   service,
-  members,
   isOwner,
+  onEdit,
 }: ServiceActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showEditDrawer, setShowEditDrawer] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const isActive = service.status === "active";
@@ -82,7 +81,10 @@ export function ServiceActions({
       <Button
         variant="ghost"
         className={`col-span-2 ${cardBtn}`}
-        onClick={() => setShowEditDrawer(true)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
       >
         <Icon icon="solar:pen-linear" width={12} />
         Editar
@@ -92,7 +94,10 @@ export function ServiceActions({
       <Button
         variant="ghost"
         className={`col-span-2 ${cardBtn}`}
-        onClick={handleToggleStatus}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleToggleStatus();
+        }}
         disabled={isPending}
       >
         {isActive ? (
@@ -114,6 +119,7 @@ export function ServiceActions({
           variant="ghost"
           className={`col-span-1 ${cardBtn}`}
           title="Compartir"
+          onClick={(e) => e.stopPropagation()}
         >
           <Icon icon="solar:share-linear" width={12} />
         </Button>
@@ -122,20 +128,15 @@ export function ServiceActions({
           variant="ghost"
           className={`col-span-1 ${cardBtn} hover:text-red-400 hover:border-red-400/20`}
           title="Eliminar"
-          onClick={() => setShowDeleteDialog(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowDeleteDialog(true);
+          }}
           disabled={isPending}
         >
           <Icon icon="solar:trash-bin-trash-linear" width={12} />
         </Button>
       )}
-
-      {/* Edit Drawer */}
-      <EditServiceDrawer
-        open={showEditDrawer}
-        onOpenChange={setShowEditDrawer}
-        service={service}
-        members={members}
-      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="bg-neutral-950 border-neutral-800">

@@ -8,12 +8,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn, formatCurrency } from "@/lib/utils";
-import { mockMemberPayments } from "@/lib/mock-data";
 import type {
   PersonaCardData,
   ServiceInfo,
 } from "@/components/personas/persona-card";
-import type { PaymentStatus } from "@/types/database";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -82,13 +80,6 @@ export function PersonaDetailModal({
 }: PersonaDetailModalProps) {
   const overallStatus = getOverallStatus(persona.services);
   const status = statusConfig[overallStatus] ?? statusConfig.pending;
-
-  // Get payment details for this persona
-  const payments = mockMemberPayments.filter((p) => p.member_id === persona.id);
-
-  const totalPaid = payments
-    .filter((p) => p.status === "confirmed" || p.status === "paid")
-    .reduce((sum, p) => sum + p.amount_paid, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -175,7 +166,7 @@ export function PersonaDetailModal({
         {/* Content */}
         <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-6">
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="Mensual"
               value={formatCurrency(persona.monthly_amount)}
@@ -189,12 +180,6 @@ export function PersonaDetailModal({
               color={
                 persona.total_debt > 0 ? "text-red-400" : "text-neutral-500"
               }
-            />
-            <StatCard
-              label="Pagado"
-              value={formatCurrency(totalPaid)}
-              icon="solar:check-circle-bold"
-              color={totalPaid > 0 ? "text-emerald-400" : "text-neutral-500"}
             />
           </div>
 
@@ -262,56 +247,6 @@ export function PersonaDetailModal({
               </div>
             )}
           </section>
-
-          {/* Payment history */}
-          {payments.length > 0 && (
-            <section>
-              <h2 className="text-sm font-semibold text-neutral-200 mb-3">
-                Pagos recientes
-              </h2>
-              <div className="space-y-2">
-                {payments.map((p) => {
-                  const pStatus =
-                    statusConfig[p.status] ?? statusConfig.pending;
-                  const serviceName =
-                    persona.services.find((s) => s.service_id === p.service_id)
-                      ?.service_name ?? "";
-
-                  return (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-xl border bg-neutral-900/30 border-neutral-800"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium text-neutral-200 truncate">
-                          {serviceName}
-                        </p>
-                        <p className="text-[11px] text-neutral-500">
-                          {new Intl.DateTimeFormat("es-MX", {
-                            month: "short",
-                            year: "numeric",
-                          }).format(new Date(p.billing_cycles.period_start))}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-sm font-medium text-neutral-200 tabular-nums">
-                          {formatCurrency(p.amount_due)}
-                        </span>
-                        <span
-                          className={cn(
-                            "px-2 py-0.5 rounded-full text-[9px] font-medium",
-                            pStatus.badgeClass,
-                          )}
-                        >
-                          {pStatus.label}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
         </div>
       </DialogContent>
     </Dialog>

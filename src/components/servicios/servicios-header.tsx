@@ -23,8 +23,8 @@ export default function ServiciosHeader({
 
   return (
     <>
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-col md:flex-row md:items-end gap-6 w-full justify-between">
+        <div className="max-w-2xl">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold text-white">
               Gestión de Servicios
@@ -48,7 +48,7 @@ export default function ServiciosHeader({
         </div>
         <button
           onClick={() => setModalOpen(true)}
-          className="btn-cta-gold flex items-center gap-2 shrink-0"
+          className="btn-cta-gold flex items-center justify-center gap-2 shrink-0"
         >
           <Icon icon="solar:add-circle-bold" width={18} />
           <span className="relative z-10">Nuevo Servicio</span>

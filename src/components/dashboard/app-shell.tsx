@@ -3,14 +3,14 @@
 import { Header } from "@/components/dashboard/header";
 import { BottomDock } from "@/components/dashboard/bottom-dock";
 import type { ServiceSummary, MyPayment } from "@/types/database";
-import type { CommandPersona } from "@/components/shared/command-palette";
+import type { PersonaCardData } from "@/components/personas/persona-card";
 
 interface AppShellProps {
   displayName: string;
   avatarUrl: string | null;
   email: string;
   services: ServiceSummary[];
-  personas: CommandPersona[];
+  personas: PersonaCardData[];
   myPayments: MyPayment[];
   children: React.ReactNode;
 }

@@ -15,6 +15,117 @@ import { getInitials } from "@/lib/utils";
 // React.cache() deduplicates calls within the same request.
 // Layout + page share the same request, so identical queries run only once.
 
+// --- Cleanup orphaned payments (pending payments for inactive members) ---
+
+export const cleanupOrphanedPayments = cache(async (userId: string) => {
+  const supabase = await createClient();
+
+  // 1. Cancel pending payments for inactive service members
+  const { data: inactiveMembers } = await supabase
+    .from("service_members")
+    .select("member_id, service_id")
+    .eq("owner_id", userId)
+    .eq("is_active", false);
+
+  if (inactiveMembers && inactiveMembers.length > 0) {
+    for (const im of inactiveMembers) {
+      await supabase
+        .from("payments")
+        .update({ status: "cancelled" })
+        .eq("owner_id", userId)
+        .eq("service_id", im.service_id)
+        .eq("member_id", im.member_id)
+        .in("status", ["pending", "partial"]);
+    }
+  }
+
+  // 2. Cancel duplicate payments within the same billing cycle
+  //    (caused by re-adding members that triggered add_member_to_active_cycles again)
+  const { data: pendingPayments } = await supabase
+    .from("payments")
+    .select("id, member_id, service_id, billing_cycle_id, created_at")
+    .eq("owner_id", userId)
+    .in("status", ["pending", "partial", "overdue"])
+    .order("created_at", { ascending: true });
+
+  if (pendingPayments && pendingPayments.length > 0) {
+    const seen = new Map<string, string>(); // key -> first payment id
+    const duplicateIds: string[] = [];
+
+    for (const p of pendingPayments) {
+      const key = `${p.member_id}:${p.service_id}:${p.billing_cycle_id}`;
+      if (seen.has(key)) {
+        // This is a duplicate — cancel it
+        duplicateIds.push(p.id);
+      } else {
+        seen.set(key, p.id);
+      }
+    }
+
+    if (duplicateIds.length > 0) {
+      await supabase
+        .from("payments")
+        .update({ status: "cancelled" })
+        .in("id", duplicateIds);
+    }
+  }
+
+  // 3. Fix amount_due on pending payments for custom-split services
+  //    (when split_type changed to 'custom' after payments were generated)
+  const { data: customServices } = await supabase
+    .from("services")
+    .select("id")
+    .eq("owner_id", userId)
+    .eq("split_type", "custom");
+
+  if (customServices && customServices.length > 0) {
+    const serviceIds = customServices.map((s) => s.id);
+
+    // Get active members with custom amounts for these services
+    const { data: customMembers } = await supabase
+      .from("service_members")
+      .select("member_id, service_id, custom_amount")
+      .eq("owner_id", userId)
+      .eq("is_active", true)
+      .in("service_id", serviceIds)
+      .not("custom_amount", "is", null);
+
+    if (customMembers && customMembers.length > 0) {
+      // Get pending payments for these services
+      const { data: paymentsToFix } = await supabase
+        .from("payments")
+        .select("id, member_id, service_id, amount_due")
+        .eq("owner_id", userId)
+        .in("service_id", serviceIds)
+        .in("status", ["pending", "partial", "overdue"]);
+
+      if (paymentsToFix && paymentsToFix.length > 0) {
+        // Build lookup: member_id:service_id -> custom_amount
+        const customAmountMap = new Map(
+          customMembers.map((cm) => [
+            `${cm.member_id}:${cm.service_id}`,
+            cm.custom_amount as number,
+          ]),
+        );
+
+        for (const payment of paymentsToFix) {
+          const key = `${payment.member_id}:${payment.service_id}`;
+          const correctAmount = customAmountMap.get(key);
+          if (
+            correctAmount !== undefined &&
+            payment.amount_due !== correctAmount
+          ) {
+            await supabase
+              .from("payments")
+              .update({ amount_due: correctAmount })
+              .eq("id", payment.id);
+          }
+        }
+      }
+    }
+  }
+});
+
 // --- Profile ---
 
 export const getCachedProfile = cache(async (userId: string) => {
@@ -53,6 +164,18 @@ export const getCachedDashboardSummary = cache(async (userId: string) => {
 
 export const getCachedPendingDebtors = cache(async (userId: string) => {
   const supabase = await createClient();
+
+  // First get active service_member pairs to filter payments
+  const { data: activeMembers } = await supabase
+    .from("service_members")
+    .select("member_id, service_id")
+    .eq("owner_id", userId)
+    .eq("is_active", true);
+
+  const activePairs = new Set(
+    (activeMembers ?? []).map((m) => `${m.member_id}:${m.service_id}`),
+  );
+
   const { data } = await supabase
     .from("payments")
     .select(
@@ -61,19 +184,38 @@ export const getCachedPendingDebtors = cache(async (userId: string) => {
     .eq("owner_id", userId)
     .in("status", ["pending", "partial", "overdue"])
     .order("status", { ascending: true })
-    .limit(10);
+    .limit(30);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const debtors: PendingDebtor[] = (data ?? []).map((p: any) => ({
-    id: p.id,
-    name: p.members?.name ?? "—",
-    initials: getInitials(p.members?.name ?? "—"),
-    status:
-      p.status === "overdue" ? ("overdue" as const) : ("pending" as const),
-    amount:
-      (p.amount_due ?? 0) - (p.amount_paid ?? 0) + (p.accumulated_debt ?? 0),
-    serviceName: p.services?.name ?? "—",
-  }));
+  // Filter to only active members and deduplicate by member+service
+  const seen = new Set<string>();
+  const debtors: PendingDebtor[] = [];
+
+  for (const p of data ?? []) {
+    const pairKey = `${p.member_id}:${p.service_id}`;
+    // Skip payments for inactive service members
+    if (!activePairs.has(pairKey)) continue;
+    // Deduplicate: only show one entry per member+service
+    if (seen.has(pairKey)) continue;
+    seen.add(pairKey);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payment = p as any;
+    debtors.push({
+      id: p.id,
+      name: payment.members?.name ?? "—",
+      initials: getInitials(payment.members?.name ?? "—"),
+      status:
+        p.status === "overdue" ? ("overdue" as const) : ("pending" as const),
+      amount:
+        (p.amount_due ?? 0) -
+        (p.amount_paid ?? 0) +
+        (p.accumulated_debt ?? 0),
+      serviceName: payment.services?.name ?? "—",
+    });
+
+    if (debtors.length >= 10) break;
+  }
+
   return debtors;
 });
 

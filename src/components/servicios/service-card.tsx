@@ -12,6 +12,7 @@ import {
   AvatarGroupCount,
 } from "@/components/ui/avatar";
 import ServiceDetailModal from "./service-detail-modal";
+import EditServiceDrawer from "./edit-service-drawer";
 import type { ServiceSummary, Member } from "@/types/database";
 
 const statusConfig: Record<
@@ -53,6 +54,7 @@ interface ServiceCardProps {
 
 export function ServiceCard({ service, members, isOwner }: ServiceCardProps) {
   const [showDetail, setShowDetail] = useState(false);
+  const [showEditDrawer, setShowEditDrawer] = useState(false);
   const serviceMembers = service.members ?? [];
   const isInactive = service.status !== "active";
   const status = statusConfig[service.status] ?? statusConfig.pending;
@@ -60,7 +62,9 @@ export function ServiceCard({ service, members, isOwner }: ServiceCardProps) {
   return (
     <>
       <div
-        onClick={() => setShowDetail(true)}
+        onClick={() => {
+          if (!showEditDrawer) setShowDetail(true);
+        }}
         className={cn(
           "group relative flex flex-col justify-between p-5 rounded-[1.5rem] border transition-all cursor-pointer backdrop-blur-sm",
           isInactive
@@ -134,17 +138,6 @@ export function ServiceCard({ service, members, isOwner }: ServiceCardProps) {
               )}
             </div>
           </div>
-          <button
-            type="button"
-            className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-colors shrink-0"
-            title="Ver detalle"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowDetail(true);
-            }}
-          >
-            <Icon icon="solar:alt-arrow-right-linear" width={16} />
-          </button>
         </div>
 
         {/* Middle: members + status badge */}
@@ -205,13 +198,22 @@ export function ServiceCard({ service, members, isOwner }: ServiceCardProps) {
             service={service}
             members={members}
             isOwner={isOwner}
+            onEdit={() => setShowEditDrawer(true)}
           />
         </div>
       </div>
+
       <ServiceDetailModal
         open={showDetail}
         onOpenChange={setShowDetail}
         service={service}
+      />
+
+      <EditServiceDrawer
+        open={showEditDrawer}
+        onOpenChange={setShowEditDrawer}
+        service={service}
+        members={members}
       />
     </>
   );

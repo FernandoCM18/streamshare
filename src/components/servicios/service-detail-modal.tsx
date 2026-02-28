@@ -7,42 +7,8 @@ import {
   DialogClose,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PaymentHistorySection } from "@/components/servicios/service-detail-sections";
 import { formatCurrency } from "@/lib/utils";
-import {
-  getMockServiceDetail,
-  getMockCyclesForService,
-  MOCK_USER_ID,
-} from "@/lib/mock-data";
 import type { ServiceSummary, ServiceMemberInfo } from "@/types/database";
-
-const paymentStatusConfig: Record<
-  string,
-  { label: string; badgeClass: string }
-> = {
-  confirmed: {
-    label: "Confirmado",
-    badgeClass:
-      "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
-  },
-  paid: {
-    label: "Pagado",
-    badgeClass:
-      "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
-  },
-  pending: {
-    label: "Pendiente",
-    badgeClass: "bg-orange-400/10 border border-orange-400/20 text-orange-400",
-  },
-  partial: {
-    label: "Parcial",
-    badgeClass: "bg-orange-400/10 border border-orange-400/20 text-orange-400",
-  },
-  overdue: {
-    label: "Vencido",
-    badgeClass: "bg-red-500/10 border border-red-500/20 text-red-400",
-  },
-};
 
 const serviceStatusConfig: Record<
   string,
@@ -90,37 +56,9 @@ export default function ServiceDetailModal({
   onOpenChange,
   service,
 }: ServiceDetailModalProps) {
-  const detail = getMockServiceDetail(service.id);
-  const typedCycles = getMockCyclesForService(service.id);
-
-  if (!detail) return null;
-
-  const viewMembers: ServiceMemberInfo[] = detail.members ?? [];
-  const currentCycle = typedCycles[0] ?? null;
-  const currentPayments = currentCycle?.payments ?? [];
-
-  const pendingThisMonth = currentPayments
-    .filter((p) => ["pending", "partial", "overdue"].includes(p.status))
-    .reduce((sum, p) => sum + (p.amount_due - p.amount_paid), 0);
-
-  const collectedThisMonth = currentPayments
-    .filter((p) => ["paid", "confirmed"].includes(p.status))
-    .reduce((sum, p) => sum + p.amount_paid, 0);
-
-  const accumulatedDebt = currentPayments.reduce(
-    (sum, p) => sum + p.accumulated_debt,
-    0,
-  );
-
-  const totalCredits = 0;
-
-  const paymentByMember: Record<string, (typeof currentPayments)[0]> = {};
-  for (const p of currentPayments) {
-    paymentByMember[p.member_id] = p;
-  }
-
+  const viewMembers: ServiceMemberInfo[] = service.members ?? [];
   const status =
-    serviceStatusConfig[detail.status] ?? serviceStatusConfig.pending;
+    serviceStatusConfig[service.status] ?? serviceStatusConfig.pending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,7 +92,7 @@ export default function ServiceDetailModal({
                 <div
                   className={`px-2.5 py-1 rounded-full text-[10px] font-medium flex items-center gap-1.5 ${status.badgeClass}`}
                 >
-                  {detail.status === "overdue" ? (
+                  {service.status === "overdue" ? (
                     <span
                       className={`w-1.5 h-1.5 rounded-full bg-current ${status.dotClass ?? ""}`}
                     />
@@ -190,27 +128,23 @@ export default function ServiceDetailModal({
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="Por cobrar"
-              value={formatCurrency(pendingThisMonth)}
+              value={formatCurrency(service.pending_amount)}
               icon="solar:wallet-money-linear"
-              color="text-orange-400"
+              color={
+                service.pending_amount > 0
+                  ? "text-orange-400"
+                  : "text-neutral-500"
+              }
             />
             <StatCard
               label="Cobrado"
-              value={formatCurrency(collectedThisMonth)}
+              value={formatCurrency(service.collected_amount)}
               icon="solar:check-circle-linear"
-              color="text-emerald-400"
-            />
-            <StatCard
-              label="Deuda acumulada"
-              value={formatCurrency(accumulatedDebt)}
-              icon="solar:danger-triangle-linear"
-              color={accumulatedDebt > 0 ? "text-red-400" : "text-neutral-500"}
-            />
-            <StatCard
-              label="Créditos activos"
-              value={formatCurrency(totalCredits)}
-              icon="solar:star-linear"
-              color={totalCredits > 0 ? "text-violet-400" : "text-neutral-500"}
+              color={
+                service.collected_amount > 0
+                  ? "text-emerald-400"
+                  : "text-neutral-500"
+              }
             />
           </div>
 
@@ -221,95 +155,37 @@ export default function ServiceDetailModal({
             </h2>
             {viewMembers.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {viewMembers.map((member) => {
-                  const payment = paymentByMember[member.member_id];
-                  const pStatus = payment
-                    ? (paymentStatusConfig[payment.status] ??
-                      paymentStatusConfig.pending)
-                    : null;
-
-                  return (
-                    <div
-                      key={member.member_id}
-                      className="flex items-center gap-3 p-3.5 rounded-xl border bg-neutral-900/30 border-neutral-800"
-                    >
-                      <div className="w-9 h-9 rounded-full bg-neutral-800 border border-neutral-900 flex items-center justify-center text-[10px] font-medium text-neutral-400 shrink-0">
-                        {getInitials(member.name)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-neutral-200 truncate block">
-                          {member.name}
+                {viewMembers.map((member) => (
+                  <div
+                    key={member.member_id}
+                    className="flex items-center gap-3 p-3.5 rounded-xl border bg-neutral-900/30 border-neutral-800"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-neutral-800 border border-neutral-900 flex items-center justify-center text-[10px] font-medium text-neutral-400 shrink-0">
+                      {getInitials(member.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-neutral-200 truncate block">
+                        {member.name}
+                      </span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] text-neutral-500">
+                          {member.custom_amount
+                            ? formatCurrency(member.custom_amount)
+                            : formatCurrency(
+                                service.monthly_cost /
+                                  (viewMembers.length || 1),
+                              )}
+                          /mes
                         </span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[11px] text-neutral-500">
-                            {member.custom_amount
-                              ? formatCurrency(member.custom_amount)
-                              : formatCurrency(
-                                  service.monthly_cost /
-                                    (viewMembers.length || 1),
-                                )}
-                            /mes
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {pStatus && (
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[9px] font-medium ${pStatus.badgeClass}`}
-                          >
-                            {pStatus.label}
-                          </span>
-                        )}
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-900/10 p-6 text-center">
                 <p className="text-xs text-neutral-500">
                   No hay miembros en este servicio
-                </p>
-              </div>
-            )}
-          </section>
-
-          {/* Payment History */}
-          <section>
-            <h2 className="text-sm font-semibold text-neutral-200 mb-3">
-              Historial de pagos
-            </h2>
-            {typedCycles.length > 0 ? (
-              <PaymentHistorySection
-                cycles={typedCycles.map((cycle) => ({
-                  id: cycle.id,
-                  periodStart: cycle.period_start,
-                  totalAmount: cycle.total_amount,
-                  payments: cycle.payments.map((p) => ({
-                    id: p.id,
-                    personaName: p.member.name,
-                    personaInitials: getInitials(p.member.name),
-                    isRegistered: !!p.member.profile_id,
-                    amountDue: p.amount_due,
-                    amountPaid: p.amount_paid,
-                    accumulatedDebt: p.accumulated_debt,
-                    status: p.status,
-                    dueDate: p.due_date,
-                    paidAt: p.paid_at,
-                    confirmedAt: p.confirmed_at,
-                    notes: (p.payment_notes ?? []).map((n) => ({
-                      id: n.id,
-                      content: n.content,
-                      createdAt: n.created_at,
-                      isOwner: n.author_id === MOCK_USER_ID,
-                    })),
-                  })),
-                }))}
-              />
-            ) : (
-              <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-900/10 p-6 text-center">
-                <p className="text-xs text-neutral-500">
-                  No hay ciclos de cobro aún
                 </p>
               </div>
             )}

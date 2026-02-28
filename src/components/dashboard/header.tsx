@@ -6,10 +6,7 @@ import { UserMenu } from "@/components/dashboard/user-menu";
 import { LogoIcon } from "@/components/icons/LogoIcon";
 import { BellIcon } from "@/components/icons/BellIcon";
 import { SearchIcon } from "../icons/SearchIcon";
-import {
-  CommandPalette,
-  type CommandPersona,
-} from "@/components/shared/command-palette";
+import { CommandPalette } from "@/components/shared/command-palette";
 import ServiceDetailModal from "@/components/servicios/service-detail-modal";
 import { PersonaDetailModal } from "@/components/personas/persona-detail-modal";
 import { MyPaymentDetailModal } from "@/components/mis-pagos/my-payment-detail-modal";
@@ -21,7 +18,7 @@ interface HeaderProps {
   avatarUrl: string | null;
   email: string;
   services: ServiceSummary[];
-  personas: CommandPersona[];
+  personas: PersonaCardData[];
   myPayments: MyPayment[];
 }
 
@@ -43,19 +40,9 @@ export function Header({
     null,
   );
 
-  const handleSelectPersona = (persona: CommandPersona) => {
-    // Convert CommandPersona to PersonaCardData shape for the modal
-    setSelectedPersona({
-      id: persona.id,
-      name: persona.name,
-      email: persona.email,
-      phone: null,
-      avatar_url: null,
-      profile_id: persona.profile_id,
-      services: [],
-      total_debt: 0,
-      monthly_amount: 0,
-    });
+  const handleSelectPersona = (personaId: string) => {
+    const found = personas.find((p) => p.id === personaId);
+    if (found) setSelectedPersona(found);
   };
 
   return (
