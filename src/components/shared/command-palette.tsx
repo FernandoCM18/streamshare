@@ -6,8 +6,9 @@ import { Icon } from "@iconify/react";
 import { Command as CommandPrimitive } from "cmdk";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { cn, formatCurrency } from "@/lib/utils";
-import type { PaymentStatus, ServiceSummary, Member } from "@/types/database";
+import type { ServiceSummary } from "@/types/database";
 import type { MyPayment } from "@/types/database";
+import type { PersonaCardData } from "@/components/personas/persona-card";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -55,16 +56,19 @@ export interface CommandPersona {
   serviceCount: number;
 }
 
+// Keep for backward compat but prefer PersonaCardData
+import type { PaymentStatus } from "@/types/database";
+
 // ── Props ─────────────────────────────────────────────────────
 
 interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   services: ServiceSummary[];
-  personas: CommandPersona[];
+  personas: PersonaCardData[];
   myPayments: MyPayment[];
   onSelectService?: (service: ServiceSummary) => void;
-  onSelectPersona?: (persona: CommandPersona) => void;
+  onSelectPersona?: (personaId: string) => void;
   onSelectPayment?: (payment: MyPayment) => void;
 }
 
@@ -102,10 +106,10 @@ export function CommandPalette({
     }
   };
 
-  const selectPersona = (persona: CommandPersona) => {
+  const selectPersona = (persona: PersonaCardData) => {
     onOpenChange(false);
     if (onSelectPersona) {
-      onSelectPersona(persona);
+      onSelectPersona(persona.id);
     } else {
       router.push("/personas");
     }
@@ -254,8 +258,22 @@ export function CommandPalette({
                   className="mt-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.12em] [&_[cmdk-group-heading]]:text-neutral-600"
                 >
                   {personas.map((p) => {
-                    const statusStyle = p.status
-                      ? paymentStatusLabel[p.status]
+                    // Derive overall status from services
+                    let overallStatus: string | null = null;
+                    if (p.services.length > 0) {
+                      if (p.services.some((s) => s.status === "overdue"))
+                        overallStatus = "overdue";
+                      else if (
+                        p.services.some(
+                          (s) =>
+                            s.status === "pending" || s.status === "partial",
+                        )
+                      )
+                        overallStatus = "pending";
+                      else overallStatus = "confirmed";
+                    }
+                    const statusStyle = overallStatus
+                      ? paymentStatusLabel[overallStatus]
                       : null;
 
                     return (
@@ -287,11 +305,11 @@ export function CommandPalette({
                           </p>
                           <p className="text-[11px] text-neutral-500 truncate">
                             {p.email}
-                            {p.serviceCount > 0 && (
+                            {p.services.length > 0 && (
                               <>
                                 {" "}
-                                · {p.serviceCount} servicio
-                                {p.serviceCount !== 1 ? "s" : ""}
+                                · {p.services.length} servicio
+                                {p.services.length !== 1 ? "s" : ""}
                               </>
                             )}
                           </p>

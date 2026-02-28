@@ -83,9 +83,10 @@ function getGlowColor(status: string): string {
 interface PersonaCardProps {
   persona: PersonaCardData;
   onEdit: (persona: PersonaCardData) => void;
+  onViewDetail: (persona: PersonaCardData) => void;
 }
 
-export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
+export function PersonaCard({ persona, onEdit, onViewDetail }: PersonaCardProps) {
   const [isDeleting, startTransition] = useTransition();
   const overallStatus = getOverallStatus(persona.services);
   const status = statusConfig[overallStatus];
@@ -117,6 +118,7 @@ export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
 
   return (
     <div
+      onClick={() => onViewDetail(persona)}
       className={cn(
         "group relative flex flex-col justify-between p-5 rounded-[1.5rem] border transition-all cursor-pointer h-full backdrop-blur-sm",
         isInactive
@@ -279,7 +281,10 @@ export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
           variant="ghost"
           size="xs"
           className="col-span-2 h-8 rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-[10px] font-medium text-neutral-400 hover:text-white"
-          onClick={() => onEdit(persona)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(persona);
+          }}
         >
           <Icon icon="solar:pen-2-bold" width={12} />
           Editar
@@ -291,6 +296,7 @@ export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
             variant="ghost"
             size="xs"
             className="col-span-2 h-8 rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-[10px] font-medium text-neutral-400 hover:text-white"
+            onClick={(e) => e.stopPropagation()}
             disabled
           >
             <Icon icon="solar:add-circle-linear" width={12} />
@@ -301,6 +307,7 @@ export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
             variant="ghost"
             size="xs"
             className="col-span-2 h-8 rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-[10px] font-medium text-neutral-400 hover:text-white"
+            onClick={(e) => e.stopPropagation()}
             disabled
           >
             <Icon icon="solar:checklist-minimalistic-bold" width={12} />
@@ -314,35 +321,41 @@ export function PersonaCard({ persona, onEdit }: PersonaCardProps) {
             variant="ghost"
             size="icon-xs"
             className="col-span-1 h-8 w-full rounded-lg bg-neutral-800/40 hover:bg-red-500/10 border-transparent hover:border-red-500/20 text-neutral-400 hover:text-red-400"
-            onClick={handleDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }}
             disabled={isDeleting}
             title="Eliminar"
           >
             <Icon icon="solar:trash-bin-trash-bold" width={12} />
           </Button>
         ) : hasPending ? (
-          <RemindDrawer
-            memberName={persona.name}
-            memberPhone={persona.phone}
-            memberEmail={persona.email}
-            serviceName={persona.services.map((s) => s.service_name).join(", ")}
-            amount={persona.total_debt || persona.monthly_amount}
-          >
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="col-span-1 h-8 w-full rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-neutral-400 hover:text-white"
-              title="Enviar recordatorio"
+          <div onClick={(e) => e.stopPropagation()}>
+            <RemindDrawer
+              memberName={persona.name}
+              memberPhone={persona.phone}
+              memberEmail={persona.email}
+              serviceName={persona.services.map((s) => s.service_name).join(", ")}
+              amount={persona.total_debt || persona.monthly_amount}
             >
-              <Icon icon="solar:bell-bing-bold" width={12} />
-            </Button>
-          </RemindDrawer>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="col-span-1 h-8 w-full rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-neutral-400 hover:text-white"
+                title="Enviar recordatorio"
+              >
+                <Icon icon="solar:bell-bing-bold" width={12} />
+              </Button>
+            </RemindDrawer>
+          </div>
         ) : (
           <Button
             variant="ghost"
             size="icon-xs"
             className="col-span-1 h-8 w-full rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-neutral-400 hover:text-white"
             title="Mensaje"
+            onClick={(e) => e.stopPropagation()}
             disabled
           >
             <Icon icon="solar:chat-round-dots-bold" width={12} />

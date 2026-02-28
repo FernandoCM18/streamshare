@@ -7,9 +7,11 @@ import {
   getCachedDashboardSummary,
   getCachedPendingDebtors,
   getCachedServices,
-  getCachedCommandPersonas,
   getCachedMyPayments,
+  getCachedPersonasData,
+  cleanupOrphanedPayments,
 } from "@/lib/queries";
+import type { PersonaCardData } from "@/components/personas/persona-card";
 
 export default async function DashboardLayout({
   children,
@@ -18,17 +20,72 @@ export default async function DashboardLayout({
 }) {
   const user = await getRequiredUser();
 
-  const [profile, dashboard, pendingDebtors, services, personas, myPayments] =
+  // Clean up orphaned payments from previously removed members
+  await cleanupOrphanedPayments(user.id);
+
+  const [profile, dashboard, pendingDebtors, services, personasData, myPayments] =
     await Promise.all([
       getCachedProfile(user.id),
       getCachedDashboardSummary(user.id),
       getCachedPendingDebtors(user.id),
       getCachedServices(user.id),
-      getCachedCommandPersonas(user.id),
+      getCachedPersonasData(user.id),
       getCachedMyPayments(user.id),
     ]);
 
   if (!profile) redirect("/login");
+
+  // Build full PersonaCardData for command palette detail modals
+  const svcMap = new Map(personasData.services.map((s) => [s.id, s]));
+  const personas: PersonaCardData[] = personasData.members.map((m) => {
+    const memberServices = personasData.serviceMembers
+      .filter((sm) => sm.member_id === m.id)
+      .map((sm) => {
+        const svc = svcMap.get(sm.service_id);
+        const latestPayment = personasData.payments.find(
+          (p) => p.member_id === m.id && p.service_id === sm.service_id,
+        );
+        const memberCount = personasData.serviceMembers.filter(
+          (s) => s.service_id === sm.service_id,
+        ).length;
+        return {
+          service_id: sm.service_id,
+          service_name: svc?.name ?? "—",
+          service_color: svc?.color ?? "#6366f1",
+          service_icon: svc?.icon_url ?? null,
+          amount_due:
+            sm.custom_amount ??
+            (svc?.monthly_cost ?? 0) / Math.max(memberCount, 1),
+          status: latestPayment?.status ?? null,
+        };
+      });
+
+    const memberPayments = personasData.payments.filter(
+      (p) =>
+        p.member_id === m.id &&
+        ["pending", "overdue", "partial"].includes(p.status),
+    );
+    const totalDebt = memberPayments.reduce(
+      (sum, p) => sum + (p.amount_due - p.amount_paid + p.accumulated_debt),
+      0,
+    );
+    const monthlyAmount = memberServices.reduce(
+      (sum, s) => sum + s.amount_due,
+      0,
+    );
+
+    return {
+      id: m.id,
+      name: m.name,
+      email: m.email,
+      phone: m.phone,
+      avatar_url: m.avatar_url,
+      profile_id: m.profile_id,
+      services: memberServices,
+      total_debt: totalDebt,
+      monthly_amount: monthlyAmount,
+    };
+  });
 
   return (
     <AppShell

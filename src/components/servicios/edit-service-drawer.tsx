@@ -19,12 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "react-day-picker/locale";
-import {
-  updateService,
-  addServiceMember,
-  removeServiceMember,
-  updateMemberAmount,
-} from "@/app/(dashboard)/servicios/actions";
+import { updateService } from "@/app/(dashboard)/servicios/actions";
 import { formatCurrency } from "@/lib/utils";
 import type {
   ServiceSummary,
@@ -79,14 +74,22 @@ export default function EditServiceDrawer({
   const [submitting, setSubmitting] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Members — initialized from service.members (from the view)
+  // Local member state (changes are NOT saved until submit)
   const [serviceMembers, setServiceMembers] = useState<ServiceMemberInfo[]>(
     service.members ?? [],
   );
-  const [memberAction, setMemberAction] = useState<string | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [editingAmountFor, setEditingAmountFor] = useState<string | null>(null);
   const [editAmountValue, setEditAmountValue] = useState("");
+
+  // Track pending changes (applied on submit)
+  const [addedMemberIds, setAddedMemberIds] = useState<Set<string>>(new Set());
+  const [removedMemberIds, setRemovedMemberIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [amountChanges, setAmountChanges] = useState<
+    Record<string, number | null>
+  >({});
 
   const [billingDate, setBillingDate] = useState<Date>(() =>
     getNextBillingDate(service.billing_day),
@@ -119,6 +122,9 @@ export default function EditServiceDrawer({
       setBillingDate(getNextBillingDate(service.billing_day));
       setShowAddMember(false);
       setEditingAmountFor(null);
+      setAddedMemberIds(new Set());
+      setRemovedMemberIds(new Set());
+      setAmountChanges({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, service.id]);
@@ -145,79 +151,80 @@ export default function EditServiceDrawer({
     }).format(date);
   }
 
-  async function handleAddMember(
-    person: Pick<Member, "id" | "name" | "email">,
-  ) {
-    setMemberAction(person.id);
-    try {
-      const result = await addServiceMember(service.id, person.id);
-      if (result.success) {
-        setServiceMembers((prev) => [
-          ...prev,
-          {
-            member_id: result.memberId!,
-            custom_amount: null,
-            is_active: true,
-            name: person.name,
-            email: person.email ?? null,
-            avatar_url: null,
-          },
-        ]);
-        toast.success(`${person.name} agregado`);
-        if (availableMembers.length <= 1) {
-          setShowAddMember(false);
-        }
-      } else {
-        toast.error(result.error ?? "Error al agregar miembro");
-      }
-    } finally {
-      setMemberAction(null);
+  // Add member locally (no DB call)
+  function handleAddMember(person: Pick<Member, "id" | "name" | "email">) {
+    setServiceMembers((prev) => [
+      ...prev,
+      {
+        member_id: person.id,
+        custom_amount: null,
+        is_active: true,
+        name: person.name,
+        email: person.email ?? null,
+        avatar_url: null,
+      },
+    ]);
+
+    // If this member was previously removed in this session, undo the removal
+    if (removedMemberIds.has(person.id)) {
+      setRemovedMemberIds((prev) => {
+        const next = new Set(prev);
+        next.delete(person.id);
+        return next;
+      });
+    } else {
+      setAddedMemberIds((prev) => new Set(prev).add(person.id));
+    }
+
+    if (availableMembers.length <= 1) {
+      setShowAddMember(false);
     }
   }
 
-  async function handleRemoveMember(member: ServiceMemberInfo) {
-    setMemberAction(member.member_id);
-    try {
-      const result = await removeServiceMember(member.member_id);
-      if (result.success) {
-        setServiceMembers((prev) =>
-          prev.filter((m) => m.member_id !== member.member_id),
-        );
-        toast.success(`${member.name} eliminado del servicio`);
-      } else {
-        toast.error(result.error ?? "Error al eliminar miembro");
-      }
-    } finally {
-      setMemberAction(null);
+  // Remove member locally (no DB call)
+  function handleRemoveMember(member: ServiceMemberInfo) {
+    setServiceMembers((prev) =>
+      prev.filter((m) => m.member_id !== member.member_id),
+    );
+
+    // If this member was added in this session, undo the addition
+    if (addedMemberIds.has(member.member_id)) {
+      setAddedMemberIds((prev) => {
+        const next = new Set(prev);
+        next.delete(member.member_id);
+        return next;
+      });
+    } else {
+      setRemovedMemberIds((prev) => new Set(prev).add(member.member_id));
     }
+
+    // Clean up any amount changes for this member
+    setAmountChanges((prev) => {
+      const next = { ...prev };
+      delete next[member.member_id];
+      return next;
+    });
   }
 
-  async function handleSaveCustomAmount(member: ServiceMemberInfo) {
+  // Save custom amount locally (no DB call)
+  function handleSaveCustomAmount(member: ServiceMemberInfo) {
     const amount = editAmountValue.trim() ? parseFloat(editAmountValue) : null;
     if (editAmountValue.trim() && (isNaN(amount!) || amount! < 0)) {
       toast.error("Cantidad inválida");
       return;
     }
-    setMemberAction(member.member_id);
-    try {
-      const result = await updateMemberAmount(member.member_id, amount);
-      if (result.success) {
-        setServiceMembers((prev) =>
-          prev.map((m) =>
-            m.member_id === member.member_id
-              ? { ...m, custom_amount: amount }
-              : m,
-          ),
-        );
-        setEditingAmountFor(null);
-        setEditAmountValue("");
-        toast.success("Monto actualizado");
-      } else {
-        toast.error(result.error ?? "Error al actualizar monto");
-      }
-    } finally {
-      setMemberAction(null);
-    }
+
+    setServiceMembers((prev) =>
+      prev.map((m) =>
+        m.member_id === member.member_id ? { ...m, custom_amount: amount } : m,
+      ),
+    );
+    setAmountChanges((prev) => ({
+      ...prev,
+      [member.member_id]: amount,
+    }));
+    setEditingAmountFor(null);
+    setEditAmountValue("");
   }
 
   async function onSubmit(values: FormValues) {
@@ -232,6 +239,28 @@ export default function EditServiceDrawer({
       fd.set("split_type", values.split_type);
       if (values.icon_url) fd.set("icon_url", values.icon_url);
 
+      // Batch member additions
+      if (addedMemberIds.size > 0) {
+        const addedMembers = [...addedMemberIds].map((id) => ({
+          id,
+          custom_amount: amountChanges[id] ?? null,
+        }));
+        fd.set("added_members", JSON.stringify(addedMembers));
+      }
+
+      // Batch member removals
+      if (removedMemberIds.size > 0) {
+        fd.set("removed_members", JSON.stringify([...removedMemberIds]));
+      }
+
+      // Batch amount updates (only for existing members, not newly added)
+      const existingAmountUpdates = Object.entries(amountChanges)
+        .filter(([id]) => !addedMemberIds.has(id))
+        .map(([member_id, custom_amount]) => ({ member_id, custom_amount }));
+      if (existingAmountUpdates.length > 0) {
+        fd.set("amount_updates", JSON.stringify(existingAmountUpdates));
+      }
+
       const result = await updateService(fd);
       if (result.success) {
         toast.success("Servicio actualizado");
@@ -243,6 +272,12 @@ export default function EditServiceDrawer({
       setSubmitting(false);
     }
   }
+
+  const hasPendingChanges =
+    addedMemberIds.size > 0 ||
+    removedMemberIds.size > 0 ||
+    Object.keys(amountChanges).length > 0 ||
+    form.formState.isDirty;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -459,16 +494,6 @@ export default function EditServiceDrawer({
                 <label className="text-xs font-medium text-neutral-400 tracking-wide">
                   MIEMBROS ({serviceMembers.length})
                 </label>
-                {!showAddMember && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAddMember(true)}
-                    className="text-xs font-medium text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1 focus:outline-none"
-                  >
-                    <Icon icon="solar:add-circle-linear" width={14} />
-                    Agregar
-                  </button>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -490,120 +515,132 @@ export default function EditServiceDrawer({
                 </div>
 
                 {/* Current Members */}
-                {serviceMembers.map((member) => (
-                  <div
-                    key={member.member_id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-neutral-900/30 border border-neutral-800/80 group/member"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 shrink-0 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-xs font-medium text-neutral-400">
-                        {getInitials(member.name)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-neutral-200 truncate">
-                          {member.name}
-                        </p>
-                        {member.email && (
-                          <p className="text-[10px] text-neutral-500 truncate">
-                            {member.email}
+                {serviceMembers.map((member) => {
+                  const isNewlyAdded = addedMemberIds.has(member.member_id);
+                  return (
+                    <div
+                      key={member.member_id}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-xl bg-neutral-900/30 border group/member",
+                        isNewlyAdded
+                          ? "border-violet-500/30 bg-violet-500/5"
+                          : "border-neutral-800/80",
+                      )}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 shrink-0 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-xs font-medium text-neutral-400">
+                          {getInitials(member.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-neutral-200 truncate">
+                            {member.name}
                           </p>
-                        )}
+                          {member.email && (
+                            <p className="text-[10px] text-neutral-500 truncate">
+                              {member.email}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Amount display / edit */}
-                      {watchedSplit === "custom" ? (
-                        editingAmountFor === member.member_id ? (
-                          <div className="flex items-center gap-1.5">
-                            <div className="relative">
-                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">
-                                $
-                              </span>
-                              <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={editAmountValue}
-                                onChange={(e) =>
-                                  setEditAmountValue(e.target.value)
-                                }
-                                placeholder="0.00"
-                                className="w-20 h-7 bg-neutral-900 border border-neutral-700 focus:border-neutral-500 rounded-lg pl-5 pr-2 text-xs font-mono text-neutral-200 outline-none"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    handleSaveCustomAmount(member);
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* Amount display / edit */}
+                        {watchedSplit === "custom" ? (
+                          editingAmountFor === member.member_id ? (
+                            <div className="flex items-center gap-1.5">
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">
+                                  $
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={editAmountValue}
+                                  onChange={(e) =>
+                                    setEditAmountValue(e.target.value)
                                   }
-                                  if (e.key === "Escape") {
-                                    setEditingAmountFor(null);
-                                    setEditAmountValue("");
-                                  }
+                                  placeholder="0.00"
+                                  className="w-20 h-7 bg-neutral-900 border border-neutral-700 focus:border-neutral-500 rounded-lg pl-5 pr-2 text-xs font-mono text-neutral-200 outline-none"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      handleSaveCustomAmount(member);
+                                    }
+                                    if (e.key === "Escape") {
+                                      setEditingAmountFor(null);
+                                      setEditAmountValue("");
+                                    }
+                                  }}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveCustomAmount(member)}
+                                className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/20 transition-colors focus:outline-none"
+                              >
+                                <Icon
+                                  icon="solar:check-read-linear"
+                                  width={14}
+                                />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingAmountFor(null);
+                                  setEditAmountValue("");
                                 }}
-                              />
+                                className="w-7 h-7 rounded-lg bg-neutral-800/40 flex items-center justify-center text-neutral-400 hover:text-neutral-200 transition-colors focus:outline-none"
+                              >
+                                <Icon
+                                  icon="solar:close-circle-linear"
+                                  width={14}
+                                />
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveCustomAmount(member)}
-                              disabled={memberAction === member.member_id}
-                              className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/20 transition-colors focus:outline-none disabled:opacity-50"
-                            >
-                              <Icon icon="solar:check-read-linear" width={14} />
-                            </button>
+                          ) : (
                             <button
                               type="button"
                               onClick={() => {
-                                setEditingAmountFor(null);
-                                setEditAmountValue("");
+                                setEditingAmountFor(member.member_id);
+                                setEditAmountValue(
+                                  member.custom_amount != null
+                                    ? String(member.custom_amount)
+                                    : "",
+                                );
                               }}
-                              className="w-7 h-7 rounded-lg bg-neutral-800/40 flex items-center justify-center text-neutral-400 hover:text-neutral-200 transition-colors focus:outline-none"
+                              className="px-2 h-7 rounded-lg bg-neutral-800/40 border border-neutral-800 hover:border-neutral-600 text-xs font-mono text-neutral-400 hover:text-neutral-200 transition-all flex items-center gap-1.5 focus:outline-none"
                             >
-                              <Icon
-                                icon="solar:close-circle-linear"
-                                width={14}
-                              />
+                              {member.custom_amount != null
+                                ? formatCurrency(member.custom_amount)
+                                : "Sin monto"}
+                              <Icon icon="solar:pen-linear" width={10} />
                             </button>
-                          </div>
+                          )
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingAmountFor(member.member_id);
-                              setEditAmountValue(
-                                member.custom_amount != null
-                                  ? String(member.custom_amount)
-                                  : "",
-                              );
-                            }}
-                            className="px-2 h-7 rounded-lg bg-neutral-800/40 border border-neutral-800 hover:border-neutral-600 text-xs font-mono text-neutral-400 hover:text-neutral-200 transition-all flex items-center gap-1.5 focus:outline-none"
-                          >
-                            {member.custom_amount != null
-                              ? formatCurrency(member.custom_amount)
-                              : "Sin monto"}
-                            <Icon icon="solar:pen-linear" width={10} />
-                          </button>
-                        )
-                      ) : (
-                        perPersonAmount > 0 && (
-                          <span className="text-xs font-mono text-neutral-500">
-                            {formatCurrency(perPersonAmount)}
-                          </span>
-                        )
-                      )}
+                          perPersonAmount > 0 && (
+                            <span className="text-xs font-mono text-neutral-500">
+                              {formatCurrency(perPersonAmount)}
+                            </span>
+                          )
+                        )}
 
-                      {/* Remove button */}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMember(member)}
-                        disabled={memberAction === member.member_id}
-                        className="w-7 h-7 rounded-lg opacity-0 group-hover/member:opacity-100 bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all focus:outline-none disabled:opacity-50"
-                      >
-                        <Icon icon="solar:trash-bin-trash-linear" width={12} />
-                      </button>
+                        {/* Remove button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(member)}
+                          className="w-7 h-7 rounded-lg opacity-0 group-hover/member:opacity-100 bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all focus:outline-none"
+                        >
+                          <Icon
+                            icon="solar:trash-bin-trash-linear"
+                            width={12}
+                          />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* Add Member Panel */}
                 {showAddMember && (
@@ -629,8 +666,7 @@ export default function EditServiceDrawer({
                             key={m.id}
                             type="button"
                             onClick={() => handleAddMember(m)}
-                            disabled={memberAction === m.id}
-                            className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-neutral-800/50 transition-colors text-left focus:outline-none disabled:opacity-50"
+                            className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-neutral-800/50 transition-colors text-left focus:outline-none"
                           >
                             <div className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-[10px] font-medium text-neutral-400 shrink-0">
                               {getInitials(m.name)}
@@ -724,6 +760,13 @@ export default function EditServiceDrawer({
                 </div>
               </div>
             </div>
+
+            {/* Pending changes indicator */}
+            {hasPendingChanges && (
+              <p className="text-[11px] text-orange-400 text-center">
+                Tienes cambios sin guardar
+              </p>
+            )}
           </div>
 
           {/* Footer */}

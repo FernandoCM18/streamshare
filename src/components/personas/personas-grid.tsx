@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { PersonaCard } from "@/components/personas/persona-card";
 import { PersonaModal } from "@/components/personas/persona-modal";
+import { PersonaDetailModal } from "@/components/personas/persona-detail-modal";
 import { EmptyStateCard } from "@/components/shared/empty-state-card";
 import type { PersonaCardData } from "@/components/personas/persona-card";
 
@@ -13,6 +14,9 @@ interface PersonasGridProps {
 
 export function PersonasGrid({ personas }: PersonasGridProps) {
   const [editingPersona, setEditingPersona] = useState<PersonaCardData | null>(
+    null,
+  );
+  const [viewingPersona, setViewingPersona] = useState<PersonaCardData | null>(
     null,
   );
 
@@ -25,6 +29,7 @@ export function PersonasGrid({ personas }: PersonasGridProps) {
               key={persona.id}
               persona={persona}
               onEdit={setEditingPersona}
+              onViewDetail={setViewingPersona}
             />
           ))}
         </div>
@@ -50,6 +55,16 @@ export function PersonasGrid({ personas }: PersonasGridProps) {
         }}
         editingPersona={editingPersona}
       />
+
+      {viewingPersona && (
+        <PersonaDetailModal
+          open={!!viewingPersona}
+          onOpenChange={(open) => {
+            if (!open) setViewingPersona(null);
+          }}
+          persona={viewingPersona}
+        />
+      )}
     </>
   );
 }

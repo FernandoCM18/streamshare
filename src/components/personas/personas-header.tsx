@@ -49,7 +49,7 @@ export function PersonasHeader({
 
         <button
           onClick={() => setModalOpen(true)}
-          className="btn-cta-gold flex items-center gap-2 shrink-0"
+          className="btn-cta-gold flex items-center justify-center gap-2 shrink-0"
         >
           <span className="flex items-center gap-2 text-[13px] relative z-10">
             Nueva Persona

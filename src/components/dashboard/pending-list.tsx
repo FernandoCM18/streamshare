@@ -18,7 +18,7 @@ export function PendingList({ debtors }: PendingListProps) {
   }
 
   return (
-    <div className="space-y-3 max-h-48 overflow-y-auto w-full">
+    <div className="space-y-3 overflow-y-auto w-full">
       {debtors.map((debtor) => (
         <div key={debtor.id} className="flex items-center gap-3">
           <div className="relative">
