@@ -10,17 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import type { DashboardSummary } from "@/types/database";
+import type { DashboardSummary, PendingDebtor } from "@/types/database";
 import { Badge } from "../ui/badge";
-
-export interface PendingDebtor {
-  id: string;
-  name: string;
-  initials: string;
-  status: "overdue" | "pending";
-  amount: number;
-  serviceName: string;
-}
 
 interface GaugeCardProps {
   dashboard: DashboardSummary;

@@ -2,43 +2,13 @@
 
 import { useTransition } from "react";
 import { Icon } from "@iconify/react";
-import { cn, formatCurrency } from "@/lib/utils";
-import type { PaymentStatus } from "@/types/database";
+import { cn, formatCurrency, getInitials } from "@/lib/utils";
+import type { PersonaCardData, ServiceInfo } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { deletePersona } from "@/app/(dashboard)/personas/actions";
 import { RemindDrawer } from "@/components/dashboard/remind-drawer";
 import Image from "next/image";
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-export interface ServiceInfo {
-  service_id: string;
-  service_name: string;
-  service_color: string;
-  service_icon: string | null;
-  amount_due: number;
-  status: PaymentStatus | null;
-}
-
-export interface PersonaCardData {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  avatar_url: string | null;
-  profile_id: string | null;
-  services: ServiceInfo[];
-  total_debt: number;
-  monthly_amount: number;
-}
 
 const statusConfig: Record<
   string,

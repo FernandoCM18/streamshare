@@ -24,7 +24,7 @@ import {
   updateService,
 } from "@/app/(dashboard)/servicios/actions";
 import type { Service, Member } from "@/types/database";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, getInitials } from "@/lib/utils";
 import IconEmojiPicker from "@/components/servicios/icon-emoji-picker";
 
 interface ServicePlan {
@@ -176,15 +176,6 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 interface CreateServiceModalProps {
   open: boolean;

@@ -6,7 +6,7 @@ import { PersonaCard } from "@/components/personas/persona-card";
 import { PersonaModal } from "@/components/personas/persona-modal";
 import { PersonaDetailModal } from "@/components/personas/persona-detail-modal";
 import { EmptyStateCard } from "@/components/shared/empty-state-card";
-import type { PersonaCardData } from "@/components/personas/persona-card";
+import type { PersonaCardData } from "@/types/database";
 
 interface PersonasGridProps {
   personas: PersonaCardData[];

@@ -35,7 +35,9 @@ export function DashboardServiceCard({
   const statusBadge = getServiceStatusBadge(firstDueDate, hasOverdue);
 
   const pendingVerifications = payments.filter((p) => p.status === "paid");
-  const regularPayments = payments.filter((p) => p.status !== "paid");
+  const regularPayments = payments.filter(
+    (p) => p.status !== "paid" && p.status !== "confirmed",
+  );
 
   const isIndividual =
     payments.length === 0 && (service.members ?? []).length === 0;

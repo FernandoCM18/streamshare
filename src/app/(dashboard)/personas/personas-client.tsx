@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PersonasHeader } from "@/components/personas/personas-header";
 import { PersonasGrid } from "@/components/personas/personas-grid";
 import { PersonasFilters } from "@/components/personas/personas-filters";
-import type { PersonaCardData } from "@/components/personas/persona-card";
+import type { PersonaCardData } from "@/types/database";
 
 interface PersonasClientProps {
   personas: PersonaCardData[];

@@ -11,7 +11,7 @@ import ServiceDetailModal from "@/components/servicios/service-detail-modal";
 import { PersonaDetailModal } from "@/components/personas/persona-detail-modal";
 import { MyPaymentDetailModal } from "@/components/mis-pagos/my-payment-detail-modal";
 import type { ServiceSummary, MyPayment } from "@/types/database";
-import type { PersonaCardData } from "@/components/personas/persona-card";
+import type { PersonaCardData } from "@/types/database";
 
 interface HeaderProps {
   displayName: string;

@@ -5,21 +5,12 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { Command as CommandPrimitive } from "cmdk";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { cn, formatCurrency } from "@/lib/utils";
-import type { ServiceSummary } from "@/types/database";
-import type { MyPayment } from "@/types/database";
-import type { PersonaCardData } from "@/components/personas/persona-card";
-
-// ── Helpers ───────────────────────────────────────────────────
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { cn, formatCurrency, getInitials } from "@/lib/utils";
+import type {
+  ServiceSummary,
+  MyPayment,
+  PersonaCardData,
+} from "@/types/database";
 
 const paymentStatusLabel: Record<string, { label: string; className: string }> =
   {
@@ -56,7 +47,6 @@ export interface CommandPersona {
   serviceCount: number;
 }
 
-// Keep for backward compat but prefer PersonaCardData
 import type { PaymentStatus } from "@/types/database";
 
 // ── Props ─────────────────────────────────────────────────────

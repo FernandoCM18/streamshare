@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, getInitials } from "@/lib/utils";
 import { ServiceActions } from "./service-actions";
 import {
   Avatar,
@@ -36,15 +36,6 @@ const statusConfig: Record<
     badgeClass: "bg-red-500/10 border border-red-500/20 text-red-400",
   },
 };
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 interface ServiceCardProps {
   service: ServiceSummary;

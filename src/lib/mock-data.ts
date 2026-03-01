@@ -1,5 +1,6 @@
 import type {
   DashboardSummary,
+  PendingDebtor,
   ServiceSummary,
   ServiceMemberInfo,
   Member,
@@ -7,6 +8,7 @@ import type {
   UserSettings,
   PaymentStatus,
 } from "@/types/database";
+import { getInitials } from "@/lib/utils";
 
 // ============================================================
 // MOCK USER
@@ -623,24 +625,6 @@ export const mockPayments = mockMemberPayments;
 // ============================================================
 // PENDING DEBTORS (for sidebar gauge)
 // ============================================================
-
-export interface PendingDebtor {
-  id: string;
-  name: string;
-  initials: string;
-  status: "overdue" | "pending";
-  amount: number;
-  serviceName: string;
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 export const mockPendingDebtors: PendingDebtor[] = mockMemberPayments
   .filter((p) => ["pending", "partial", "overdue"].includes(p.status))

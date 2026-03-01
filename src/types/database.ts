@@ -306,6 +306,49 @@ export interface RegisterPaymentResult {
 }
 
 // ============================================================
+// UI TYPES — Shared across components
+// ============================================================
+
+export interface ServiceInfo {
+  service_id: string;
+  service_name: string;
+  service_color: string;
+  service_icon: string | null;
+  amount_due: number;
+  status: PaymentStatus | null;
+}
+
+export interface PersonaCardData {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  profile_id: string | null;
+  services: ServiceInfo[];
+  total_debt: number;
+  monthly_amount: number;
+}
+
+export interface PendingDebtor {
+  id: string;
+  name: string;
+  initials: string;
+  status: "overdue" | "pending";
+  amount: number;
+  serviceName: string;
+}
+
+export interface StatusBadgeConfig {
+  label: string;
+  bgClass: string;
+  borderClass: string;
+  textClass: string;
+  dotColor: string | null;
+  animate: boolean;
+}
+
+// ============================================================
 // TIPOS COMPUESTOS — Para el UI (joins frecuentes)
 // ============================================================
 

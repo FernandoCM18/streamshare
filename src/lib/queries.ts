@@ -1,16 +1,21 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
-  DashboardSummary,
   ServiceSummary,
   MyPayment,
   Profile,
   UserSettings,
 } from "@/types/database";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
-import type { PendingDebtor } from "@/components/dashboard/gauge-card";
 import type { CommandPersona } from "@/components/shared/command-palette";
-import { getInitials } from "@/lib/utils";
+
+interface MemberWithServiceMembers {
+  id: string;
+  name: string;
+  email: string | null;
+  profile_id: string | null;
+  service_members: { service_id: string }[];
+}
 
 // React.cache() deduplicates calls within the same request.
 // Layout + page share the same request, so identical queries run only once.
@@ -28,15 +33,17 @@ export const cleanupOrphanedPayments = cache(async (userId: string) => {
     .eq("is_active", false);
 
   if (inactiveMembers && inactiveMembers.length > 0) {
-    for (const im of inactiveMembers) {
-      await supabase
-        .from("payments")
-        .update({ status: "cancelled" })
-        .eq("owner_id", userId)
-        .eq("service_id", im.service_id)
-        .eq("member_id", im.member_id)
-        .in("status", ["pending", "partial"]);
-    }
+    await Promise.all(
+      inactiveMembers.map((im) =>
+        supabase
+          .from("payments")
+          .update({ status: "cancelled" })
+          .eq("owner_id", userId)
+          .eq("service_id", im.service_id)
+          .eq("member_id", im.member_id)
+          .in("status", ["pending", "partial"]),
+      ),
+    );
   }
 
   // 2. Cancel duplicate payments within the same billing cycle
@@ -108,6 +115,8 @@ export const cleanupOrphanedPayments = cache(async (userId: string) => {
           ]),
         );
 
+        // Group payments by correct amount for batch updates
+        const amountGroups = new Map<number, string[]>();
         for (const payment of paymentsToFix) {
           const key = `${payment.member_id}:${payment.service_id}`;
           const correctAmount = customAmountMap.get(key);
@@ -115,12 +124,19 @@ export const cleanupOrphanedPayments = cache(async (userId: string) => {
             correctAmount !== undefined &&
             payment.amount_due !== correctAmount
           ) {
-            await supabase
-              .from("payments")
-              .update({ amount_due: correctAmount })
-              .eq("id", payment.id);
+            const ids = amountGroups.get(correctAmount) ?? [];
+            ids.push(payment.id);
+            amountGroups.set(correctAmount, ids);
           }
         }
+        await Promise.all(
+          [...amountGroups].map(([amount, ids]) =>
+            supabase
+              .from("payments")
+              .update({ amount_due: amount })
+              .in("id", ids),
+          ),
+        );
       }
     }
   }
@@ -138,87 +154,16 @@ export const getCachedProfile = cache(async (userId: string) => {
   return data as Profile | null;
 });
 
-// --- Dashboard Summary ---
+// --- Active service member pairs (for filtering payments) ---
 
-export const getCachedDashboardSummary = cache(async (userId: string) => {
+export const getCachedActiveServiceMembers = cache(async (userId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
-    .from("dashboard_summary")
-    .select("*")
-    .eq("owner_id", userId)
-    .single();
-
-  const dashboard: DashboardSummary = data ?? {
-    owner_id: userId,
-    total_services: 0,
-    total_members: 0,
-    total_month_receivable: 0,
-    total_month_collected: 0,
-    overdue_count: 0,
-    total_accumulated_debt: 0,
-  };
-  return dashboard;
-});
-
-// --- Pending Debtors (for gauge card) ---
-
-export const getCachedPendingDebtors = cache(async (userId: string) => {
-  const supabase = await createClient();
-
-  // First get active service_member pairs to filter payments
-  const { data: activeMembers } = await supabase
     .from("service_members")
     .select("member_id, service_id")
     .eq("owner_id", userId)
     .eq("is_active", true);
-
-  const activePairs = new Set(
-    (activeMembers ?? []).map((m) => `${m.member_id}:${m.service_id}`),
-  );
-
-  const today = new Date().toISOString().split("T")[0];
-  const { data } = await supabase
-    .from("payments")
-    .select(
-      "id, amount_due, amount_paid, accumulated_debt, status, member_id, service_id, members!inner(name), services!inner(name), billing_cycles!inner(period_start)",
-    )
-    .eq("owner_id", userId)
-    .in("status", ["pending", "partial", "overdue"])
-    .lte("billing_cycles.period_start", today)
-    .order("status", { ascending: true })
-    .limit(30);
-
-  // Filter to only active members and deduplicate by member+service
-  const seen = new Set<string>();
-  const debtors: PendingDebtor[] = [];
-
-  for (const p of data ?? []) {
-    const pairKey = `${p.member_id}:${p.service_id}`;
-    // Skip payments for inactive service members
-    if (!activePairs.has(pairKey)) continue;
-    // Deduplicate: only show one entry per member+service
-    if (seen.has(pairKey)) continue;
-    seen.add(pairKey);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payment = p as any;
-    debtors.push({
-      id: p.id,
-      name: payment.members?.name ?? "—",
-      initials: getInitials(payment.members?.name ?? "—"),
-      status:
-        p.status === "overdue" ? ("overdue" as const) : ("pending" as const),
-      amount:
-        (p.amount_due ?? 0) -
-        (p.amount_paid ?? 0) +
-        (p.accumulated_debt ?? 0),
-      serviceName: payment.services?.name ?? "—",
-    });
-
-    if (debtors.length >= 10) break;
-  }
-
-  return debtors;
+  return (data ?? []) as { member_id: string; service_id: string }[];
 });
 
 // --- Services (service_summary view) ---
@@ -241,8 +186,9 @@ export const getCachedCommandPersonas = cache(async (userId: string) => {
     .select("id, name, email, profile_id, service_members(service_id)")
     .eq("owner_id", userId);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const personas: CommandPersona[] = (data ?? []).map((m: any) => ({
+  const personas: CommandPersona[] = (
+    (data ?? []) as MemberWithServiceMembers[]
+  ).map((m) => ({
     id: m.id,
     name: m.name,
     email: m.email,
@@ -255,7 +201,7 @@ export const getCachedCommandPersonas = cache(async (userId: string) => {
   return personas;
 });
 
-// --- Payments (active, for dashboard) ---
+// --- Payments (all non-cancelled, for dashboard + gauge) ---
 
 export const getCachedPayments = cache(async (userId: string) => {
   const supabase = await createClient();
@@ -263,12 +209,12 @@ export const getCachedPayments = cache(async (userId: string) => {
   const { data } = await supabase
     .from("payments")
     .select(
-      "id, service_id, member_id, amount_due, amount_paid, accumulated_debt, status, due_date, paid_at, confirmed_at, requires_confirmation, members!inner(id, name, email, phone, avatar_url, profile_id), billing_cycles!inner(id, period_start, period_end)",
+      "id, service_id, member_id, amount_due, amount_paid, accumulated_debt, status, due_date, paid_at, confirmed_at, requires_confirmation, members!inner(id, name, email, phone, avatar_url, profile_id), services!inner(name), billing_cycles!inner(id, period_start, period_end)",
     )
     .eq("owner_id", userId)
-    .in("status", ["pending", "partial", "paid", "overdue"])
+    .in("status", ["pending", "partial", "paid", "overdue", "confirmed"])
     .lte("billing_cycles.period_start", today);
-  return (data ?? []) as MemberPayment[];
+  return (data ?? []) as unknown as MemberPayment[];
 });
 
 // --- My Payments (guest view) ---
@@ -340,13 +286,3 @@ export const getCachedPersonasData = cache(async (userId: string) => {
   };
 });
 
-// --- Simple members list (for servicios page) ---
-
-export const getCachedMembersList = cache(async (userId: string) => {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("members")
-    .select("id, name, email")
-    .eq("owner_id", userId);
-  return (data ?? []) as { id: string; name: string; email: string | null }[];
-});

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import type { UpdateService } from "@/types/database";
 
 export async function createService(
   formData: FormData,
@@ -52,15 +53,16 @@ export async function createService(
       }
     }
 
-    for (const memberId of ids) {
-      const amount = customAmounts[memberId];
-      await supabase.from("service_members").insert({
-        service_id: data.id,
-        member_id: memberId,
-        owner_id: user.id,
-        custom_amount: amount && amount > 0 ? amount : null,
-      });
-    }
+    const memberRows = ids.map((memberId) => ({
+      service_id: data.id,
+      member_id: memberId,
+      owner_id: user.id,
+      custom_amount:
+        customAmounts[memberId] && customAmounts[memberId] > 0
+          ? customAmounts[memberId]
+          : null,
+    }));
+    await supabase.from("service_members").insert(memberRows);
 
     // Generate billing cycle for the new service (unless opted out)
     const autoGenerate = formData.get("auto_generate_cycle") !== "false";
@@ -86,7 +88,7 @@ export async function updateService(
 
   const serviceId = formData.get("id") as string;
 
-  const updates: Record<string, unknown> = {};
+  const updates: UpdateService = {};
   const fields = [
     "name",
     "icon_url",
@@ -95,12 +97,15 @@ export async function updateService(
     "billing_day",
     "split_type",
     "notes",
-  ];
+  ] as const;
   for (const field of fields) {
     const val = formData.get(field);
     if (val !== null && val !== "") {
-      updates[field] =
-        field === "monthly_cost" || field === "billing_day" ? Number(val) : val;
+      if (field === "monthly_cost" || field === "billing_day") {
+        updates[field] = Number(val);
+      } else {
+        (updates as Record<string, unknown>)[field] = val;
+      }
     }
   }
 
@@ -117,34 +122,26 @@ export async function updateService(
     try {
       const addedMembers: { id: string; custom_amount: number | null }[] =
         JSON.parse(addedMembersJson);
-      for (const member of addedMembers) {
-        // Check for existing deactivated record
-        const { data: existing } = await supabase
-          .from("service_members")
-          .select("id")
-          .eq("service_id", serviceId)
-          .eq("member_id", member.id)
-          .maybeSingle();
 
-        if (existing) {
-          await supabase
-            .from("service_members")
-            .update({ is_active: true, custom_amount: member.custom_amount })
-            .eq("id", existing.id);
-        } else {
-          await supabase.from("service_members").insert({
-            service_id: serviceId,
-            member_id: member.id,
-            owner_id: user.id,
-            custom_amount: member.custom_amount,
-          });
-        }
+      const upsertRows = addedMembers.map((m) => ({
+        service_id: serviceId,
+        member_id: m.id,
+        owner_id: user.id,
+        is_active: true,
+        custom_amount: m.custom_amount,
+      }));
+      await supabase
+        .from("service_members")
+        .upsert(upsertRows, { onConflict: "service_id,member_id" });
 
-        await supabase.rpc("add_member_to_active_cycles", {
-          p_service_id: serviceId,
-          p_member_id: member.id,
-        });
-      }
+      await Promise.all(
+        addedMembers.map((m) =>
+          supabase.rpc("add_member_to_active_cycles", {
+            p_service_id: serviceId,
+            p_member_id: m.id,
+          }),
+        ),
+      );
     } catch {
       // ignore parse errors
     }
@@ -155,20 +152,20 @@ export async function updateService(
   if (removedMembersJson) {
     try {
       const removedMemberIds: string[] = JSON.parse(removedMembersJson);
-      for (const memberId of removedMemberIds) {
-        await supabase
-          .from("service_members")
-          .update({ is_active: false })
-          .eq("service_id", serviceId)
-          .eq("member_id", memberId);
-
-        // Cancel pending payments
-        await supabase
-          .from("payments")
-          .update({ status: "cancelled" })
-          .eq("service_id", serviceId)
-          .eq("member_id", memberId)
-          .in("status", ["pending", "partial"]);
+      if (removedMemberIds.length > 0) {
+        await Promise.all([
+          supabase
+            .from("service_members")
+            .update({ is_active: false })
+            .eq("service_id", serviceId)
+            .in("member_id", removedMemberIds),
+          supabase
+            .from("payments")
+            .update({ status: "cancelled" })
+            .eq("service_id", serviceId)
+            .in("member_id", removedMemberIds)
+            .in("status", ["pending", "partial"]),
+        ]);
       }
     } catch {
       // ignore parse errors
@@ -179,15 +176,19 @@ export async function updateService(
   const amountUpdatesJson = formData.get("amount_updates") as string;
   if (amountUpdatesJson) {
     try {
-      const amountUpdates: { member_id: string; custom_amount: number | null }[] =
-        JSON.parse(amountUpdatesJson);
-      for (const update of amountUpdates) {
-        await supabase
-          .from("service_members")
-          .update({ custom_amount: update.custom_amount })
-          .eq("service_id", serviceId)
-          .eq("member_id", update.member_id);
-      }
+      const amountUpdates: {
+        member_id: string;
+        custom_amount: number | null;
+      }[] = JSON.parse(amountUpdatesJson);
+      await Promise.all(
+        amountUpdates.map((u) =>
+          supabase
+            .from("service_members")
+            .update({ custom_amount: u.custom_amount })
+            .eq("service_id", serviceId)
+            .eq("member_id", u.member_id),
+        ),
+      );
     } catch {
       // ignore parse errors
     }
@@ -199,16 +200,9 @@ export async function updateService(
 
 export async function toggleServiceStatus(
   serviceId: string,
+  newStatus: "active" | "pending",
 ): Promise<{ success: boolean; error?: string; newStatus?: string }> {
   const supabase = await createClient();
-
-  const { data: service } = await supabase
-    .from("services")
-    .select("status")
-    .eq("id", serviceId)
-    .single();
-
-  const newStatus = service?.status === "active" ? "pending" : "active";
 
   const { error } = await supabase
     .from("services")

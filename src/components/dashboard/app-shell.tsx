@@ -3,7 +3,7 @@
 import { Header } from "@/components/dashboard/header";
 import { BottomDock } from "@/components/dashboard/bottom-dock";
 import type { ServiceSummary, MyPayment } from "@/types/database";
-import type { PersonaCardData } from "@/components/personas/persona-card";
+import type { PersonaCardData } from "@/types/database";
 
 interface AppShellProps {
   displayName: string;

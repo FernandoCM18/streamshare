@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
-import type { PendingDebtor } from "@/components/dashboard/gauge-card";
+import type { PendingDebtor } from "@/types/database";
 
 interface PendingListProps {
   debtors: PendingDebtor[];

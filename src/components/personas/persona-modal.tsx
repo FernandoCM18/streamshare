@@ -15,7 +15,7 @@ import {
   createPersona,
   updatePersona,
 } from "@/app/(dashboard)/personas/actions";
-import type { PersonaCardData } from "@/components/personas/persona-card";
+import type { PersonaCardData } from "@/types/database";
 
 interface PersonaModalProps {
   open: boolean;

@@ -7,22 +7,8 @@ import {
   DialogClose,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn, formatCurrency } from "@/lib/utils";
-import type {
-  PersonaCardData,
-  ServiceInfo,
-} from "@/components/personas/persona-card";
-
-// ── Helpers ───────────────────────────────────────────────────
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { cn, formatCurrency, getInitials } from "@/lib/utils";
+import type { PersonaCardData, ServiceInfo } from "@/types/database";
 
 const statusConfig: Record<
   string,

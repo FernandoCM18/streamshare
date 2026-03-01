@@ -1,5 +1,5 @@
 import { formatPaymentDate, formatRelativeTime } from "@/lib/utils";
-import type { PaymentStatus } from "@/types/database";
+import type { PaymentStatus, StatusBadgeConfig } from "@/types/database";
 
 export interface MemberPayment {
   id: string;
@@ -13,20 +13,26 @@ export interface MemberPayment {
   paid_at: string | null;
   confirmed_at: string | null;
   requires_confirmation: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  members: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  billing_cycles: any;
+  members: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    avatar_url: string | null;
+    profile_id: string | null;
+  };
+  services: { name: string };
+  billing_cycles: { id: string; period_start: string; period_end: string };
 }
 
-export function normalize(val: unknown) {
+export function normalize(val: unknown): unknown {
   return Array.isArray(val) ? (val[0] ?? null) : (val ?? null);
 }
 
 export function getServiceStatusBadge(
   dueDate: string | undefined,
   hasOverdue: boolean,
-) {
+): StatusBadgeConfig | null {
   if (hasOverdue) {
     return {
       label: "VENCIDO",

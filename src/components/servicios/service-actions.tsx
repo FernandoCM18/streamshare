@@ -41,8 +41,9 @@ export function ServiceActions({
   const isActive = service.status === "active";
 
   function handleToggleStatus() {
+    const newStatus = isActive ? "pending" : "active";
     startTransition(async () => {
-      const result = await toggleServiceStatus(service.id);
+      const result = await toggleServiceStatus(service.id, newStatus);
       if (result.success) {
         toast.success(
           result.newStatus === "active"

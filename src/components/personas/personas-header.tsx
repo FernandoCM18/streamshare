@@ -52,8 +52,8 @@ export function PersonasHeader({
           className="btn-cta-gold flex items-center justify-center gap-2 shrink-0"
         >
           <span className="flex items-center gap-2 text-[13px] relative z-10">
-            Nueva Persona
             <Icon icon="solar:user-plus-bold" width={16} />
+            Nueva Persona
           </span>
         </button>
       </div>

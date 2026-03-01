@@ -7,7 +7,7 @@ import {
   DialogClose,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getInitials } from "@/lib/utils";
 import type { ServiceSummary, ServiceMemberInfo } from "@/types/database";
 
 const serviceStatusConfig: Record<
@@ -35,15 +35,6 @@ const splitTypeLabels: Record<string, string> = {
   equal: "Dividido igual",
   custom: "Montos personalizados",
 };
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 interface ServiceDetailModalProps {
   open: boolean;
@@ -173,7 +164,7 @@ export default function ServiceDetailModal({
                             ? formatCurrency(member.custom_amount)
                             : formatCurrency(
                                 service.monthly_cost /
-                                  (viewMembers.length || 1),
+                                  (viewMembers.length + 1),
                               )}
                           /mes
                         </span>

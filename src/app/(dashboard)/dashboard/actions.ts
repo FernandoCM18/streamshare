@@ -2,8 +2,16 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import type { RegisterPaymentResult } from "@/types/database";
 
-export async function registerPayment(paymentId: string, amountPaid: number) {
+export async function registerPayment(
+  paymentId: string,
+  amountPaid: number,
+): Promise<{
+  success: boolean;
+  error?: string;
+  result: RegisterPaymentResult | null;
+}> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("register_payment", {
     p_payment_id: paymentId,
