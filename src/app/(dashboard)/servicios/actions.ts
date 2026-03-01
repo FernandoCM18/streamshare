@@ -63,14 +63,14 @@ export async function createService(
           : null,
     }));
     await supabase.from("service_members").insert(memberRows);
+  }
 
-    // Generate billing cycle for the new service (unless opted out)
-    const autoGenerate = formData.get("auto_generate_cycle") !== "false";
-    if (autoGenerate) {
-      await supabase.rpc("generate_billing_cycle", {
-        p_service_id: data.id,
-      });
-    }
+  // Generate billing cycle (even without members, so it's ready when they're added)
+  const autoGenerate = formData.get("auto_generate_cycle") !== "false";
+  if (autoGenerate && data) {
+    await supabase.rpc("generate_billing_cycle", {
+      p_service_id: data.id,
+    });
   }
 
   revalidatePath("/", "layout");
@@ -133,6 +133,11 @@ export async function updateService(
       await supabase
         .from("service_members")
         .upsert(upsertRows, { onConflict: "service_id,member_id" });
+
+      // Ensure a billing cycle exists before adding members
+      await supabase.rpc("generate_billing_cycle", {
+        p_service_id: serviceId,
+      });
 
       await Promise.all(
         addedMembers.map((m) =>
@@ -260,7 +265,11 @@ export async function addServiceMember(
     serviceMemberId = data.id;
   }
 
-  // Add member to active billing cycles
+  // Ensure a billing cycle exists before adding member to it
+  await supabase.rpc("generate_billing_cycle", {
+    p_service_id: serviceId,
+  });
+
   await supabase.rpc("add_member_to_active_cycles", {
     p_service_id: serviceId,
     p_member_id: memberId,

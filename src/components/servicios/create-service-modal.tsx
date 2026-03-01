@@ -899,10 +899,7 @@ export default function CreateServiceModal({
                                   onChange={(e) => {
                                     const v = e.target.value;
                                     if (v === "" || /^\d*\.?\d{0,2}$/.test(v))
-                                      setCustomAmount(
-                                        m.id,
-                                        parseFloat(v) || 0,
-                                      );
+                                      setCustomAmount(m.id, parseFloat(v) || 0);
                                   }}
                                   className="w-full h-8 bg-neutral-950/50 border border-neutral-700 focus:border-neutral-500 focus:ring-0 rounded-lg pl-7 pr-3 text-sm font-mono text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
                                 />

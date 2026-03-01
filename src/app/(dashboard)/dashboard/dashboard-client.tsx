@@ -133,11 +133,7 @@ export function DashboardClient({
       {/* Service cards */}
       <AnimatePresence mode="popLayout">
         {filteredServices.length > 0 ? (
-          <motion.div
-            key="cards"
-            className="space-y-5"
-            initial={false}
-          >
+          <motion.div key="cards" className="space-y-5" initial={false}>
             {filteredServices.map((service, index) => (
               <motion.div
                 key={service.id}

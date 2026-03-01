@@ -56,7 +56,11 @@ interface PersonaCardProps {
   onViewDetail: (persona: PersonaCardData) => void;
 }
 
-export function PersonaCard({ persona, onEdit, onViewDetail }: PersonaCardProps) {
+export function PersonaCard({
+  persona,
+  onEdit,
+  onViewDetail,
+}: PersonaCardProps) {
   const [isDeleting, startTransition] = useTransition();
   const overallStatus = getOverallStatus(persona.services);
   const status = statusConfig[overallStatus];
@@ -159,7 +163,7 @@ export function PersonaCard({ persona, onEdit, onViewDetail }: PersonaCardProps)
         <div className="text-right">
           <div
             className={cn(
-              "mb-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-medium",
+              "mb-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-medium mr-2",
               persona.profile_id
                 ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                 : "border-neutral-700 bg-neutral-800 text-neutral-500",
@@ -306,7 +310,9 @@ export function PersonaCard({ persona, onEdit, onViewDetail }: PersonaCardProps)
               memberName={persona.name}
               memberPhone={persona.phone}
               memberEmail={persona.email}
-              serviceName={persona.services.map((s) => s.service_name).join(", ")}
+              serviceName={persona.services
+                .map((s) => s.service_name)
+                .join(", ")}
               amount={persona.total_debt || persona.monthly_amount}
             >
               <Button
