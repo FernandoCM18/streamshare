@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { DashboardServiceCard } from "@/components/dashboard/dashboard-service-card";
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
@@ -86,14 +87,18 @@ export function DashboardClient({
   return (
     <div className="space-y-6">
       {/* Greeting + date */}
-      <div>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      >
         <h1 className="text-2xl font-semibold text-white">
           {getGreeting()}, {displayName.split(" ")[0]}
         </h1>
         <p className="text-sm text-neutral-500 mt-1 capitalize">
           {formatDate()}
         </p>
-      </div>
+      </motion.div>
 
       {/* Title + badges */}
       <div className="flex items-center flex-wrap gap-3">
@@ -126,32 +131,59 @@ export function DashboardClient({
       />
 
       {/* Service cards */}
-      {filteredServices.length > 0 ? (
-        <div className="space-y-5">
-          {filteredServices.map((service) => (
-            <DashboardServiceCard
-              key={service.id}
-              service={service}
-              payments={paymentsByService.get(service.id) ?? []}
-              isOwner={true}
+      <AnimatePresence mode="popLayout">
+        {filteredServices.length > 0 ? (
+          <motion.div
+            key="cards"
+            className="space-y-5"
+            initial={false}
+          >
+            {filteredServices.map((service, index) => (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 30,
+                  delay: index * 0.05,
+                }}
+                layout
+              >
+                <DashboardServiceCard
+                  service={service}
+                  payments={paymentsByService.get(service.id) ?? []}
+                  isOwner={true}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <EmptyStateCard
+              icon={<TvIcon className="h-7 w-7 text-neutral-400" />}
+              title={
+                statusFilter !== "all"
+                  ? "Sin resultados"
+                  : "No tienes servicios aun"
+              }
+              description={
+                statusFilter !== "all"
+                  ? "Intenta con otros filtros."
+                  : "Crea tu primer servicio en la seccion de Servicios para empezar a gestionar los pagos compartidos."
+              }
             />
-          ))}
-        </div>
-      ) : (
-        <EmptyStateCard
-          icon={<TvIcon className="h-7 w-7 text-neutral-400" />}
-          title={
-            statusFilter !== "all"
-              ? "Sin resultados"
-              : "No tienes servicios aun"
-          }
-          description={
-            statusFilter !== "all"
-              ? "Intenta con otros filtros."
-              : "Crea tu primer servicio en la seccion de Servicios para empezar a gestionar los pagos compartidos."
-          }
-        />
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
 import type { PendingDebtor } from "@/types/database";
@@ -19,8 +20,19 @@ export function PendingList({ debtors }: PendingListProps) {
 
   return (
     <div className="space-y-3 overflow-y-auto w-full">
-      {debtors.map((debtor) => (
-        <div key={debtor.id} className="flex items-center gap-3">
+      {debtors.map((debtor, index) => (
+        <motion.div
+          key={debtor.id}
+          className="flex items-center gap-3"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 30,
+            delay: index * 0.05,
+          }}
+        >
           <div className="relative">
             <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center">
               <span className="text-[10px] font-medium text-white/70">
@@ -53,7 +65,7 @@ export function PendingList({ debtors }: PendingListProps) {
           <span className="text-xs font-medium text-white/70">
             {formatCurrency(debtor.amount)}
           </span>
-        </div>
+        </motion.div>
       ))}
     </div>
   );

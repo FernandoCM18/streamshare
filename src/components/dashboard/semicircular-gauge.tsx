@@ -1,5 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
+import {
+  motion,
+  useMotionValue,
+  useTransform,
+  useSpring,
+} from "motion/react";
+
 interface SemicircularGaugeProps {
   collectedAmount: number;
   totalAmount: number;
@@ -19,10 +27,25 @@ export function SemicircularGauge({
       ? Math.min(100, (normalizedCollected / normalizedTotal) * 100)
       : 0;
   const hasDecimals = Math.abs(normalizedRemaining % 1) > Number.EPSILON;
-  const formattedRemaining = new Intl.NumberFormat("es-MX", {
-    minimumFractionDigits: hasDecimals ? 2 : 0,
-    maximumFractionDigits: 2,
-  }).format(normalizedRemaining);
+
+  // Animated remaining amount
+  const motionRemaining = useMotionValue(0);
+  const springRemaining = useSpring(motionRemaining, {
+    stiffness: 100,
+    damping: 30,
+  });
+  const displayRemaining = useTransform(springRemaining, (v) => {
+    const hasD = Math.abs(v % 1) > Number.EPSILON;
+    return `$${new Intl.NumberFormat("es-MX", {
+      minimumFractionDigits: hasD ? 2 : 0,
+      maximumFractionDigits: 2,
+    }).format(v)}`;
+  });
+
+  useEffect(() => {
+    motionRemaining.set(normalizedRemaining);
+  }, [normalizedRemaining, motionRemaining]);
+
   // SVG arc calculations
   const cx = 100;
   const cy = 100;
@@ -73,38 +96,51 @@ export function SemicircularGauge({
         strokeLinecap="round"
       />
 
-      {/* Progress arc */}
+      {/* Progress arc — animated with pathLength */}
       {percent > 0 && (
-        <path
+        <motion.path
           d={progPath}
           fill="none"
           stroke="url(#emeraldGradient)"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           className="gauge-glow"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{
+            duration: 1,
+            ease: "easeOut",
+            delay: 0.3,
+          }}
         />
       )}
 
-      {/* Center remaining amount text */}
-      <text
+      {/* Center remaining amount text — animated count */}
+      <motion.text
         x={cx}
         y={cy - 10}
         textAnchor="middle"
         className="fill-white text-2xl font-semibold"
         fontSize="24"
         fontWeight="600"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
       >
-        ${formattedRemaining}
-      </text>
-      <text
+        {displayRemaining}
+      </motion.text>
+      <motion.text
         x={cx}
         y={cy + 10}
         textAnchor="middle"
         className="fill-white/50"
         fontSize="10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.5 }}
       >
         PENDIENTE
-      </text>
+      </motion.text>
     </svg>
   );
 }

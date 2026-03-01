@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { Header } from "@/components/dashboard/header";
 import { BottomDock } from "@/components/dashboard/bottom-dock";
 import type { ServiceSummary, MyPayment } from "@/types/database";
@@ -34,7 +35,13 @@ export function AppShell({
         personas={personas}
         myPayments={myPayments}
       />
-      {children}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        {children}
+      </motion.div>
       <BottomDock />
     </div>
   );

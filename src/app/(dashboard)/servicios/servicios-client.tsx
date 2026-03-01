@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { ServiceCard } from "@/components/servicios/service-card";
 import ServiciosHeader from "@/components/servicios/servicios-header";
 import { ServiciosFilters } from "@/components/servicios/servicios-filters";
@@ -41,24 +42,51 @@ export function ServiciosClient({ services, members }: ServiciosClientProps) {
         totalCount={services.length}
       />
 
-      {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {filtered.map((service) => (
-            <ServiceCard
-              key={service.id}
-              service={service}
-              members={members}
-              isOwner={true}
+      <AnimatePresence mode="popLayout">
+        {filtered.length > 0 ? (
+          <motion.div
+            key="grid"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-5"
+            initial={false}
+          >
+            {filtered.map((service, index) => (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 30,
+                  delay: index * 0.05,
+                }}
+                layout
+              >
+                <ServiceCard
+                  service={service}
+                  members={members}
+                  isOwner={true}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <EmptyStateCard
+              icon={<TvIcon className="h-7 w-7 text-neutral-400" />}
+              title="Sin resultados"
+              description="Intenta con otros filtros."
             />
-          ))}
-        </div>
-      ) : (
-        <EmptyStateCard
-          icon={<TvIcon className="h-7 w-7 text-neutral-400" />}
-          title="Sin resultados"
-          description="Intenta con otros filtros."
-        />
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
