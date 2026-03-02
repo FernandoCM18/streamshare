@@ -86,10 +86,16 @@ export function MyPaymentDetailModal({
     });
   }
 
+  const totalOwed = payment.amount_due + payment.accumulated_debt;
+  const paidPercent =
+    totalOwed > 0
+      ? Math.min(100, Math.round((payment.amount_paid / totalOwed) * 100))
+      : 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[92vh] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 flex flex-col overflow-hidden sm:max-w-md sm:max-h-[90vh]"
+        className="max-h-[92vh] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 flex flex-col overflow-hidden sm:max-w-md sm:max-h-[90vh] data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
         showCloseButton={false}
       >
         {/* Drag Handle (mobile) */}
@@ -97,50 +103,61 @@ export function MyPaymentDetailModal({
           <div className="w-9 h-1 rounded-full bg-neutral-700" />
         </div>
 
-        {/* Header */}
-        <div className="flex shrink-0 bg-neutral-950/80 border-b border-neutral-800/80 pt-3 pr-5 pb-4 pl-5 sm:px-6 sm:pt-5 backdrop-blur-xl items-start justify-between gap-4">
-          <div className="flex items-start gap-4 flex-1 min-w-0">
-            <div
-              className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center shadow-lg shrink-0"
-              style={{
-                boxShadow: `0 4px 14px ${payment.service_color}1a`,
-              }}
-            >
-              <Icon
-                icon={payment.service_icon ?? "solar:tv-bold"}
-                width={24}
-                style={{ color: payment.service_color }}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <DialogTitle className="text-lg font-bold text-white tracking-tight">
-                  {payment.service_name}
-                </DialogTitle>
-                <span
-                  className={cn(
-                    "px-2.5 py-1 rounded-full text-[10px] font-medium",
-                    status.badgeClass,
-                  )}
-                >
-                  {status.label}
-                </span>
+        {/* Header with colored accent */}
+        <div className="relative shrink-0 overflow-hidden">
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              background: `linear-gradient(135deg, ${payment.service_color} 0%, transparent 60%)`,
+            }}
+          />
+          <div className="relative flex bg-neutral-950/60 border-b border-neutral-800/80 pt-3 pr-5 pb-4 pl-5 sm:px-6 sm:pt-5 backdrop-blur-xl items-start justify-between gap-4">
+            <div className="flex items-start gap-4 flex-1 min-w-0">
+              <div
+                className="w-[52px] h-[52px] rounded-2xl bg-black/80 border border-neutral-700/50 flex items-center justify-center shrink-0"
+                style={{
+                  boxShadow: `0 4px 20px ${payment.service_color}26, 0 0 0 1px ${payment.service_color}10`,
+                }}
+              >
+                <Icon
+                  icon={payment.service_icon ?? "solar:tv-bold"}
+                  width={26}
+                  style={{ color: payment.service_color }}
+                />
               </div>
-              <p className="mt-1 text-sm text-neutral-400">
-                Propietario: {payment.owner_name}
-              </p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <DialogTitle className="text-lg font-bold text-white tracking-tight">
+                    {payment.service_name}
+                  </DialogTitle>
+                  <span
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-[10px] font-medium",
+                      status.badgeClass,
+                    )}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex items-center gap-2 text-[13px] text-neutral-400">
+                  <span>Propietario:</span>
+                  <span className="font-medium text-neutral-300">
+                    {payment.owner_name}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors focus:outline-none shrink-0 mt-1">
-            <Icon icon="solar:close-circle-linear" width={20} />
-          </DialogClose>
+            <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-all duration-150 focus:outline-none shrink-0 mt-0.5">
+              <Icon icon="solar:close-square-linear" width={15} />
+            </DialogClose>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-6">
+        <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-5">
           {/* Status description */}
-          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-neutral-900/40 border border-neutral-800/60">
+          <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-neutral-900/30 border border-neutral-800/60">
             <Icon
               icon="solar:info-circle-linear"
               width={16}
@@ -151,23 +168,53 @@ export function MyPaymentDetailModal({
             </p>
           </div>
 
-          {/* Amount breakdown */}
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-neutral-200">Desglose</h2>
-            <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 divide-y divide-neutral-800/60">
-              <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-neutral-400">
-                  Monto mensual
+          {/* Amount breakdown — unified card */}
+          <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden">
+            {/* Progress header */}
+            <div className="px-4 pt-4 pb-3">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
+                  Progreso de pago
                 </span>
+                <span className="text-[11px] font-medium text-neutral-400 tabular-nums">
+                  {paidPercent}%
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-neutral-800/80 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${paidPercent}%`,
+                    background:
+                      paidPercent === 100
+                        ? "linear-gradient(90deg, #34d399, #10b981)"
+                        : `linear-gradient(90deg, ${payment.service_color}cc, ${payment.service_color})`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Breakdown rows */}
+            <div className="divide-y divide-neutral-800/40">
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+                  <span className="text-[13px] text-neutral-400">
+                    Monto mensual
+                  </span>
+                </div>
                 <span className="text-[13px] font-medium text-neutral-200 tabular-nums">
                   {formatCurrency(payment.amount_due)}
                 </span>
               </div>
               {payment.accumulated_debt > 0 && (
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-[13px] text-red-400">
-                    Deuda acumulada
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                    <span className="text-[13px] text-red-400">
+                      Deuda acumulada
+                    </span>
+                  </div>
                   <span className="text-[13px] font-medium text-red-400 tabular-nums">
                     +{formatCurrency(payment.accumulated_debt)}
                   </span>
@@ -175,17 +222,20 @@ export function MyPaymentDetailModal({
               )}
               {payment.amount_paid > 0 && (
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-[13px] text-emerald-400">Pagado</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="text-[13px] text-emerald-400">Pagado</span>
+                  </div>
                   <span className="text-[13px] font-medium text-emerald-400 tabular-nums">
                     -{formatCurrency(payment.amount_paid)}
                   </span>
                 </div>
               )}
-              <div className="flex items-center justify-between px-4 py-3 bg-neutral-900/40">
+              <div className="flex items-center justify-between px-4 py-3.5 bg-neutral-800/20">
                 <span className="text-[13px] font-semibold text-neutral-200">
                   Restante
                 </span>
-                <span className="text-base font-bold text-white tabular-nums">
+                <span className="text-lg font-bold text-white tabular-nums tracking-tight">
                   {formatCurrency(Math.max(0, remaining))}
                 </span>
               </div>
@@ -193,12 +243,14 @@ export function MyPaymentDetailModal({
           </div>
 
           {/* Due date */}
-          <div className="flex items-center gap-3 p-3.5 rounded-xl border bg-neutral-900/30 border-neutral-800">
-            <Icon
-              icon="solar:calendar-bold"
-              width={16}
-              className="text-neutral-500 shrink-0"
-            />
+          <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-neutral-800/80 bg-neutral-900/20">
+            <div className="w-9 h-9 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
+              <Icon
+                icon="solar:calendar-bold"
+                width={16}
+                className="text-neutral-400"
+              />
+            </div>
             <div>
               <p className="text-[13px] font-medium text-neutral-200">
                 Fecha de vencimiento
@@ -217,7 +269,7 @@ export function MyPaymentDetailModal({
               type="button"
               onClick={handleMarkPaid}
               disabled={isPending || remaining <= 0}
-              className="w-full rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20 disabled:opacity-60"
+              className="w-full rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3.5 text-sm font-semibold text-emerald-400 transition-all hover:bg-emerald-500/15 hover:border-emerald-500/30 active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none"
             >
               {isPending ? (
                 <span className="inline-flex items-center gap-2 justify-center">

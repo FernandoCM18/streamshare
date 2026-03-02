@@ -388,8 +388,8 @@ export default function CreateServiceModal({
           <DialogTitle className="text-lg font-medium text-white tracking-tight">
             {isEdit ? "Editar Servicio" : "Agregar Servicio"}
           </DialogTitle>
-          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors focus:outline-none">
-            <Icon icon="solar:close-circle-linear" width={20} />
+          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-all duration-150 focus:outline-none">
+            <Icon icon="solar:close-square-linear" width={15} />
           </DialogClose>
         </div>
 

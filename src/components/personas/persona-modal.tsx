@@ -6,10 +6,9 @@ import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
+  DialogClose,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   createPersona,
@@ -56,17 +55,31 @@ export function PersonaModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[420px] rounded-3xl bg-neutral-950 border-neutral-800 p-0 gap-0">
-        <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="text-lg font-semibold text-neutral-100">
-            {isEditing ? "Editar Persona" : "Nueva Persona"}
-          </DialogTitle>
-          <p className="text-xs text-neutral-500 mt-1">
-            {isEditing
-              ? "Actualiza los datos de esta persona"
-              : "Agrega un contacto para compartir servicios"}
-          </p>
-        </DialogHeader>
+      <DialogContent
+        className="max-w-[420px] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
+        showCloseButton={false}
+      >
+        {/* Drag Handle (mobile) */}
+        <div className="flex justify-center pt-2 pb-0 sm:hidden">
+          <div className="w-9 h-1 rounded-full bg-neutral-700" />
+        </div>
+
+        {/* Header */}
+        <div className="flex shrink-0 bg-neutral-950/80 border-b border-neutral-800/80 pt-3 pr-5 pb-4 pl-5 sm:px-6 sm:pt-5 backdrop-blur-xl items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <DialogTitle className="text-lg font-bold text-white tracking-tight">
+              {isEditing ? "Editar Persona" : "Nueva Persona"}
+            </DialogTitle>
+            <p className="text-xs text-neutral-500 mt-1">
+              {isEditing
+                ? "Actualiza los datos de esta persona"
+                : "Agrega un contacto para compartir servicios"}
+            </p>
+          </div>
+          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-all duration-150 focus:outline-none shrink-0 mt-0.5">
+            <Icon icon="solar:close-square-linear" width={15} />
+          </DialogClose>
+        </div>
 
         <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-4">
           {/* Name */}

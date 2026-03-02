@@ -67,7 +67,7 @@ export default async function DashboardLayout({
         <aside className="w-full lg:fixed lg:top-19 lg:bottom-5 lg:w-80">
           <GaugeCard dashboard={dashboard} pendingDebtors={pendingDebtors} />
         </aside>
-        <main className="flex-1 lg:ml-85">{children}</main>
+        <main className="flex-1 lg:ml-85 pb-24">{children}</main>
       </div>
     </AppShell>
   );

@@ -67,6 +67,8 @@ export function PersonaDetailModal({
   const overallStatus = getOverallStatus(persona.services);
   const status = statusConfig[overallStatus] ?? statusConfig.pending;
 
+  const accentColor = persona.profile_id ? "#8b5cf6" : "#737373";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -78,116 +80,157 @@ export function PersonaDetailModal({
           <div className="w-9 h-1 rounded-full bg-neutral-700" />
         </div>
 
-        {/* Header */}
-        <div className="flex shrink-0 bg-neutral-950/80 border-b border-neutral-800/80 pt-3 pr-5 pb-4 pl-5 sm:px-6 sm:pt-5 backdrop-blur-xl items-start justify-between gap-4">
-          <div className="flex items-start gap-4 flex-1 min-w-0">
-            {/* Avatar */}
-            <div
-              className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 border shadow-lg",
-                persona.profile_id
-                  ? "bg-violet-500/10 border-violet-500/20 text-violet-400"
-                  : "bg-neutral-800 border-neutral-700 text-neutral-300",
-              )}
-            >
-              {getInitials(persona.name)}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <DialogTitle className="text-lg font-bold text-white tracking-tight">
-                  {persona.name}
-                </DialogTitle>
-                <div
-                  className={cn(
-                    "px-2.5 py-1 rounded-full text-[10px] font-medium flex items-center gap-1.5",
-                    status.badgeClass,
-                  )}
-                >
-                  {status.dotClass && (
-                    <span
-                      className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        status.dotClass,
-                      )}
-                    />
-                  )}
-                  {status.icon && <Icon icon={status.icon} width={10} />}
-                  {status.label}
-                </div>
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium border",
-                    persona.profile_id
-                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                      : "border-neutral-700 bg-neutral-800 text-neutral-500",
-                  )}
-                >
-                  <Icon
-                    icon={
-                      persona.profile_id
-                        ? "solar:link-bold"
-                        : "solar:link-broken-bold"
-                    }
-                    width={9}
-                  />
-                  {persona.profile_id ? "Vinculado" : "Sin cuenta"}
-                </span>
-              </div>
-              <div className="mt-1 flex items-center gap-3 text-sm text-neutral-400">
-                {persona.email && <span>{persona.email}</span>}
-                {persona.email && persona.phone && (
-                  <span className="text-neutral-700">|</span>
+        {/* Header with colored accent */}
+        <div className="relative shrink-0 overflow-hidden">
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor} 0%, transparent 60%)`,
+            }}
+          />
+          <div className="relative flex bg-neutral-950/60 border-b border-neutral-800/80 pt-3 pr-5 pb-4 pl-5 sm:px-6 sm:pt-5 backdrop-blur-xl items-start justify-between gap-4">
+            <div className="flex items-start gap-4 flex-1 min-w-0">
+              {/* Avatar */}
+              <div
+                className={cn(
+                  "w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-sm font-bold shrink-0 border",
+                  persona.profile_id
+                    ? "bg-violet-500/10 border-violet-500/30 text-violet-400"
+                    : "bg-neutral-800 border-neutral-700 text-neutral-300",
                 )}
-                {persona.phone && <span>{persona.phone}</span>}
+                style={{
+                  boxShadow: `0 4px 20px ${accentColor}26`,
+                }}
+              >
+                {getInitials(persona.name)}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <DialogTitle className="text-lg font-bold text-white tracking-tight">
+                    {persona.name}
+                  </DialogTitle>
+                  <div
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-[10px] font-medium flex items-center gap-1.5",
+                      status.badgeClass,
+                    )}
+                  >
+                    {status.dotClass && (
+                      <span
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          status.dotClass,
+                        )}
+                      />
+                    )}
+                    {status.icon && <Icon icon={status.icon} width={10} />}
+                    {status.label}
+                  </div>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium border",
+                      persona.profile_id
+                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                        : "border-neutral-700 bg-neutral-800 text-neutral-500",
+                    )}
+                  >
+                    <Icon
+                      icon={
+                        persona.profile_id
+                          ? "solar:link-bold"
+                          : "solar:link-broken-bold"
+                      }
+                      width={9}
+                    />
+                    {persona.profile_id ? "Vinculado" : "Sin cuenta"}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex items-center gap-2 text-[13px] text-neutral-400">
+                  {persona.email && <span>{persona.email}</span>}
+                  {persona.email && persona.phone && (
+                    <span className="w-1 h-1 rounded-full bg-neutral-700" />
+                  )}
+                  {persona.phone && <span>{persona.phone}</span>}
+                </div>
               </div>
             </div>
-          </div>
 
-          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors focus:outline-none shrink-0 mt-1">
-            <Icon icon="solar:close-circle-linear" width={20} />
-          </DialogClose>
+            <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-all duration-150 focus:outline-none shrink-0 mt-0.5">
+              <Icon icon="solar:close-square-linear" width={15} />
+            </DialogClose>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-6">
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              label="Mensual"
-              value={formatCurrency(persona.monthly_amount)}
-              icon="solar:calendar-bold"
-              color="text-neutral-300"
-            />
-            <StatCard
-              label="Deuda"
-              value={formatCurrency(persona.total_debt)}
-              icon="solar:danger-triangle-bold"
-              color={
-                persona.total_debt > 0 ? "text-red-400" : "text-neutral-500"
-              }
-            />
+        <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-5">
+          {/* Financial Overview — unified card */}
+          <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden">
+            <div className="grid grid-cols-2 divide-x divide-neutral-800/60">
+              <div className="px-4 py-3.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+                  <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">
+                    Mensual
+                  </span>
+                </div>
+                <span className="text-xl font-bold tabular-nums tracking-tight text-neutral-300">
+                  {formatCurrency(persona.monthly_amount)}
+                </span>
+              </div>
+              <div className="px-4 py-3.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full",
+                      persona.total_debt > 0
+                        ? "bg-red-400 animate-pulse"
+                        : "bg-neutral-600",
+                    )}
+                  />
+                  <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">
+                    Deuda
+                  </span>
+                </div>
+                <span
+                  className={cn(
+                    "text-xl font-bold tabular-nums tracking-tight",
+                    persona.total_debt > 0
+                      ? "text-red-400"
+                      : "text-neutral-500",
+                  )}
+                >
+                  {formatCurrency(persona.total_debt)}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Services */}
           <section>
-            <h2 className="text-sm font-semibold text-neutral-200 mb-3">
-              Servicios ({persona.services.length})
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
+                Servicios
+              </h2>
+              <span className="text-[11px] font-medium text-neutral-600 tabular-nums">
+                {persona.services.length}{" "}
+                {persona.services.length === 1 ? "servicio" : "servicios"}
+              </span>
+            </div>
             {persona.services.length > 0 ? (
-              <div className="space-y-2">
+              <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden divide-y divide-neutral-800/40">
                 {persona.services.map((s) => {
                   const sStatus = s.status ? statusConfig[s.status] : null;
 
                   return (
                     <div
                       key={s.service_id}
-                      className="flex items-center gap-3 p-3.5 rounded-xl border bg-neutral-900/30 border-neutral-800"
+                      className="flex items-center gap-3 px-4 py-3"
                     >
                       <div
-                        className="w-9 h-9 rounded-lg bg-black border border-neutral-800 flex items-center justify-center shrink-0"
+                        className="w-9 h-9 rounded-xl bg-black/80 border border-neutral-700/50 flex items-center justify-center shrink-0"
                         style={{
-                          boxShadow: `0 2px 8px ${s.service_color}15`,
+                          boxShadow: `0 2px 10px ${s.service_color}15`,
                         }}
                       >
                         {s.service_icon ? (
@@ -204,7 +247,7 @@ export function PersonaDetailModal({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-neutral-200 truncate block">
+                        <span className="text-[13px] font-medium text-neutral-200 truncate block">
                           {s.service_name}
                         </span>
                         <span className="text-[11px] text-neutral-500">
@@ -226,7 +269,14 @@ export function PersonaDetailModal({
                 })}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-900/10 p-6 text-center">
+              <div className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/10 p-8 text-center">
+                <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center mx-auto mb-3">
+                  <Icon
+                    icon="solar:box-minimalistic-linear"
+                    width={20}
+                    className="text-neutral-600"
+                  />
+                </div>
                 <p className="text-xs text-neutral-500">
                   Sin servicios asignados
                 </p>
@@ -236,29 +286,5 @@ export function PersonaDetailModal({
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: string;
-  color: string;
-}) {
-  return (
-    <div className="rounded-xl bg-neutral-900/30 border border-neutral-800 p-3.5">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <Icon icon={icon} width={12} className={color} />
-        <span className="text-[9px] font-medium text-neutral-500 uppercase tracking-wider">
-          {label}
-        </span>
-      </div>
-      <span className={cn("text-base font-bold", color)}>{value}</span>
-    </div>
   );
 }
