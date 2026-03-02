@@ -26,7 +26,7 @@ export function AppShell({
   children,
 }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-neutral-950/95 pt-14">
+    <div className="min-h-screen bg-neutral-950/95 pt-[calc(3.5rem+env(safe-area-inset-top))]">
       <Header
         displayName={displayName}
         avatarUrl={avatarUrl}

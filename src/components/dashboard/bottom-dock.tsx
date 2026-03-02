@@ -28,7 +28,7 @@ export function BottomDock() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
+    <nav className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2">
       <div className="flex items-center gap-1 rounded-full border border-neutral-800/60 bg-neutral-900/80 p-1.5 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] backdrop-blur-xl">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;

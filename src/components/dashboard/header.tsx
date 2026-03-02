@@ -88,7 +88,7 @@ export function Header({
         />
       )}
 
-      <header className="fixed inset-x-0 top-0 z-40 h-14 px-6 flex items-center justify-between border-b border-neutral-800/80 bg-neutral-950/80 backdrop-blur-xl">
+      <header className="fixed inset-x-0 top-0 z-40 px-6 flex items-center justify-between border-b border-neutral-800/80 bg-neutral-950/80 backdrop-blur-xl h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]">
         {/* Logo y Breadcrumbs */}
         <div className="flex items-center gap-3">
           <LogoIcon />

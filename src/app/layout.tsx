@@ -85,7 +85,13 @@ export const viewport: Viewport = {
 };
 
 // ─── Inline Loading Screen ────────────────────────────────────
-const LOADER_STYLES = `
+// Critical: these styles go in <head> to prevent white flash on PWA launch.
+// The browser paints background-color BEFORE parsing <body>, so we also
+// set html/body bg here to match the app background instantly.
+const CRITICAL_STYLES = `
+  html, body {
+    background-color: #0a0a0f !important;
+  }
   #streamshare-loader {
     position: fixed;
     inset: 0;
@@ -140,7 +146,9 @@ const LOADER_SCRIPT = `
       if (!el || el.dataset.hidden) return;
       el.dataset.hidden = '1';
       el.classList.add('fade-out');
-      setTimeout(function() { el.style.display = 'none'; }, 350);
+      setTimeout(function() {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 350);
     }
     if (document.readyState === 'complete') {
       hideLoader();
@@ -159,14 +167,18 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${inter.variable} ${geistSans.variable} ${geistMono.variable}`}
+      className={`dark ${inter.variable} ${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {/* Critical styles in <head> — paints #0a0a0f before body is parsed */}
+        <style dangerouslySetInnerHTML={{ __html: CRITICAL_STYLES }} />
+      </head>
       <body
         className="min-h-dvh bg-[#0a0a0f] font-sans text-white antialiased"
         suppressHydrationWarning
       >
-        {/* ── PWA Loading Screen (pre-hydration) ── */}
+        {/* ── PWA Loading Screen (pre-hydration, first child) ── */}
         <div id="streamshare-loader" aria-hidden="true">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -183,16 +195,13 @@ export default function RootLayout({
           </svg>
           <div className="loader-bar" />
         </div>
-        <style dangerouslySetInnerHTML={{ __html: LOADER_STYLES }} />
+        <script dangerouslySetInnerHTML={{ __html: LOADER_SCRIPT }} />
 
-        {/* ── Tu setup existente (sin cambios) ── */}
+        {/* ── App ── */}
         <Providers>
           {children}
           <Toaster theme="dark" richColors />
         </Providers>
-
-        {/* ── Auto-remove del loader ── */}
-        <script dangerouslySetInnerHTML={{ __html: LOADER_SCRIPT }} />
       </body>
     </html>
   );
