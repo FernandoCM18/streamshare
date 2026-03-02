@@ -146,9 +146,7 @@ const LOADER_SCRIPT = `
       if (!el || el.dataset.hidden) return;
       el.dataset.hidden = '1';
       el.classList.add('fade-out');
-      setTimeout(function() {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      }, 350);
+      setTimeout(function() { el.style.display = 'none'; }, 350);
     }
     if (document.readyState === 'complete') {
       hideLoader();
