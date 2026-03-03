@@ -4,16 +4,22 @@ import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 // ─── SEO & PWA Metadata ───────────────────────────────────────
@@ -85,57 +91,19 @@ export const viewport: Viewport = {
 };
 
 // ─── Inline Loading Screen ────────────────────────────────────
-// Critical: these styles go in <head> to prevent white flash on PWA launch.
-// The browser paints background-color BEFORE parsing <body>, so we also
-// set html/body bg here to match the app background instantly.
-const CRITICAL_STYLES = `
-  html, body {
-    background-color: #0a0a0f !important;
-  }
-  #streamshare-loader {
-    position: fixed;
-    inset: 0;
-    z-index: 99999;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
-    background-color: #0a0a0f;
-    transition: opacity 0.3s ease-out;
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  #streamshare-loader.fade-out {
-    opacity: 0;
-    pointer-events: none;
-  }
-  #streamshare-loader svg {
-    width: 56px;
-    height: 56px;
-    color: #f97316;
-  }
-  #streamshare-loader .loader-bar {
-    width: 48px;
-    height: 3px;
-    border-radius: 2px;
-    background: rgba(249, 115, 22, 0.15);
-    overflow: hidden;
-    position: relative;
-  }
-  #streamshare-loader .loader-bar::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    width: 40%;
-    border-radius: 2px;
-    background: #f97316;
-    animation: loader-slide 1s ease-in-out infinite;
-  }
+// iOS PWA: Safari renders html/body background BEFORE any <style> or CSS file.
+// The only way to guarantee no white flash is inline `style` attributes on
+// <html> and <body>, plus the loader div with all styles inline (no classes).
+// The <style> tag in <head> is kept only for the animation keyframes.
+const LOADER_KEYFRAMES = `
   @keyframes loader-slide {
     0%   { transform: translateX(-100%); }
     50%  { transform: translateX(200%); }
     100% { transform: translateX(-100%); }
+  }
+  #streamshare-loader.fade-out {
+    opacity: 0 !important;
+    pointer-events: none;
   }
 `;
 
@@ -166,24 +134,42 @@ export default function RootLayout({
     <html
       lang="es"
       className={`dark ${inter.variable} ${geistSans.variable} ${geistMono.variable}`}
+      style={{ backgroundColor: "#0a0a0f" }}
       suppressHydrationWarning
     >
       <head>
-        {/* Critical styles in <head> — paints #0a0a0f before body is parsed */}
-        <style dangerouslySetInnerHTML={{ __html: CRITICAL_STYLES }} />
+        <style dangerouslySetInnerHTML={{ __html: LOADER_KEYFRAMES }} />
       </head>
       <body
         className="min-h-dvh bg-[#0a0a0f] font-sans text-white antialiased"
+        style={{ backgroundColor: "#0a0a0f", margin: 0 }}
         suppressHydrationWarning
       >
-        {/* ── PWA Loading Screen (pre-hydration, first child) ── */}
-        <div id="streamshare-loader" aria-hidden="true">
+        {/* ── PWA Loading Screen — ALL styles inline for instant paint ── */}
+        <div
+          id="streamshare-loader"
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 24,
+            backgroundColor: "#0a0a0f",
+            transition: "opacity 0.3s ease-out",
+            paddingTop: "env(safe-area-inset-top)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="56"
             height="56"
             viewBox="0 0 24 24"
-            fill="currentColor"
+            fill="#f97316"
           >
             <path
               d="M14 3h-4C6.229 3 4.343 3 3.172 4.172S2 7.229 2 11s0 5.657 1.172 6.828S6.229 19 10 19h4c3.771 0 5.657 0 6.828-1.172S22 14.771 22 11s0-5.657-1.172-6.828S17.771 3 14 3"
@@ -191,7 +177,27 @@ export default function RootLayout({
             />
             <path d="M9.95 16.05c.93-.93 1.396-1.396 1.97-1.427q.08-.003.159 0c.574.03 1.04.496 1.971 1.427c2.026 2.026 3.039 3.039 2.755 3.913a1.5 1.5 0 0 1-.09.218C16.297 21 14.865 21 12 21s-4.298 0-4.715-.819a1.5 1.5 0 0 1-.09-.218c-.284-.874.729-1.887 2.755-3.913" />
           </svg>
-          <div className="loader-bar" />
+          <div
+            style={{
+              width: 48,
+              height: 3,
+              borderRadius: 2,
+              background: "rgba(249,115,22,0.15)",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "40%",
+                borderRadius: 2,
+                background: "#f97316",
+                animation: "loader-slide 1s ease-in-out infinite",
+              }}
+            />
+          </div>
         </div>
         <script dangerouslySetInnerHTML={{ __html: LOADER_SCRIPT }} />
 
