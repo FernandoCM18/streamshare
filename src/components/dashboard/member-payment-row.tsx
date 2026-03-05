@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import {
   cn,
@@ -19,11 +19,12 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { registerAndConfirmPayment } from "@/app/(dashboard)/dashboard/actions";
 import { RemindDrawer } from "@/components/dashboard/remind-drawer";
-import { AmountPopover } from "@/components/dashboard/amount-popover";
+import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
 import {
   normalize,
   type MemberPayment,
 } from "@/components/dashboard/service-card-utils";
+import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 
 const memberStatusConfig: Record<
   PaymentStatus,
@@ -79,6 +80,8 @@ export function MemberPaymentRow({
   serviceName: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalEditable, setModalEditable] = useState(false);
 
   const member = normalize(payment.members) as {
     id: string;
@@ -101,10 +104,15 @@ export function MemberPaymentRow({
     payment.status === "partial" ||
     payment.status === "overdue";
 
-  function handleRegister(amount: number) {
+  function handleRegister(amount: number, note?: string) {
     startTransition(async () => {
-      const result = await registerAndConfirmPayment(payment.id, amount);
+      const result = await registerAndConfirmPayment(
+        payment.id,
+        amount,
+        note,
+      );
       if (result.success) {
+        setModalOpen(false);
         toast.success(
           result.confirmed
             ? `Pago de ${member!.name} confirmado`
@@ -123,10 +131,6 @@ export function MemberPaymentRow({
         });
       }
     });
-  }
-
-  function handleMarkFullPaid() {
-    handleRegister(remaining);
   }
 
   return (
@@ -217,7 +221,10 @@ export function MemberPaymentRow({
             )}
             type="button"
             disabled={isPending}
-            onClick={handleMarkFullPaid}
+            onClick={() => {
+              setModalEditable(false);
+              setModalOpen(true);
+            }}
           >
             {isPending ? (
               <Icon
@@ -230,28 +237,25 @@ export function MemberPaymentRow({
             )}
             {payment.status === "partial" ? "Pagó el resto" : "Pagó todo"}
           </Button>
-          <AmountPopover
-            defaultAmount={remaining}
-            label={`¿Cuánto pagó ${member.name}?`}
-            onConfirm={handleRegister}
-            isPending={isPending}
+          <Button
+            variant="ghost"
+            size="xs"
+            className={cn(
+              "flex-1 px-2.5 py-1 text-[10px] font-medium",
+              "bg-violet-500/10 hover:bg-violet-500/20",
+              "text-violet-400",
+              "border border-violet-500/20",
+            )}
+            type="button"
+            disabled={isPending}
+            onClick={() => {
+              setModalEditable(true);
+              setModalOpen(true);
+            }}
           >
-            <Button
-              variant="ghost"
-              size="xs"
-              className={cn(
-                "flex-1 px-2.5 py-1 text-[10px] font-medium",
-                "bg-violet-500/10 hover:bg-violet-500/20",
-                "text-violet-400",
-                "border border-violet-500/20",
-              )}
-              type="button"
-              disabled={isPending}
-            >
-              <Icon icon="solar:pen-new-square-bold" width={12} />
-              Otro monto
-            </Button>
-          </AmountPopover>
+            <Icon icon="solar:pen-new-square-bold" width={12} />
+            Otro monto
+          </Button>
           <RemindDrawer
             memberName={member.name}
             memberPhone={member.phone}
@@ -273,8 +277,24 @@ export function MemberPaymentRow({
               <Icon icon="solar:bell-bold" width={12} />
             </Button>
           </RemindDrawer>
+          <PaymentConfirmModal
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            defaultAmount={remaining}
+            memberName={member.name}
+            serviceName={serviceName}
+            isPending={isPending}
+            onConfirm={handleRegister}
+            amountEditable={modalEditable}
+          />
         </div>
       )}
+
+      {/* Payment notes */}
+      <PaymentNotesSection
+        notes={payment.payment_notes}
+        isOwner={true}
+      />
     </div>
   );
 }

@@ -6,6 +6,15 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
+import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
+
+interface PaymentNote {
+  id: string;
+  content: string;
+  author_id: string;
+  is_edited: boolean;
+  created_at: string;
+}
 
 interface MyPaymentCardProps {
   paymentId: string;
@@ -18,6 +27,7 @@ interface MyPaymentCardProps {
   amountDue: number;
   amountPaid: number;
   accumulatedDebt: number;
+  notes?: PaymentNote[];
 }
 
 export function MyPaymentCard({
@@ -31,6 +41,7 @@ export function MyPaymentCard({
   amountDue,
   amountPaid,
   accumulatedDebt,
+  notes = [],
 }: MyPaymentCardProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -121,6 +132,12 @@ export function MyPaymentCard({
         </div>
         <p className="text-xs text-neutral-500">Vence: {formatDate(dueDate)}</p>
       </div>
+
+      {notes.length > 0 && (
+        <div className="mb-4">
+          <PaymentNotesSection notes={notes} isOwner={false} />
+        </div>
+      )}
 
       {actionable ? (
         <button

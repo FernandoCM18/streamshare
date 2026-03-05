@@ -1,14 +1,15 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { cn, formatPaymentDate, formatCurrency } from "@/lib/utils";
 import type { PaymentStatus } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
-import { AmountPopover } from "@/components/dashboard/amount-popover";
+import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
+import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 
 const guestStatusConfig: Record<
   PaymentStatus,
@@ -50,6 +51,7 @@ export function GuestPaymentRow({
   serviceName: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [modalOpen, setModalOpen] = useState(false);
 
   const totalOwed =
     Number(payment.amount_due) + Number(payment.accumulated_debt);
@@ -59,10 +61,16 @@ export function GuestPaymentRow({
     payment.status === "partial" ||
     payment.status === "overdue";
 
-  function handleMarkPaid(amount: number) {
+  const remaining =
+    payment.status === "partial"
+      ? totalOwed - Number(payment.amount_paid)
+      : totalOwed;
+
+  function handleMarkPaid(amount: number, note?: string) {
     startTransition(async () => {
-      const result = await markMyPaymentAsPaid(payment.id, amount);
+      const result = await markMyPaymentAsPaid(payment.id, amount, note);
       if (result.success) {
+        setModalOpen(false);
         toast.success("¡Pago registrado!", {
           description: `${formatCurrency(amount)} en ${serviceName}`,
         });
@@ -77,85 +85,94 @@ export function GuestPaymentRow({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3",
+        "flex flex-col gap-2",
         "p-3 rounded-xl",
         "bg-neutral-900/50",
         "border border-neutral-800/50",
         isPending && "opacity-60 pointer-events-none",
       )}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <div
-          className={cn(
-            "w-8 h-8 shrink-0 rounded-lg flex items-center justify-center",
-            "bg-neutral-800 border border-neutral-700",
-          )}
-        >
-          <Icon
-            icon={config.iconName}
-            width={16}
-            className={config.textClass}
-          />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className={cn(
+              "w-8 h-8 shrink-0 rounded-lg flex items-center justify-center",
+              "bg-neutral-800 border border-neutral-700",
+            )}
+          >
+            <Icon
+              icon={config.iconName}
+              width={16}
+              className={config.textClass}
+            />
+          </div>
+          <div className="min-w-0">
+            <p className={cn("text-xs font-medium", config.textClass)}>
+              {config.label(payment)}
+            </p>
+            <p className="text-[10px] text-neutral-500">
+              {payment.status === "partial"
+                ? `Restante: ${formatCurrency(totalOwed - Number(payment.amount_paid))} • Vence ${formatPaymentDate(payment.due_date)}`
+                : `${formatCurrency(totalOwed)} • Vence ${formatPaymentDate(payment.due_date)}`}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className={cn("text-xs font-medium", config.textClass)}>
-            {config.label(payment)}
-          </p>
-          <p className="text-[10px] text-neutral-500">
-            {payment.status === "partial"
-              ? `Restante: ${formatCurrency(totalOwed - Number(payment.amount_paid))} • Vence ${formatPaymentDate(payment.due_date)}`
-              : `${formatCurrency(totalOwed)} • Vence ${formatPaymentDate(payment.due_date)}`}
-          </p>
-        </div>
+
+        {canPay ? (
+          <>
+            <Button
+              variant="ghost"
+              size="xs"
+              className={cn(
+                "px-3 py-1.5 text-[10px] font-medium shrink-0",
+                "bg-violet-500/10 hover:bg-violet-500/20",
+                "text-violet-400",
+                "border border-violet-500/20",
+              )}
+              type="button"
+              disabled={isPending}
+              onClick={() => setModalOpen(true)}
+            >
+              {isPending ? (
+                <Icon
+                  icon="solar:refresh-bold"
+                  width={12}
+                  className="animate-spin"
+                />
+              ) : (
+                <Icon icon="solar:hand-money-bold" width={12} />
+              )}
+              Ya pagué
+            </Button>
+            <PaymentConfirmModal
+              open={modalOpen}
+              onOpenChange={setModalOpen}
+              defaultAmount={remaining}
+              memberName="Mi pago"
+              serviceName={serviceName}
+              isPending={isPending}
+              onConfirm={handleMarkPaid}
+            />
+          </>
+        ) : (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Icon
+              icon="solar:check-circle-bold"
+              className="text-emerald-500"
+              width={14}
+            />
+            <span className="text-[10px] font-medium text-emerald-400">
+              {payment.status === "paid" ? "Enviado" : "Listo"}
+            </span>
+          </div>
+        )}
       </div>
 
-      {canPay ? (
-        <AmountPopover
-          defaultAmount={
-            payment.status === "partial"
-              ? totalOwed - Number(payment.amount_paid)
-              : totalOwed
-          }
-          label="¿Cuánto pagaste?"
-          onConfirm={handleMarkPaid}
-          isPending={isPending}
-        >
-          <Button
-            variant="ghost"
-            size="xs"
-            className={cn(
-              "px-3 py-1.5 text-[10px] font-medium shrink-0",
-              "bg-violet-500/10 hover:bg-violet-500/20",
-              "text-violet-400",
-              "border border-violet-500/20",
-            )}
-            type="button"
-            disabled={isPending}
-          >
-            {isPending ? (
-              <Icon
-                icon="solar:refresh-bold"
-                width={12}
-                className="animate-spin"
-              />
-            ) : (
-              <Icon icon="solar:hand-money-bold" width={12} />
-            )}
-            Ya pagué
-          </Button>
-        </AmountPopover>
-      ) : (
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Icon
-            icon="solar:check-circle-bold"
-            className="text-emerald-500"
-            width={14}
-          />
-          <span className="text-[10px] font-medium text-emerald-400">
-            {payment.status === "paid" ? "Enviado" : "Listo"}
-          </span>
-        </div>
-      )}
+      {/* Payment notes (read-only for guest) */}
+      <PaymentNotesSection
+        notes={payment.payment_notes}
+        isOwner={false}
+      />
     </div>
   );
 }

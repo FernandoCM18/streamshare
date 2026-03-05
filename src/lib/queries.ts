@@ -208,7 +208,7 @@ export const getCachedPayments = cache(async (userId: string) => {
   const { data } = await supabase
     .from("payments")
     .select(
-      "id, service_id, member_id, amount_due, amount_paid, accumulated_debt, status, due_date, paid_at, confirmed_at, requires_confirmation, members!inner(id, name, email, phone, avatar_url, profile_id), services!inner(name), billing_cycles!inner(id, period_start, period_end)",
+      "id, service_id, member_id, amount_due, amount_paid, accumulated_debt, status, due_date, paid_at, confirmed_at, requires_confirmation, members!inner(id, name, email, phone, avatar_url, profile_id), services!inner(name), billing_cycles!inner(id, period_start, period_end), payment_notes(id, content, author_id, is_edited, created_at, profiles!payment_notes_author_id_fkey(display_name, avatar_url))",
     )
     .eq("owner_id", userId)
     .in("status", ["pending", "partial", "paid", "overdue", "confirmed"]);
@@ -224,6 +224,24 @@ export const getCachedMyPayments = cache(async (userId: string) => {
     .select("*")
     .order("due_date", { ascending: true });
   return (data ?? []) as MyPayment[];
+});
+
+// --- Payment notes for my payments (guest view) ---
+
+export const getCachedMyPaymentNotes = cache(async () => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("payment_notes")
+    .select("id, payment_id, content, author_id, is_edited, created_at")
+    .order("created_at", { ascending: true });
+  return (data ?? []) as {
+    id: string;
+    payment_id: string;
+    content: string;
+    author_id: string;
+    is_edited: boolean;
+    created_at: string;
+  }[];
 });
 
 // --- Settings ---

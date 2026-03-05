@@ -14,6 +14,7 @@ import {
 import ServiceDetailModal from "./service-detail-modal";
 import EditServiceDrawer from "./edit-service-drawer";
 import type { ServiceSummary, Member } from "@/types/database";
+import type { MemberPayment } from "@/components/dashboard/service-card-utils";
 
 const statusConfig: Record<
   string,
@@ -40,10 +41,16 @@ const statusConfig: Record<
 interface ServiceCardProps {
   service: ServiceSummary;
   members: Pick<Member, "id" | "name" | "email">[];
+  payments?: MemberPayment[];
   isOwner: boolean;
 }
 
-export function ServiceCard({ service, members, isOwner }: ServiceCardProps) {
+export function ServiceCard({
+  service,
+  members,
+  payments = [],
+  isOwner,
+}: ServiceCardProps) {
   const [showDetail, setShowDetail] = useState(false);
   const [showEditDrawer, setShowEditDrawer] = useState(false);
   const serviceMembers = service.members ?? [];
@@ -198,6 +205,7 @@ export function ServiceCard({ service, members, isOwner }: ServiceCardProps) {
         open={showDetail}
         onOpenChange={setShowDetail}
         service={service}
+        payments={payments}
       />
 
       <EditServiceDrawer

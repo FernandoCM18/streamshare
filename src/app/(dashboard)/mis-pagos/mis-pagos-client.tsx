@@ -7,11 +7,20 @@ import { MisPagosFilters } from "@/components/mis-pagos/mis-pagos-filters";
 import { EmptyStateCard } from "@/components/shared/empty-state-card";
 import type { MyPayment } from "@/types/database";
 
-interface MisPagosClientProps {
-  payments: MyPayment[];
+export interface PaymentNoteData {
+  id: string;
+  content: string;
+  author_id: string;
+  is_edited: boolean;
+  created_at: string;
 }
 
-export function MisPagosClient({ payments }: MisPagosClientProps) {
+interface MisPagosClientProps {
+  payments: MyPayment[];
+  notesMap?: Record<string, PaymentNoteData[]>;
+}
+
+export function MisPagosClient({ payments, notesMap = {} }: MisPagosClientProps) {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const counts: Record<string, number> = { all: payments.length };
@@ -54,6 +63,7 @@ export function MisPagosClient({ payments }: MisPagosClientProps) {
               amountDue={payment.amount_due}
               amountPaid={payment.amount_paid}
               accumulatedDebt={payment.accumulated_debt}
+              notes={notesMap[payment.id] ?? []}
             />
           ))}
         </div>

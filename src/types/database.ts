@@ -305,6 +305,14 @@ export interface RegisterPaymentResult {
   credit_amount: number;
 }
 
+export interface EditPaymentResult {
+  old_amount: number;
+  new_amount: number;
+  new_status: PaymentStatus;
+  credit_cancelled: number;
+  credit_generated: number;
+}
+
 // ============================================================
 // UI TYPES — Shared across components
 // ============================================================
@@ -496,6 +504,14 @@ export interface Database {
       reject_payment_claim: {
         Args: { p_payment_id: string };
         Returns: void;
+      };
+      void_payment: {
+        Args: { p_payment_id: string };
+        Returns: void;
+      };
+      edit_payment_amount: {
+        Args: { p_payment_id: string; p_new_amount: number };
+        Returns: EditPaymentResult;
       };
     };
     Enums: {

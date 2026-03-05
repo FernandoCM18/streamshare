@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
 import {
@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/dialog";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
+import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
 import type { MyPayment } from "@/types/database";
+import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -49,18 +51,29 @@ const statusConfig: Record<
 
 // ── Component ─────────────────────────────────────────────────
 
+interface PaymentNote {
+  id: string;
+  content: string;
+  author_id: string;
+  is_edited: boolean;
+  created_at: string;
+}
+
 interface MyPaymentDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   payment: MyPayment;
+  notes?: PaymentNote[];
 }
 
 export function MyPaymentDetailModal({
   open,
   onOpenChange,
   payment,
+  notes = [],
 }: MyPaymentDetailModalProps) {
   const [isPending, startTransition] = useTransition();
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
   const remaining =
     payment.amount_due + payment.accumulated_debt - payment.amount_paid;
@@ -70,10 +83,11 @@ export function MyPaymentDetailModal({
     payment.status === "overdue";
   const status = statusConfig[payment.status] ?? statusConfig.pending;
 
-  function handleMarkPaid() {
+  function handleMarkPaid(amount: number, note?: string) {
     startTransition(async () => {
-      const result = await markMyPaymentAsPaid(payment.id);
+      const result = await markMyPaymentAsPaid(payment.id, amount, note);
       if (result.success) {
+        setConfirmModalOpen(false);
         toast.success("Pago marcado correctamente", {
           description: "Tu propietario ahora puede confirmarlo.",
         });
@@ -260,6 +274,16 @@ export function MyPaymentDetailModal({
               </p>
             </div>
           </div>
+
+          {/* Payment notes */}
+          {notes.length > 0 && (
+            <section>
+              <h2 className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-3">
+                Notas
+              </h2>
+              <PaymentNotesSection notes={notes} isOwner={false} />
+            </section>
+          )}
         </div>
 
         {/* Footer action */}
@@ -267,22 +291,21 @@ export function MyPaymentDetailModal({
           <div className="shrink-0 border-t border-neutral-800/60 p-5 sm:p-6">
             <button
               type="button"
-              onClick={handleMarkPaid}
+              onClick={() => setConfirmModalOpen(true)}
               disabled={isPending || remaining <= 0}
               className="w-full rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3.5 text-sm font-semibold text-emerald-400 transition-all hover:bg-emerald-500/15 hover:border-emerald-500/30 active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none"
             >
-              {isPending ? (
-                <span className="inline-flex items-center gap-2 justify-center">
-                  <Icon
-                    icon="solar:refresh-bold"
-                    className="h-4 w-4 animate-spin"
-                  />
-                  Enviando...
-                </span>
-              ) : (
-                "Marcar como pagado"
-              )}
+              Marcar como pagado
             </button>
+            <PaymentConfirmModal
+              open={confirmModalOpen}
+              onOpenChange={setConfirmModalOpen}
+              defaultAmount={Math.max(0, remaining)}
+              memberName="Mi pago"
+              serviceName={payment.service_name}
+              isPending={isPending}
+              onConfirm={handleMarkPaid}
+            />
           </div>
         )}
       </DialogContent>

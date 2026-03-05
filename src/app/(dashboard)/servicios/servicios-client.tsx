@@ -8,13 +8,19 @@ import { ServiciosFilters } from "@/components/servicios/servicios-filters";
 import { EmptyStateCard } from "@/components/shared/empty-state-card";
 import { TvIcon } from "@/components/icons/TvIcon";
 import type { ServiceSummary } from "@/types/database";
+import type { MemberPayment } from "@/components/dashboard/service-card-utils";
 
 interface ServiciosClientProps {
   services: ServiceSummary[];
   members: { id: string; name: string; email: string | null }[];
+  payments: MemberPayment[];
 }
 
-export function ServiciosClient({ services, members }: ServiciosClientProps) {
+export function ServiciosClient({
+  services,
+  members,
+  payments,
+}: ServiciosClientProps) {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const activeCount = services.filter((s) => s.status === "active").length;
@@ -66,6 +72,9 @@ export function ServiciosClient({ services, members }: ServiciosClientProps) {
                 <ServiceCard
                   service={service}
                   members={members}
+                  payments={payments.filter(
+                    (p) => p.service_id === service.id,
+                  )}
                   isOwner={true}
                 />
               </motion.div>

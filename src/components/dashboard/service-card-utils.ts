@@ -23,6 +23,17 @@ export interface MemberPayment {
   };
   services: { name: string };
   billing_cycles: { id: string; period_start: string; period_end: string };
+  payment_notes: {
+    id: string;
+    content: string;
+    author_id: string;
+    is_edited: boolean;
+    created_at: string;
+    profiles: {
+      display_name: string | null;
+      avatar_url: string | null;
+    } | null;
+  }[];
 }
 
 export function normalize(val: unknown): unknown {
