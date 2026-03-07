@@ -1,37 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StreamShare
 
-## Getting Started
+StreamShare es una PWA dark-mode-first para gestionar pagos compartidos de
+servicios de streaming (Netflix, Spotify, Crunchyroll, etc.). Permite al dueño
+de la cuenta controlar cuánto debe cada persona, registrar pagos y confirmar
+movimientos con un flujo de doble verificación.
 
-First, run the development server:
+## Demo visual (capturas pendientes)
+
+> Esta sección está lista para que agregues tus imágenes después.
+
+### Login
+![Pantalla de login](./public/readme/login.png)
+
+### Dashboard
+![Pantalla de dashboard](./public/readme/dashboard.png)
+
+### Servicios
+![Pantalla de servicios](./public/readme/services.png)
+
+### Personas
+![Pantalla de personas](./public/readme/personas.png)
+
+## Funcionalidades principales
+
+- Gestión de servicios con costo mensual, color, icono y día de cobro.
+- Gestión de personas (con o sin cuenta registrada en StreamShare).
+- Generación automática de ciclos mensuales de facturación.
+- Registro de pagos con conciliación automática (incluye pagos parciales).
+- Doble verificación para pagos de personas registradas.
+- Sistema de créditos por sobrepago, aplicados automáticamente.
+- Dashboard con resumen mensual, pendientes y deuda acumulada.
+- Soporte PWA con modo offline y service worker en producción.
+
+## Stack tecnológico
+
+- `Next.js 16` (App Router) + `React 19` + `TypeScript (strict)`
+- `Tailwind CSS v4` + `shadcn/ui` + `Radix UI`
+- `Supabase` (`@supabase/ssr` + `@supabase/supabase-js`)
+- `React Hook Form` + `Zod v4`
+- `Motion` para animaciones
+- `Serwist` para capacidades PWA
+- `pnpm` como package manager
+
+## Rutas principales
+
+- `/login` - Inicio de sesión
+- `/register` - Registro
+- `/dashboard` - Panel principal
+- `/servicios` - Gestión de servicios
+- `/personas` - Gestión de personas
+- `/mis-pagos` - Historial/estado de pagos
+- `/configuracion` - Ajustes del usuario
+
+## Requisitos
+
+- Node.js `>= 20`
+- `pnpm` instalado globalmente
+- Proyecto de Supabase con credenciales activas
+
+## Variables de entorno
+
+Crea un archivo `.env.local` en la raíz:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Instalación y ejecución local
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+La app quedará disponible en:
 
-## Learn More
+- [http://localhost:3000](http://localhost:3000)
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts disponibles
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `pnpm dev` - Inicia entorno de desarrollo
+- `pnpm build` - Compila para producción (`next build --webpack`)
+- `pnpm start` - Inicia la build de producción
+- `pnpm lint` - Ejecuta ESLint
+- `pnpm lint:fix` - Corrige issues automáticos de lint
+- `pnpm format` - Formatea archivos con Prettier
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estructura del proyecto
 
-## Deploy on Vercel
+```text
+src/
+  app/
+    (auth)/
+    (dashboard)/
+    layout.tsx
+    manifest.ts
+    sw.ts
+  components/
+  hooks/
+  lib/
+    supabase/
+  types/
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Lógica de negocio (resumen)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# streamshare
+- Flujo de estado de pago: `pending -> partial -> paid -> confirmed` (y
+  `overdue` según fecha de vencimiento).
+- Para registrar pagos y generar ciclos se usan funciones RPC de Supabase.
+- El crédito por sobrepago se guarda por servicio y se aplica en ciclos futuros.
+
+## PWA y offline
+
+- Modo instalación en móviles y escritorio (manifest + iconos).
+- Cache de assets y llamadas relevantes para mejor rendimiento.
+- Fallback offline mediante `public/offline.html`.
+
+## Estado del proyecto
+
+En desarrollo activo. El diseño y la experiencia están optimizados para
+dark-mode.
