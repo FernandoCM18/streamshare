@@ -37,7 +37,7 @@ export const cleanupOrphanedPayments = cache(async (userId: string) => {
       inactiveMembers.map((im) =>
         supabase
           .from("payments")
-          .update({ status: "cancelled" })
+          .delete()
           .eq("owner_id", userId)
           .eq("service_id", im.service_id)
           .eq("member_id", im.member_id)
@@ -72,7 +72,7 @@ export const cleanupOrphanedPayments = cache(async (userId: string) => {
     if (duplicateIds.length > 0) {
       await supabase
         .from("payments")
-        .update({ status: "cancelled" })
+        .delete()
         .in("id", duplicateIds);
     }
   }

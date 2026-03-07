@@ -9,7 +9,6 @@ import {
   getCachedPersonasData,
   getCachedPayments,
   getCachedActiveServiceMembers,
-  cleanupOrphanedPayments,
 } from "@/lib/queries";
 import { computeDashboardFromPayments } from "@/lib/compute-dashboard";
 import { buildPersonaCards } from "@/lib/build-persona-cards";
@@ -20,9 +19,6 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await getRequiredUser();
-
-  // Clean up orphaned payments from previously removed members
-  await cleanupOrphanedPayments(user.id);
 
   const [profile, services, personasData, myPayments, payments, activeMembers] =
     await Promise.all([

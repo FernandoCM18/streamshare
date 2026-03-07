@@ -1,5 +1,3 @@
-"use client";
-
 import { SemicircularGauge } from "@/components/dashboard/semicircular-gauge";
 import { PendingList } from "@/components/dashboard/pending-list";
 import {

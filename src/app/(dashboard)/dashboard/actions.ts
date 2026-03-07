@@ -1,11 +1,20 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { revalidatePayments, revalidateNotes } from "@/lib/revalidate";
 import type {
   RegisterPaymentResult,
   EditPaymentResult,
 } from "@/types/database";
+
+// ── Schemas ──────────────────────────────────────────────────────
+
+const uuidSchema = z.string().uuid();
+const amountSchema = z.number().positive().max(999999);
+const contentSchema = z.string().min(1).max(1000);
+
+// ── Actions ──────────────────────────────────────────────────────
 
 export async function registerPayment(
   paymentId: string,
@@ -15,15 +24,27 @@ export async function registerPayment(
   error?: string;
   result: RegisterPaymentResult | null;
 }> {
+  const parsed = z
+    .object({ paymentId: uuidSchema, amountPaid: amountSchema })
+    .safeParse({ paymentId, amountPaid });
+  if (!parsed.success)
+    return { success: false, error: "Datos inválidos", result: null };
+
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
+    return { success: false, error: "No autenticado", result: null };
+
   const { data, error } = await supabase.rpc("register_payment", {
-    p_payment_id: paymentId,
-    p_amount_paid: amountPaid,
+    p_payment_id: parsed.data.paymentId,
+    p_amount_paid: parsed.data.amountPaid,
   });
 
   if (error) return { success: false, error: error.message, result: null };
 
-  revalidatePath("/", "layout");
+  revalidatePayments();
   return { success: true, result: data };
 }
 
@@ -41,13 +62,38 @@ export async function registerAndConfirmPayment(
     credit_amount: number;
   } | null;
 }> {
+  const parsed = z
+    .object({
+      paymentId: uuidSchema,
+      amountPaid: amountSchema,
+      note: contentSchema.optional(),
+    })
+    .safeParse({ paymentId, amountPaid, note: note || undefined });
+  if (!parsed.success)
+    return {
+      success: false,
+      confirmed: false,
+      error: "Datos inválidos",
+      result: null,
+    };
+
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
+    return {
+      success: false,
+      confirmed: false,
+      error: "No autenticado",
+      result: null,
+    };
 
   // First register the payment (RPC handles note insertion internally)
   const { data, error } = await supabase.rpc("register_payment", {
-    p_payment_id: paymentId,
-    p_amount_paid: amountPaid,
-    p_note: note ?? null,
+    p_payment_id: parsed.data.paymentId,
+    p_amount_paid: parsed.data.amountPaid,
+    p_note: parsed.data.note ?? null,
   });
 
   if (error) {
@@ -61,12 +107,12 @@ export async function registerAndConfirmPayment(
 
   // Then confirm it (owner action — skips double-verification)
   const { error: confirmError } = await supabase.rpc("confirm_payment", {
-    p_payment_id: paymentId,
+    p_payment_id: parsed.data.paymentId,
   });
 
   if (confirmError) {
     // Payment registered but not confirmed — still partial success
-    revalidatePath("/", "layout");
+    revalidatePayments();
     return {
       success: true,
       confirmed: false,
@@ -75,19 +121,27 @@ export async function registerAndConfirmPayment(
     };
   }
 
-  revalidatePath("/", "layout");
+  revalidatePayments();
   return { success: true, confirmed: true, result: data };
 }
 
 export async function confirmPayment(paymentId: string) {
+  const parsed = uuidSchema.safeParse(paymentId);
+  if (!parsed.success) return { success: false, error: "ID inválido" };
+
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "No autenticado" };
+
   const { error } = await supabase.rpc("confirm_payment", {
-    p_payment_id: paymentId,
+    p_payment_id: parsed.data,
   });
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath("/", "layout");
+  revalidatePayments();
   return { success: true };
 }
 
@@ -95,6 +149,11 @@ export async function updatePaymentNote(
   noteId: string,
   content: string,
 ): Promise<{ success: boolean; error?: string }> {
+  const parsed = z
+    .object({ noteId: uuidSchema, content: contentSchema })
+    .safeParse({ noteId, content });
+  if (!parsed.success) return { success: false, error: "Datos inválidos" };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -103,19 +162,26 @@ export async function updatePaymentNote(
 
   const { error } = await supabase
     .from("payment_notes")
-    .update({ content, is_edited: true, edited_at: new Date().toISOString() })
-    .eq("id", noteId)
+    .update({
+      content: parsed.data.content,
+      is_edited: true,
+      edited_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.noteId)
     .eq("author_id", user.id);
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath("/", "layout");
+  revalidateNotes();
   return { success: true };
 }
 
 export async function deletePaymentNote(
   noteId: string,
 ): Promise<{ success: boolean; error?: string }> {
+  const parsed = uuidSchema.safeParse(noteId);
+  if (!parsed.success) return { success: false, error: "ID inválido" };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -125,12 +191,12 @@ export async function deletePaymentNote(
   const { error } = await supabase
     .from("payment_notes")
     .delete()
-    .eq("id", noteId)
+    .eq("id", parsed.data)
     .eq("owner_id", user.id);
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath("/", "layout");
+  revalidateNotes();
   return { success: true };
 }
 
@@ -138,6 +204,11 @@ export async function addPaymentNote(
   paymentId: string,
   content: string,
 ): Promise<{ success: boolean; error?: string }> {
+  const parsed = z
+    .object({ paymentId: uuidSchema, content: contentSchema })
+    .safeParse({ paymentId, content });
+  if (!parsed.success) return { success: false, error: "Datos inválidos" };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -147,35 +218,43 @@ export async function addPaymentNote(
   const { data: payment } = await supabase
     .from("payments")
     .select("owner_id")
-    .eq("id", paymentId)
+    .eq("id", parsed.data.paymentId)
     .single();
 
   if (!payment) return { success: false, error: "Pago no encontrado" };
 
   const { error } = await supabase.from("payment_notes").insert({
-    payment_id: paymentId,
+    payment_id: parsed.data.paymentId,
     author_id: user.id,
     owner_id: payment.owner_id,
-    content,
+    content: parsed.data.content,
   });
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath("/", "layout");
+  revalidateNotes();
   return { success: true };
 }
 
 export async function voidPayment(
   paymentId: string,
 ): Promise<{ success: boolean; error?: string }> {
+  const parsed = uuidSchema.safeParse(paymentId);
+  if (!parsed.success) return { success: false, error: "ID inválido" };
+
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "No autenticado" };
+
   const { error } = await supabase.rpc("void_payment", {
-    p_payment_id: paymentId,
+    p_payment_id: parsed.data,
   });
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath("/", "layout");
+  revalidatePayments();
   return { success: true };
 }
 
@@ -187,28 +266,48 @@ export async function editPaymentAmount(
   error?: string;
   result: EditPaymentResult | null;
 }> {
+  const parsed = z
+    .object({ paymentId: uuidSchema, newAmount: amountSchema })
+    .safeParse({ paymentId, newAmount });
+  if (!parsed.success)
+    return { success: false, error: "Datos inválidos", result: null };
+
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
+    return { success: false, error: "No autenticado", result: null };
+
   const { data, error } = await supabase.rpc("edit_payment_amount", {
-    p_payment_id: paymentId,
-    p_new_amount: newAmount,
+    p_payment_id: parsed.data.paymentId,
+    p_new_amount: parsed.data.newAmount,
   });
 
   if (error) return { success: false, error: error.message, result: null };
 
-  revalidatePath("/", "layout");
+  revalidatePayments();
   return { success: true, result: data };
 }
 
 export async function rejectPaymentClaim(
   paymentId: string,
 ): Promise<{ success: boolean; error?: string }> {
+  const parsed = uuidSchema.safeParse(paymentId);
+  if (!parsed.success) return { success: false, error: "ID inválido" };
+
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "No autenticado" };
+
   const { error } = await supabase.rpc("reject_payment_claim", {
-    p_payment_id: paymentId,
+    p_payment_id: parsed.data,
   });
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath("/", "layout");
+  revalidatePayments();
   return { success: true };
 }

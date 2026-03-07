@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { getRequiredUser } from "@/lib/auth/user";
+
+export const metadata: Metadata = {
+  title: "Mis Pagos",
+};
 import { getCachedMyPayments, getCachedMyPaymentNotes } from "@/lib/queries";
 import { MisPagosClient } from "./mis-pagos-client";
 

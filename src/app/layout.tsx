@@ -17,6 +17,20 @@ export const metadata: Metadata = {
     template: "%s | StreamShare",
   },
   description: "Gestiona pagos compartidos de servicios de streaming",
+  openGraph: {
+    title: "StreamShare",
+    description: "Gestiona pagos compartidos de servicios de streaming",
+    siteName: "StreamShare",
+    locale: "es_MX",
+    type: "website",
+    images: [{ url: "/icons/icon-512.png", width: 512, height: 512 }],
+  },
+  twitter: {
+    card: "summary",
+    title: "StreamShare",
+    description: "Gestiona pagos compartidos de servicios de streaming",
+    images: ["/icons/icon-512.png"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -107,8 +121,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
   themeColor: "#0a0a0f",
 };

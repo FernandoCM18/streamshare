@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { getRequiredUser } from "@/lib/auth/user";
+
+export const metadata: Metadata = {
+  title: "Personas",
+};
 import { getCachedPersonasData } from "@/lib/queries";
 import { PersonasClient } from "./personas-client";
 import { buildPersonaCards } from "@/lib/build-persona-cards";

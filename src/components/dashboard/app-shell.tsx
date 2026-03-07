@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { Header } from "@/components/dashboard/header";
 import { BottomDock } from "@/components/dashboard/bottom-dock";
+import { useSwUpdate } from "@/hooks/use-sw-update";
 import type { ServiceSummary, MyPayment } from "@/types/database";
 import type { PersonaCardData } from "@/types/database";
 
@@ -25,6 +26,8 @@ export function AppShell({
   myPayments,
   children,
 }: AppShellProps) {
+  useSwUpdate();
+
   return (
     <div className="min-h-screen bg-neutral-950/95 pt-[calc(3.5rem+env(safe-area-inset-top))]">
       <Header

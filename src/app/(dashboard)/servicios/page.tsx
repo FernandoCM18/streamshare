@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { getRequiredUser } from "@/lib/auth/user";
+
+export const metadata: Metadata = {
+  title: "Servicios",
+};
 import {
   getCachedServices,
   getCachedPersonasData,

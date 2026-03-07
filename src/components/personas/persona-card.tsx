@@ -1,10 +1,20 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { cn, formatCurrency, getInitials } from "@/lib/utils";
 import type { PersonaCardData, ServiceInfo } from "@/types/database";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { deletePersona } from "@/app/(dashboard)/personas/actions";
 import { RemindDrawer } from "@/components/dashboard/remind-drawer";
@@ -62,6 +72,7 @@ export function PersonaCard({
   onViewDetail,
 }: PersonaCardProps) {
   const [isDeleting, startTransition] = useTransition();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const overallStatus = getOverallStatus(persona.services);
   const status = statusConfig[overallStatus];
   const hasServices = persona.services.length > 0;
@@ -75,7 +86,6 @@ export function PersonaCard({
   const genderSuffix = persona.name.endsWith("a") ? "a" : "o";
 
   function handleDelete() {
-    if (!confirm(`¿Eliminar a ${persona.name}?`)) return;
     startTransition(async () => {
       const result = await deletePersona(persona.id);
       if (result.success) {
@@ -87,6 +97,7 @@ export function PersonaCard({
           description: result.error,
         });
       }
+      setShowDeleteDialog(false);
     });
   }
 
@@ -297,7 +308,7 @@ export function PersonaCard({
             className="col-span-1 h-8 w-full rounded-lg bg-neutral-800/40 hover:bg-red-500/10 border-transparent hover:border-red-500/20 text-neutral-400 hover:text-red-400"
             onClick={(e) => {
               e.stopPropagation();
-              handleDelete();
+              setShowDeleteDialog(true);
             }}
             disabled={isDeleting}
             title="Eliminar"
@@ -338,6 +349,35 @@ export function PersonaCard({
           </Button>
         )}
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="bg-neutral-950 border-neutral-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-neutral-100">
+              Eliminar persona
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-neutral-400">
+              ¿Estás seguro de que deseas eliminar a{" "}
+              <span className="text-neutral-100 font-medium">
+                {persona.name}
+              </span>
+              ? Se eliminará de todos los servicios asignados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-neutral-900 border-neutral-800 text-neutral-200 hover:bg-neutral-800 hover:text-white">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-500 text-white hover:bg-red-600"
+            >
+              {isDeleting ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

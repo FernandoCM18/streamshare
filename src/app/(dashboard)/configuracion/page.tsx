@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { getRequiredUser } from "@/lib/auth/user";
+
+export const metadata: Metadata = {
+  title: "Configuracion",
+};
 import { getCachedProfile, getCachedSettings } from "@/lib/queries";
 import { ConfiguracionClient } from "@/components/configuracion/configuracion-client";
 import type { Profile } from "@/types/database";

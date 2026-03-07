@@ -90,8 +90,16 @@ export function ServiciosClient({
           >
             <EmptyStateCard
               icon={<TvIcon className="h-7 w-7 text-neutral-400" />}
-              title="Sin resultados"
-              description="Intenta con otros filtros."
+              title={
+                services.length === 0
+                  ? "No tienes servicios aun"
+                  : "Sin resultados"
+              }
+              description={
+                services.length === 0
+                  ? "Crea tu primer servicio para empezar a gestionar los pagos compartidos."
+                  : "Intenta con otros filtros."
+              }
             />
           </motion.div>
         )}

@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import { CacheFirst, NetworkFirst, StaleWhileRevalidate, ExpirationPlugin, Serwist } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -15,7 +15,74 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [
+    // Supabase storage (avatars, uploads) — cache first, 7 days
+    {
+      matcher: ({ url }) =>
+        url.hostname.endsWith(".supabase.co") &&
+        url.pathname.includes("/storage/"),
+      handler: new CacheFirst({
+        cacheName: "supabase-storage",
+        plugins: [
+          new ExpirationPlugin({
+            maxEntries: 200,
+            maxAgeSeconds: 7 * 24 * 60 * 60,
+          }),
+        ],
+      }),
+    },
+    // Iconify API (icon SVGs) — cache first, 30 days
+    {
+      matcher: ({ url }) => url.hostname === "api.iconify.design",
+      handler: new CacheFirst({
+        cacheName: "iconify-icons",
+        plugins: [
+          new ExpirationPlugin({
+            maxEntries: 500,
+            maxAgeSeconds: 30 * 24 * 60 * 60,
+          }),
+        ],
+      }),
+    },
+    // Google Fonts stylesheets — stale while revalidate
+    {
+      matcher: ({ url }) => url.hostname === "fonts.googleapis.com",
+      handler: new StaleWhileRevalidate({
+        cacheName: "google-fonts-stylesheets",
+      }),
+    },
+    // Google Fonts files — cache first, 1 year
+    {
+      matcher: ({ url }) => url.hostname === "fonts.gstatic.com",
+      handler: new CacheFirst({
+        cacheName: "google-fonts-webfonts",
+        plugins: [
+          new ExpirationPlugin({
+            maxEntries: 30,
+            maxAgeSeconds: 365 * 24 * 60 * 60,
+          }),
+        ],
+      }),
+    },
+    // Supabase API (data queries) — network first, 3s timeout
+    {
+      matcher: ({ url }) =>
+        url.hostname.endsWith(".supabase.co") &&
+        url.pathname.startsWith("/rest/"),
+      handler: new NetworkFirst({
+        cacheName: "supabase-api",
+        networkTimeoutSeconds: 3,
+        plugins: [
+          new ExpirationPlugin({
+            maxEntries: 50,
+            maxAgeSeconds: 24 * 60 * 60,
+          }),
+        ],
+      }),
+    },
+    // Keep the default cache rules for everything else
+    ...defaultCache,
+  ],
   fallbacks: {
     entries: [
       {
@@ -74,4 +141,12 @@ self.addEventListener("notificationclick", (event) => {
         return self.clients.openWindow(url);
       }),
   );
+});
+
+// ─── App Update ────────────────────────────────────────────
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
