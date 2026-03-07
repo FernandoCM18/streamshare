@@ -5,12 +5,12 @@ import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { toast } from "sonner";
 
 interface RemindDrawerProps {
@@ -36,11 +36,9 @@ export function RemindDrawer({
 
   async function handleCopy() {
     try {
-      // navigator.clipboard fails silently in iOS PWA standalone mode
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(message);
       } else {
-        // Fallback for iOS PWA standalone
         const textarea = document.createElement("textarea");
         textarea.value = message;
         textarea.style.position = "fixed";
@@ -72,7 +70,6 @@ export function RemindDrawer({
     }
     const phone = memberPhone.replace(/[^0-9]/g, "");
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    // window.open() is blocked in iOS PWA standalone — use location.href
     window.location.href = url;
     setOpen(false);
   }
@@ -86,27 +83,35 @@ export function RemindDrawer({
     }
     const subject = encodeURIComponent(`Recordatorio de pago — ${serviceName}`);
     const body = encodeURIComponent(message);
-    // window.open() is blocked in iOS PWA standalone — use location.href
     window.location.href = `mailto:${memberEmail}?subject=${subject}&body=${body}`;
     setOpen(false);
   }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{children}</DrawerTrigger>
-      <DrawerContent className="bg-neutral-950 border-neutral-800">
-        <div className="mx-auto w-full max-w-sm pb-8">
-          <DrawerHeader className="text-center">
-            <DrawerTitle className="text-neutral-100 text-base">
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>{children}</SheetTrigger>
+      <SheetContent
+        side="bottom"
+        showCloseButton={false}
+        className="bg-neutral-950 border-neutral-800 rounded-t-2xl pb-safe"
+      >
+        <div className="mx-auto w-full max-w-sm pb-6">
+          {/* Drag handle visual indicator */}
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-neutral-700" />
+          </div>
+
+          <SheetHeader className="text-center">
+            <SheetTitle className="text-neutral-100 text-base">
               Recordar a {memberName}
-            </DrawerTitle>
+            </SheetTitle>
             <p className="text-xs text-neutral-500 mt-1">
               {serviceName} • {formatCurrency(amount)}
             </p>
-          </DrawerHeader>
+          </SheetHeader>
 
           {/* Message preview */}
-          <div className="mx-4 mb-5 p-3 rounded-xl bg-neutral-900/50 border border-neutral-800/50">
+          <div className="mx-4 mb-5 mt-4 p-3 rounded-xl bg-neutral-900/50 border border-neutral-800/50">
             <p className="text-[11px] text-neutral-400 leading-relaxed">
               {message}
             </p>
@@ -115,6 +120,7 @@ export function RemindDrawer({
           {/* Action buttons */}
           <div className="space-y-2 px-4">
             <button
+              type="button"
               onClick={handleCopy}
               className={cn(
                 "w-full flex items-center gap-4 p-4 rounded-xl",
@@ -141,6 +147,7 @@ export function RemindDrawer({
             </button>
 
             <button
+              type="button"
               onClick={handleWhatsApp}
               className={cn(
                 "w-full flex items-center gap-4 p-4 rounded-xl",
@@ -170,6 +177,7 @@ export function RemindDrawer({
             </button>
 
             <button
+              type="button"
               onClick={handleEmail}
               className={cn(
                 "w-full flex items-center gap-4 p-4 rounded-xl",
@@ -197,7 +205,7 @@ export function RemindDrawer({
             </button>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { LogoIcon } from "@/components/icons/LogoIcon";
@@ -91,10 +92,16 @@ export function Header({
       <header className="fixed inset-x-0 top-0 z-40 px-6 flex items-center justify-between border-b border-neutral-800/80 bg-neutral-950/80 backdrop-blur-xl h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]">
         {/* Logo y Breadcrumbs */}
         <div className="flex items-center gap-3">
-          <LogoIcon />
-          <span className="text-sm font-semibold text-white hidden sm:inline">
-            StreamShare
-          </span>
+          <Link
+            href="/dashboard"
+            aria-label="Ir al inicio"
+            className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
+          >
+            <LogoIcon />
+            <span className="text-sm font-semibold text-white hidden sm:inline">
+              StreamShare
+            </span>
+          </Link>
           <span className="text-white/20 hidden sm:inline">/</span>
           <Breadcrumbs />
         </div>
