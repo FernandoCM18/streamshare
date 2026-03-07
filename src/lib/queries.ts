@@ -201,7 +201,7 @@ export const getCachedCommandPersonas = cache(async (userId: string) => {
   return personas;
 });
 
-// --- Payments (all non-cancelled, for dashboard + gauge) ---
+// --- Payments (all non-cancelled, full payload with notes for service cards) ---
 
 export const getCachedPayments = cache(async (userId: string) => {
   const supabase = await createClient();
@@ -213,6 +213,32 @@ export const getCachedPayments = cache(async (userId: string) => {
     .eq("owner_id", userId)
     .in("status", ["pending", "partial", "paid", "overdue", "confirmed"]);
   return (data ?? []) as unknown as MemberPayment[];
+});
+
+// --- Payments Lite (for gauge/dashboard summary — no notes join) ---
+
+export interface PaymentLite {
+  id: string;
+  service_id: string;
+  member_id: string;
+  amount_due: number;
+  amount_paid: number;
+  accumulated_debt: number;
+  status: string;
+  members: { name: string } | { name: string }[];
+  services: { name: string } | { name: string }[];
+}
+
+export const getCachedPaymentsLite = cache(async (userId: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("payments")
+    .select(
+      "id, service_id, member_id, amount_due, amount_paid, accumulated_debt, status, members!inner(name), services!inner(name)",
+    )
+    .eq("owner_id", userId)
+    .in("status", ["pending", "partial", "paid", "overdue", "confirmed"]);
+  return (data ?? []) as unknown as PaymentLite[];
 });
 
 // --- My Payments (guest view) ---

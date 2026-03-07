@@ -885,7 +885,7 @@ export default function ServiceDetailModal({
               </span>
             </div>
             {sortedPayments.length > 0 ? (
-              <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden divide-y divide-neutral-800/40">
+              <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden divide-y divide-neutral-800/40" style={{ contentVisibility: "auto" }}>
                 {sortedPayments.map((payment) => (
                   <PaymentRow key={payment.id} payment={payment} />
                 ))}

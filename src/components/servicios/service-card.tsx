@@ -11,8 +11,17 @@ import {
   AvatarGroup,
   AvatarGroupCount,
 } from "@/components/ui/avatar";
-import ServiceDetailModal from "./service-detail-modal";
-import EditServiceDrawer from "./edit-service-drawer";
+import dynamic from "next/dynamic";
+
+const ServiceDetailModal = dynamic(
+  () => import("./service-detail-modal"),
+  { ssr: false },
+);
+
+const EditServiceDrawer = dynamic(
+  () => import("./edit-service-drawer"),
+  { ssr: false },
+);
 import type { ServiceSummary, Member } from "@/types/database";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
 

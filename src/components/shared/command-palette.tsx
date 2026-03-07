@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { Command as CommandPrimitive } from "cmdk";
@@ -75,17 +75,19 @@ export function CommandPalette({
   onSelectPayment,
 }: CommandPaletteProps) {
   const router = useRouter();
+  const openRef = useRef(open);
+  openRef.current = open;
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        onOpenChange(!open);
+        onOpenChange(!openRef.current);
       }
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [open, onOpenChange]);
+  }, [onOpenChange]);
 
   const selectService = (service: ServiceSummary) => {
     onOpenChange(false);

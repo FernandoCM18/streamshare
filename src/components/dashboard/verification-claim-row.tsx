@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import confetti from "canvas-confetti";
 import { Icon } from "@iconify/react";
 import {
   cn,
@@ -74,12 +73,14 @@ export function VerificationClaimRow({ payment }: { payment: MemberPayment }) {
       // Haptic feedback
       if (navigator.vibrate) navigator.vibrate(200);
 
-      // Confetti burst
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.7 },
-        colors: ["#34d399", "#6ee7b7", "#a78bfa", "#ffffff"],
+      // Confetti burst (lazy-loaded)
+      import("canvas-confetti").then(({ default: confetti }) => {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.7 },
+          colors: ["#34d399", "#6ee7b7", "#a78bfa", "#ffffff"],
+        });
       });
     });
   }

@@ -1,6 +1,30 @@
 import type { DashboardSummary, PendingDebtor } from "@/types/database";
-import type { MemberPayment } from "@/components/dashboard/service-card-utils";
 import { getInitials } from "@/lib/utils";
+
+/** Minimal payment shape needed for dashboard computation. */
+interface PaymentForDashboard {
+  id: string;
+  service_id: string;
+  member_id: string;
+  amount_due: number;
+  amount_paid: number;
+  accumulated_debt: number;
+  status: string;
+  members:
+    | { name: string }
+    | { name: string }[]
+    | null;
+  services:
+    | { name: string }
+    | { name: string }[]
+    | null;
+}
+
+function getName(val: { name: string } | { name: string }[] | null | undefined): string {
+  if (!val) return "—";
+  if (Array.isArray(val)) return val[0]?.name ?? "—";
+  return val.name;
+}
 
 /**
  * Compute dashboard summary and pending debtors from a single payments array.
@@ -8,7 +32,7 @@ import { getInitials } from "@/lib/utils";
  * to guarantee all numbers in the UI come from the same data source.
  */
 export function computeDashboardFromPayments(
-  payments: MemberPayment[],
+  payments: PaymentForDashboard[],
   activeServiceIds: Set<string>,
   activeServiceMemberPairs: Set<string>,
   ownerId: string,
@@ -72,7 +96,7 @@ export function computeDashboardFromPayments(
       !debtorSeen.has(pairKey)
     ) {
       debtorSeen.add(pairKey);
-      const memberName = p.members?.name ?? "—";
+      const memberName = getName(p.members);
 
       pendingDebtors.push({
         id: p.id,
@@ -81,7 +105,7 @@ export function computeDashboardFromPayments(
         status:
           p.status === "overdue" ? ("overdue" as const) : ("pending" as const),
         amount: amountDue - amountPaid + accDebt,
-        serviceName: p.services?.name ?? "—",
+        serviceName: getName(p.services),
       });
     }
   }

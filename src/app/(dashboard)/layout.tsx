@@ -1,16 +1,15 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/dashboard/app-shell";
-import { GaugeCard } from "@/components/dashboard/gauge-card";
+import { GaugeCardAsync } from "@/components/dashboard/gauge-card-async";
+import { GaugeCardSkeleton } from "@/components/dashboard/gauge-card-skeleton";
 import { getRequiredUser } from "@/lib/auth/user";
 import {
   getCachedProfile,
   getCachedServices,
   getCachedMyPayments,
   getCachedPersonasData,
-  getCachedPayments,
-  getCachedActiveServiceMembers,
 } from "@/lib/queries";
-import { computeDashboardFromPayments } from "@/lib/compute-dashboard";
 import { buildPersonaCards } from "@/lib/build-persona-cards";
 
 export default async function DashboardLayout({
@@ -20,34 +19,15 @@ export default async function DashboardLayout({
 }) {
   const user = await getRequiredUser();
 
-  const [profile, services, personasData, myPayments, payments, activeMembers] =
-    await Promise.all([
-      getCachedProfile(user.id),
-      getCachedServices(user.id),
-      getCachedPersonasData(user.id),
-      getCachedMyPayments(user.id),
-      getCachedPayments(user.id),
-      getCachedActiveServiceMembers(user.id),
-    ]);
-
-  // Compute dashboard summary + pending debtors from the SAME payments data
-  // that powers the service cards. This eliminates data discrepancies.
-  const activeServiceIds = new Set(
-    services.filter((s) => s.status === "active").map((s) => s.id),
-  );
-  const activeServiceMemberPairs = new Set(
-    activeMembers.map((m) => `${m.member_id}:${m.service_id}`),
-  );
-  const { dashboard, pendingDebtors } = computeDashboardFromPayments(
-    payments,
-    activeServiceIds,
-    activeServiceMemberPairs,
-    user.id,
-  );
+  const [profile, services, personasData, myPayments] = await Promise.all([
+    getCachedProfile(user.id),
+    getCachedServices(user.id),
+    getCachedPersonasData(user.id),
+    getCachedMyPayments(user.id),
+  ]);
 
   if (!profile) redirect("/login");
 
-  // Build full PersonaCardData for command palette detail modals
   const personas = buildPersonaCards(personasData);
 
   return (
@@ -61,7 +41,9 @@ export default async function DashboardLayout({
     >
       <div className="m-5 flex flex-col gap-5 lg:flex-row">
         <aside className="w-full lg:fixed lg:top-19 lg:bottom-5 lg:w-80">
-          <GaugeCard dashboard={dashboard} pendingDebtors={pendingDebtors} />
+          <Suspense fallback={<GaugeCardSkeleton />}>
+            <GaugeCardAsync />
+          </Suspense>
         </aside>
         <main className="flex-1 lg:ml-85 pb-24">{children}</main>
       </div>

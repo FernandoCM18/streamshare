@@ -1,10 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/badge";
-import CreateServiceModal from "@/components/servicios/create-service-modal";
 import type { Member } from "@/types/database";
+
+const CreateServiceModal = dynamic(
+  () => import("@/components/servicios/create-service-modal"),
+  { ssr: false },
+);
 
 interface ServiciosHeaderProps {
   serviceCount: number;

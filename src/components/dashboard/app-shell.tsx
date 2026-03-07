@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import { Header } from "@/components/dashboard/header";
 import { BottomDock } from "@/components/dashboard/bottom-dock";
 import { useSwUpdate } from "@/hooks/use-sw-update";
@@ -38,13 +37,9 @@ export function AppShell({
         personas={personas}
         myPayments={myPayments}
       />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      >
+      <div className="animate-[fadeIn_0.3s_ease-out]">
         {children}
-      </motion.div>
+      </div>
       <BottomDock />
     </div>
   );

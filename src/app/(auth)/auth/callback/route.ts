@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (user) {
-        await supabase.from("profiles").upsert(
+        const profileUpsert = supabase.from("profiles").upsert(
           {
             id: user.id,
             email: user.email ?? "",
@@ -33,16 +33,18 @@ export async function GET(request: Request) {
         );
 
         // Auto-link members created by owners using this email.
-        if (user.email) {
-          await supabase
-            .from("members")
-            .update({
-              profile_id: user.id,
-              link_attempted: true,
-            })
-            .ilike("email", user.email)
-            .is("profile_id", null);
-        }
+        const memberLink = user.email
+          ? supabase
+              .from("members")
+              .update({
+                profile_id: user.id,
+                link_attempted: true,
+              })
+              .ilike("email", user.email)
+              .is("profile_id", null)
+          : null;
+
+        await Promise.all([profileUpsert, memberLink]);
       }
 
       return NextResponse.redirect(`${origin}${next}`);

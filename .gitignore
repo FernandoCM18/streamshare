@@ -42,3 +42,8 @@ next-env.d.ts
 
 .mcp.json
 public/sw.js
+
+# claude code skills
+.claude/skills/
+.agents/
+skills-lock.json

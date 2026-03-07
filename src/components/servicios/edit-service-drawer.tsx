@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -71,7 +71,7 @@ export default function EditServiceDrawer({
   members,
 }: EditServiceDrawerProps) {
   const isDesktop = useMediaQuery("(min-width: 640px)");
-  const [submitting, setSubmitting] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Local member state (changes are NOT saved until submit)
@@ -107,9 +107,9 @@ export default function EditServiceDrawer({
     },
   });
 
-  // Reset state when drawer opens or service changes
-  useEffect(() => {
-    if (open) {
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      // Reset state when drawer opens
       form.reset({
         name: service.name,
         color: service.color,
@@ -126,8 +126,8 @@ export default function EditServiceDrawer({
       setRemovedMemberIds(new Set());
       setAmountChanges({});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, service.id]);
+    onOpenChange(next);
+  }
 
   const watchedColor = form.watch("color");
   const watchedIcon = form.watch("icon_url");
@@ -227,9 +227,8 @@ export default function EditServiceDrawer({
     setEditAmountValue("");
   }
 
-  async function onSubmit(values: FormValues) {
-    setSubmitting(true);
-    try {
+  function onSubmit(values: FormValues) {
+    startTransition(async () => {
       const fd = new FormData();
       fd.set("id", service.id);
       fd.set("name", values.name);
@@ -268,9 +267,7 @@ export default function EditServiceDrawer({
       } else {
         toast.error(result.error ?? "Error al actualizar");
       }
-    } finally {
-      setSubmitting(false);
-    }
+    });
   }
 
   const hasPendingChanges =
@@ -280,7 +277,7 @@ export default function EditServiceDrawer({
     form.formState.isDirty;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side={isDesktop ? "right" : "bottom"}
         showCloseButton={false}
@@ -781,17 +778,17 @@ export default function EditServiceDrawer({
           <SheetFooter className="p-4 border-t border-neutral-800/80 bg-neutral-950/80 flex-row justify-end gap-3 mt-0">
             <button
               type="button"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors focus:outline-none"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={isPending}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-black bg-white hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none disabled:opacity-50"
             >
-              {submitting ? "Guardando..." : "Actualizar"}
+              {isPending ? "Guardando..." : "Actualizar"}
             </button>
           </SheetFooter>
         </form>

@@ -1,13 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "motion/react";
 import { Icon } from "@iconify/react";
 import { PersonaCard } from "@/components/personas/persona-card";
-import { PersonaModal } from "@/components/personas/persona-modal";
-import { PersonaDetailModal } from "@/components/personas/persona-detail-modal";
 import { EmptyStateCard } from "@/components/shared/empty-state-card";
 import type { PersonaCardData } from "@/types/database";
+
+const PersonaModal = dynamic(
+  () =>
+    import("@/components/personas/persona-modal").then(
+      (mod) => mod.PersonaModal,
+    ),
+  { ssr: false },
+);
+
+const PersonaDetailModal = dynamic(
+  () =>
+    import("@/components/personas/persona-detail-modal").then(
+      (mod) => mod.PersonaDetailModal,
+    ),
+  { ssr: false },
+);
 
 interface PersonasGridProps {
   personas: PersonaCardData[];

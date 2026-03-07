@@ -1,18 +1,44 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { LogoIcon } from "@/components/icons/LogoIcon";
 import { BellIcon } from "@/components/icons/BellIcon";
 import { SearchIcon } from "../icons/SearchIcon";
-import { CommandPalette } from "@/components/shared/command-palette";
-import ServiceDetailModal from "@/components/servicios/service-detail-modal";
-import { PersonaDetailModal } from "@/components/personas/persona-detail-modal";
-import { MyPaymentDetailModal } from "@/components/mis-pagos/my-payment-detail-modal";
 import type { ServiceSummary, MyPayment } from "@/types/database";
 import type { PersonaCardData } from "@/types/database";
+
+const CommandPalette = dynamic(
+  () =>
+    import("@/components/shared/command-palette").then(
+      (mod) => mod.CommandPalette,
+    ),
+  { ssr: false },
+);
+
+const ServiceDetailModal = dynamic(
+  () => import("@/components/servicios/service-detail-modal"),
+  { ssr: false },
+);
+
+const PersonaDetailModal = dynamic(
+  () =>
+    import("@/components/personas/persona-detail-modal").then(
+      (mod) => mod.PersonaDetailModal,
+    ),
+  { ssr: false },
+);
+
+const MyPaymentDetailModal = dynamic(
+  () =>
+    import("@/components/mis-pagos/my-payment-detail-modal").then(
+      (mod) => mod.MyPaymentDetailModal,
+    ),
+  { ssr: false },
+);
 
 interface HeaderProps {
   displayName: string;
