@@ -9,6 +9,7 @@ import { LayersIcon } from "../icons/LayersIcons";
 import { UsersIcon } from "../icons/UsersIcons";
 import { WalletIcon } from "../icons/WalletIcon";
 import { SettingIcon } from "../icons/SettingIcon";
+import { feedback } from "@/lib/feedback";
 
 const tabs = [
   { href: "/dashboard", Icon: WidgetIcon, label: "Inicio" },
@@ -47,6 +48,9 @@ export function BottomDock() {
               prefetch
               aria-current={isActive ? "page" : undefined}
               aria-label={tab.label}
+              onClick={() => {
+                if (!isActive) feedback("nav");
+              }}
               className={cn(
                 "group relative flex items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                 isActive

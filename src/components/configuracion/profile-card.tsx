@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { updateProfile } from "@/app/(dashboard)/configuracion/actions";
 import type { Profile } from "@/types/database";
 import { toast } from "sonner";
+import { feedback } from "@/lib/feedback";
 
 interface ProfileCardProps {
   profile: Profile;
@@ -38,9 +39,11 @@ export function ProfileCard({
     startTransition(async () => {
       const result = await updateProfile(formData);
       if (result.success) {
+        feedback("success");
         toast.success("Perfil actualizado");
         onToggleEdit();
       } else {
+        feedback("error");
         toast.error(result.error ?? "Error al actualizar");
       }
     });

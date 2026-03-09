@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { feedback } from "@/lib/feedback";
 
 // ── Filter Chips ──────────────────────────────────────────────
 
@@ -37,7 +38,10 @@ export function FilterChips({
           return (
             <button
               key={chip.value}
-              onClick={() => onChange(chip.value)}
+              onClick={() => {
+                if (chip.value !== value) feedback("filter");
+                onChange(chip.value);
+              }}
               className={cn(
                 "relative shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200",
                 isActive

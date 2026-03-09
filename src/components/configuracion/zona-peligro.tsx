@@ -4,12 +4,14 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { signOut } from "@/app/(dashboard)/configuracion/actions";
+import { feedback } from "@/lib/feedback";
 
 export function ZonaPeligro() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function handleSignOut() {
+    feedback("danger");
     startTransition(async () => {
       await signOut();
       router.push("/login");

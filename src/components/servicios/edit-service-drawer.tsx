@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
+import { feedback } from "@/lib/feedback";
 import {
   Sheet,
   SheetContent,
@@ -262,9 +263,11 @@ export default function EditServiceDrawer({
 
       const result = await updateService(fd);
       if (result.success) {
+        feedback("success");
         toast.success("Servicio actualizado");
         onOpenChange(false);
       } else {
+        feedback("error");
         toast.error(result.error ?? "Error al actualizar");
       }
     });

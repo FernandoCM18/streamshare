@@ -25,6 +25,7 @@ import {
   type MemberPayment,
 } from "@/components/dashboard/service-card-utils";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
+import { feedback } from "@/lib/feedback";
 
 const memberStatusConfig: Record<
   PaymentStatus,
@@ -108,6 +109,7 @@ export function MemberPaymentRow({
       const result = await registerAndConfirmPayment(payment.id, amount, note);
       if (result.success) {
         setModalOpen(false);
+        feedback(result.confirmed ? "celebrate" : "submit");
         toast.success(
           result.confirmed
             ? `Pago de ${member!.name} confirmado`
@@ -121,6 +123,7 @@ export function MemberPaymentRow({
           );
         }
       } else {
+        feedback("error");
         toast.error("Error al registrar pago", {
           description: result.error,
         });

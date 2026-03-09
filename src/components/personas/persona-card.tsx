@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { deletePersona } from "@/app/(dashboard)/personas/actions";
 import { RemindDrawer } from "@/components/dashboard/remind-drawer";
+import { feedback } from "@/lib/feedback";
 import Image from "next/image";
 
 const statusConfig: Record<
@@ -89,10 +90,12 @@ export function PersonaCard({
     startTransition(async () => {
       const result = await deletePersona(persona.id);
       if (result.success) {
+        feedback("danger");
         toast.success("Persona eliminada", {
           description: persona.name,
         });
       } else {
+        feedback("error");
         toast.error("Error al eliminar", {
           description: result.error,
         });
@@ -319,6 +322,7 @@ export function PersonaCard({
               className="col-span-1 h-8 w-full rounded-lg bg-neutral-800/40 hover:bg-red-500/10 border-transparent hover:border-red-500/20 text-neutral-400 hover:text-red-400"
               onClick={(e) => {
                 e.stopPropagation();
+                feedback("danger");
                 setShowDeleteDialog(true);
               }}
               disabled={isDeleting}

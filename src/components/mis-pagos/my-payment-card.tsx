@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
+import { feedback } from "@/lib/feedback";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 
 interface PaymentNote {
@@ -73,10 +74,12 @@ export function MyPaymentCard({
     startTransition(async () => {
       const result = await markMyPaymentAsPaid(paymentId);
       if (result.success) {
+        feedback("success");
         toast.success("Pago marcado correctamente", {
           description: "Tu propietario ahora puede confirmarlo.",
         });
       } else {
+        feedback("error");
         toast.error("No se pudo marcar el pago", {
           description: result.error,
         });

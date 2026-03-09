@@ -16,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { feedback } from "@/lib/feedback";
 import {
   updatePaymentNote,
   deletePaymentNote,
@@ -56,9 +57,11 @@ function NoteItem({ note, isOwner }: { note: PaymentNote; isOwner: boolean }) {
     startTransition(async () => {
       const result = await updatePaymentNote(note.id, editContent.trim());
       if (result.success) {
+        feedback("success");
         setEditing(false);
         toast.success("Nota actualizada");
       } else {
+        feedback("error");
         toast.error("Error al actualizar nota", {
           description: result.error,
         });
@@ -70,8 +73,10 @@ function NoteItem({ note, isOwner }: { note: PaymentNote; isOwner: boolean }) {
     startTransition(async () => {
       const result = await deletePaymentNote(note.id);
       if (result.success) {
+        feedback("danger");
         toast.success("Nota eliminada");
       } else {
+        feedback("error");
         toast.error("Error al eliminar nota", {
           description: result.error,
         });
