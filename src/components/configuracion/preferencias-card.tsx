@@ -12,7 +12,6 @@ import {
 import { updateSettings } from "@/app/(dashboard)/configuracion/actions";
 import type { UserSettings } from "@/types/database";
 import { toast } from "sonner";
-import { feedback } from "@/lib/feedback";
 
 interface PreferenciasCardProps {
   settings: UserSettings;
@@ -41,10 +40,8 @@ export function PreferenciasCard({ settings }: PreferenciasCardProps) {
     startTransition(async () => {
       const result = await updateSettings(formData);
       if (result.success) {
-        feedback("success");
         toast.success("Divisa actualizada");
       } else {
-        feedback("error");
         toast.error(result.error ?? "Error al actualizar");
       }
     });

@@ -18,7 +18,6 @@ import {
 } from "@/app/(dashboard)/servicios/actions";
 import { toast } from "sonner";
 import type { ServiceSummary, Member } from "@/types/database";
-import { feedback } from "@/lib/feedback";
 
 interface ServiceActionsProps {
   service: ServiceSummary;
@@ -47,14 +46,12 @@ export function ServiceActions({
     startTransition(async () => {
       const result = await toggleServiceStatus(service.id, newStatus);
       if (result.success) {
-        feedback(result.newStatus === "active" ? "toggleOn" : "toggleOff");
         toast.success(
           result.newStatus === "active"
             ? `${service.name} activado`
             : `${service.name} pausado`,
         );
       } else {
-        feedback("error");
         toast.error(result.error);
       }
     });
@@ -65,11 +62,9 @@ export function ServiceActions({
     startTransition(async () => {
       const result = await deleteService(service.id);
       if (result.success) {
-        feedback("danger");
         toast.success(`${service.name} eliminado`);
         // Don't close dialog — component unmounts from revalidation
       } else {
-        feedback("error");
         toast.error(result.error);
         onDeletingChange?.(false);
         setShowDeleteDialog(false);
@@ -131,7 +126,6 @@ export function ServiceActions({
           title="Eliminar"
           onClick={(e) => {
             e.stopPropagation();
-            feedback("danger");
             setShowDeleteDialog(true);
           }}
           disabled={isPending}

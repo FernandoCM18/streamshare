@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { feedback } from "@/lib/feedback";
 import {
   createPersona,
   updatePersona,
@@ -44,13 +43,11 @@ export function PersonaModal({
         : await createPersona(formData);
 
       if (result.success) {
-        feedback("success");
         toast.success(isEditing ? "Persona actualizada" : "Persona creada", {
           description: formData.get("name") as string,
         });
         onOpenChange(false);
       } else {
-        feedback("error");
         toast.error("Error", { description: result.error });
       }
     });

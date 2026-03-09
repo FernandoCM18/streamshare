@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
-import { feedback } from "@/lib/feedback";
 import {
   Dialog,
   DialogContent,
@@ -356,7 +355,6 @@ export default function CreateServiceModal({
       }
 
       if (result.success) {
-        feedback("success");
         toast.success(isEdit ? "Servicio actualizado" : "Servicio creado");
         onOpenChange(false);
         form.reset();
@@ -367,7 +365,6 @@ export default function CreateServiceModal({
         setSearchQuery("");
         setAutoGenerateCycle(true);
       } else {
-        feedback("error");
         toast.error(result.error ?? "Error al guardar");
       }
     } finally {

@@ -10,7 +10,6 @@ import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
 import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
-import { feedback } from "@/lib/feedback";
 
 const guestStatusConfig: Record<
   PaymentStatus,
@@ -72,12 +71,10 @@ export function GuestPaymentRow({
       const result = await markMyPaymentAsPaid(payment.id, amount, note);
       if (result.success) {
         setModalOpen(false);
-        feedback("success");
         toast.success("¡Pago registrado!", {
           description: `${formatCurrency(amount)} en ${serviceName}`,
         });
       } else {
-        feedback("error");
         toast.error("Error al registrar pago", {
           description: result.error,
         });

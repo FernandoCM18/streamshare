@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
-import { feedback } from "@/lib/feedback";
 import {
   Dialog,
   DialogContent,
@@ -88,14 +87,12 @@ export function MyPaymentDetailModal({
     startTransition(async () => {
       const result = await markMyPaymentAsPaid(payment.id, amount, note);
       if (result.success) {
-        feedback("success");
         setConfirmModalOpen(false);
         toast.success("Pago marcado correctamente", {
           description: "Tu propietario ahora puede confirmarlo.",
         });
         onOpenChange(false);
       } else {
-        feedback("error");
         toast.error("No se pudo marcar el pago", {
           description: result.error,
         });

@@ -8,7 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { feedback } from "@/lib/feedback";
 
 const loginSchema = z.object({
   email: z.string().email("Ingresa un email válido"),
@@ -73,13 +72,11 @@ export function EmailPasswordForm({
         });
 
         if (error) {
-          feedback("error");
           toast.error(error.message);
           return;
         }
 
         if (data.session) {
-          feedback("success");
           toast.success("Cuenta creada");
           router.push("/dashboard");
           router.refresh();
@@ -97,12 +94,10 @@ export function EmailPasswordForm({
       });
 
       if (error) {
-        feedback("error");
         toast.error(error.message);
         return;
       }
 
-      feedback("success");
       toast.success("Sesión iniciada");
       router.push("/dashboard");
       router.refresh();

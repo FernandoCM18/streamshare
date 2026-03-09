@@ -15,7 +15,6 @@ import {
   registerAndConfirmPayment,
   rejectPaymentClaim,
 } from "@/app/(dashboard)/dashboard/actions";
-import { feedback } from "@/lib/feedback";
 import {
   normalize,
   type MemberPayment,
@@ -71,7 +70,8 @@ export function VerificationClaimRow({ payment }: { payment: MemberPayment }) {
         description: `${member!.name} — ${formatCurrency(claimedAmount)}`,
       });
 
-      feedback("celebrate");
+      // Haptic feedback
+      if (navigator.vibrate) navigator.vibrate(200);
 
       // Confetti burst (lazy-loaded)
       import("canvas-confetti").then(({ default: confetti }) => {
@@ -90,12 +90,10 @@ export function VerificationClaimRow({ payment }: { payment: MemberPayment }) {
       const result = await rejectPaymentClaim(payment.id);
       if (result.success) {
         setDismissed(true);
-        feedback("dismiss");
         toast("Reclamo rechazado", {
           description: `El pago de ${member!.name} volvió a pendiente`,
         });
       } else {
-        feedback("error");
         toast.error("Error al rechazar", {
           description: result.error,
         });

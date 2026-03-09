@@ -22,7 +22,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { feedback } from "@/lib/feedback";
 import {
   formatCurrency,
   getInitials,
@@ -143,11 +142,9 @@ function NoteItem({ note, isOwner }: { note: NoteData; isOwner: boolean }) {
     startTransition(async () => {
       const result = await updatePaymentNote(note.id, editContent.trim());
       if (result.success) {
-        feedback("success");
         setEditing(false);
         toast.success("Nota actualizada");
       } else {
-        feedback("error");
         toast.error("Error al actualizar nota", {
           description: result.error,
         });
@@ -159,10 +156,8 @@ function NoteItem({ note, isOwner }: { note: NoteData; isOwner: boolean }) {
     startTransition(async () => {
       const result = await deletePaymentNote(note.id);
       if (result.success) {
-        feedback("danger");
         toast.success("Nota eliminada");
       } else {
-        feedback("error");
         toast.error("Error al eliminar nota", {
           description: result.error,
         });
@@ -324,12 +319,10 @@ function AddNoteForm({
     startTransition(async () => {
       const result = await addPaymentNote(paymentId, content.trim());
       if (result.success) {
-        feedback("success");
         setContent("");
         onDone();
         toast.success("Nota agregada");
       } else {
-        feedback("error");
         toast.error("Error al agregar nota", { description: result.error });
       }
     });
@@ -418,10 +411,8 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
     startTransition(async () => {
       const result = await voidPayment(payment.id);
       if (result.success) {
-        feedback("danger");
         toast.success("Pago anulado");
       } else {
-        feedback("error");
         toast.error("Error al anular pago", { description: result.error });
       }
     });
@@ -436,7 +427,6 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
     startTransition(async () => {
       const result = await editPaymentAmount(payment.id, newAmount);
       if (result.success) {
-        feedback("success");
         setEditing(false);
         toast.success("Monto actualizado");
         if (
@@ -448,7 +438,6 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
           );
         }
       } else {
-        feedback("error");
         toast.error("Error al editar pago", { description: result.error });
       }
     });

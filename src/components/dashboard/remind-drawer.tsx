@@ -12,7 +12,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { feedback } from "@/lib/feedback";
 
 interface RemindDrawerProps {
   memberName: string;
@@ -51,12 +50,10 @@ export function RemindDrawer({
         document.execCommand("copy");
         document.body.removeChild(textarea);
       }
-      feedback("copy");
       toast.success("Mensaje copiado", {
         description: "Listo para pegar donde quieras",
       });
     } catch {
-      feedback("error");
       toast.error("No se pudo copiar", {
         description: "Intenta mantener presionado el mensaje para copiarlo",
       });
