@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { feedback, unlockAudio } from "@/lib/feedback";
+import { feedback } from "@/lib/feedback";
 
 const loginSchema = z.object({
   email: z.string().email("Ingresa un email válido"),
@@ -39,21 +39,6 @@ export function EmailPasswordForm({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-
-  // Unlock audio on first interaction (iOS Safari requirement)
-  useEffect(() => {
-    const handler = () => {
-      unlockAudio();
-      document.removeEventListener("touchstart", handler);
-      document.removeEventListener("click", handler);
-    };
-    document.addEventListener("touchstart", handler, { once: true });
-    document.addEventListener("click", handler, { once: true });
-    return () => {
-      document.removeEventListener("touchstart", handler);
-      document.removeEventListener("click", handler);
-    };
-  }, []);
 
   const schema = isRegister ? registerSchema : loginSchema;
   type FormValues = typeof isRegister extends true

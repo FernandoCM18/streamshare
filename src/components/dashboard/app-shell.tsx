@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { Header } from "@/components/dashboard/header";
 import { BottomDock } from "@/components/dashboard/bottom-dock";
 import { useSwUpdate } from "@/hooks/use-sw-update";
-import { unlockAudio } from "@/lib/feedback";
 import type { ServiceSummary, MyPayment } from "@/types/database";
 import type { PersonaCardData } from "@/types/database";
 
@@ -28,21 +26,6 @@ export function AppShell({
   children,
 }: AppShellProps) {
   useSwUpdate();
-
-  // Unlock Web Audio on first user interaction (required by iOS Safari)
-  useEffect(() => {
-    const handler = () => {
-      unlockAudio();
-      document.removeEventListener("touchstart", handler);
-      document.removeEventListener("click", handler);
-    };
-    document.addEventListener("touchstart", handler, { once: true });
-    document.addEventListener("click", handler, { once: true });
-    return () => {
-      document.removeEventListener("touchstart", handler);
-      document.removeEventListener("click", handler);
-    };
-  }, []);
 
   return (
     <div className="min-h-screen bg-neutral-950/95 pt-[calc(3.5rem+env(safe-area-inset-top))]">
