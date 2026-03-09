@@ -121,7 +121,7 @@ body {
     box-shadow: var(--shadow-cta);
     position: relative;
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
     outline: none;
   }
 
@@ -159,7 +159,7 @@ body {
     font-weight: 600;
     border-radius: 0.75rem; /* rounded-xl */
     box-shadow: var(--shadow-confirm);
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .btn-confirm:hover {
@@ -174,7 +174,7 @@ body {
     font-weight: 600;
     border-radius: 0.5rem; /* rounded-lg */
     box-shadow: var(--shadow-confirm-sm);
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .btn-confirm-sm:hover {

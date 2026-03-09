@@ -169,10 +169,7 @@ export function GuestPaymentRow({
       </div>
 
       {/* Payment notes (read-only for guest) */}
-      <PaymentNotesSection
-        notes={payment.payment_notes}
-        isOwner={false}
-      />
+      <PaymentNotesSection notes={payment.payment_notes} isOwner={false} />
     </div>
   );
 }

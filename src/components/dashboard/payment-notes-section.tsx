@@ -44,13 +44,7 @@ function formatRelativeDate(dateStr: string): string {
   return date.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
 }
 
-function NoteItem({
-  note,
-  isOwner,
-}: {
-  note: PaymentNote;
-  isOwner: boolean;
-}) {
+function NoteItem({ note, isOwner }: { note: PaymentNote; isOwner: boolean }) {
   const authorName = note.profiles?.display_name ?? "Usuario";
   const authorAvatar = note.profiles?.avatar_url;
   const [editing, setEditing] = useState(false);

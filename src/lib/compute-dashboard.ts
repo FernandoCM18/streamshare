@@ -10,17 +10,13 @@ interface PaymentForDashboard {
   amount_paid: number;
   accumulated_debt: number;
   status: string;
-  members:
-    | { name: string }
-    | { name: string }[]
-    | null;
-  services:
-    | { name: string }
-    | { name: string }[]
-    | null;
+  members: { name: string } | { name: string }[] | null;
+  services: { name: string } | { name: string }[] | null;
 }
 
-function getName(val: { name: string } | { name: string }[] | null | undefined): string {
+function getName(
+  val: { name: string } | { name: string }[] | null | undefined,
+): string {
   if (!val) return "—";
   if (Array.isArray(val)) return val[0]?.name ?? "—";
   return val.name;

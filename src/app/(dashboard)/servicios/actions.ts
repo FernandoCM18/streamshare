@@ -23,7 +23,10 @@ const updateServiceSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(100).optional(),
   icon_url: z.string().max(200).optional(),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
   monthly_cost: z.number().positive().max(999999).optional(),
   billing_day: z.number().int().min(1).max(31).optional(),
   split_type: z.enum(["equal", "custom"]).optional(),
@@ -34,7 +37,10 @@ const updateServiceSchema = z.object({
 });
 
 const addedMemberSchema = z.array(
-  z.object({ id: z.string().uuid(), custom_amount: z.number().positive().nullable() }),
+  z.object({
+    id: z.string().uuid(),
+    custom_amount: z.number().positive().nullable(),
+  }),
 );
 
 const removedMembersSchema = z.array(z.string().uuid());
@@ -72,7 +78,10 @@ export async function createService(
 
   const parsed = createServiceSchema.safeParse(raw);
   if (!parsed.success)
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+    };
 
   const { name, icon_url, color, monthly_cost, billing_day, split_type } =
     parsed.data;
@@ -166,14 +175,18 @@ export async function updateService(
 
   const parsed = updateServiceSchema.safeParse(raw);
   if (!parsed.success)
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+    };
 
   const serviceId = parsed.data.id;
 
   // Build update object from validated data
   const updates: UpdateService = {};
   if (parsed.data.name !== undefined) updates.name = parsed.data.name;
-  if (parsed.data.icon_url !== undefined) updates.icon_url = parsed.data.icon_url;
+  if (parsed.data.icon_url !== undefined)
+    updates.icon_url = parsed.data.icon_url;
   if (parsed.data.color !== undefined) updates.color = parsed.data.color;
   if (parsed.data.monthly_cost !== undefined)
     updates.monthly_cost = parsed.data.monthly_cost;
@@ -315,8 +328,7 @@ export async function addServiceMember(
     customAmount: z.number().positive().nullable().optional(),
   });
   const parsed = schema.safeParse({ serviceId, memberId, customAmount });
-  if (!parsed.success)
-    return { success: false, error: "Datos inválidos" };
+  if (!parsed.success) return { success: false, error: "Datos inválidos" };
 
   const supabase = await createClient();
   const {

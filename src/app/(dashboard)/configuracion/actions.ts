@@ -37,7 +37,10 @@ export async function updateProfile(
 
   const parsed = profileSchema.safeParse(raw);
   if (!parsed.success)
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+    };
 
   const { error } = await supabase
     .from("profiles")
@@ -66,13 +69,15 @@ export async function updateSettings(
     notify_before_days: Number(formData.get("notify_before_days") ?? 3),
     notify_overdue: formData.get("notify_overdue") === "true",
     auto_generate_cycles: formData.get("auto_generate_cycles") === "true",
-    default_currency:
-      (formData.get("default_currency") as string) || "MXN",
+    default_currency: (formData.get("default_currency") as string) || "MXN",
   };
 
   const parsed = settingsSchema.safeParse(raw);
   if (!parsed.success)
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+    };
 
   const { error } = await supabase
     .from("user_settings")

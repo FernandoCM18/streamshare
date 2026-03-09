@@ -3,11 +3,7 @@
 import { useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 interface PaymentConfirmModalProps {

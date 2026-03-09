@@ -156,7 +156,7 @@ export function PersonaDetailModal({
               </div>
             </div>
 
-            <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-all duration-150 focus:outline-none shrink-0 mt-0.5">
+            <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 shrink-0 mt-0.5">
               <Icon icon="solar:close-square-linear" width={15} />
             </DialogClose>
           </div>

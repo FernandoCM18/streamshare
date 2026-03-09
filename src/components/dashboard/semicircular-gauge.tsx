@@ -6,6 +6,7 @@ import {
   useMotionValue,
   useTransform,
   useSpring,
+  useReducedMotion,
 } from "motion/react";
 
 interface SemicircularGaugeProps {
@@ -19,6 +20,11 @@ export function SemicircularGauge({
   totalAmount,
   remainingAmount,
 }: SemicircularGaugeProps) {
+  const prefersReducedMotion = useReducedMotion();
+
+  const formatDisplay = (v: number) =>
+    `$${new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 }).format(v)}`;
+
   const normalizedCollected = Math.max(0, collectedAmount);
   const normalizedTotal = Math.max(0, totalAmount);
   const normalizedRemaining = Math.max(0, remainingAmount);
@@ -79,7 +85,12 @@ export function SemicircularGauge({
       : "";
 
   return (
-    <svg viewBox="0 0 200 120" className="w-full overflow-visible">
+    <svg
+      viewBox="0 0 200 120"
+      className="w-full overflow-visible"
+      role="img"
+      aria-label={`Pendiente: ${Math.round(percent)}% cobrado de ${formatDisplay(normalizedTotal)}`}
+    >
       <defs>
         <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#10b981" />
@@ -105,13 +116,13 @@ export function SemicircularGauge({
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           className="gauge-glow"
-          initial={{ pathLength: 0 }}
+          initial={{ pathLength: prefersReducedMotion ? 1 : 0 }}
           animate={{ pathLength: 1 }}
-          transition={{
-            duration: 1,
-            ease: "easeOut",
-            delay: 0.3,
-          }}
+          transition={
+            prefersReducedMotion
+              ? { duration: 0 }
+              : { duration: 1, ease: "easeOut", delay: 0.3 }
+          }
         />
       )}
 
@@ -123,9 +134,11 @@ export function SemicircularGauge({
         className="fill-white text-2xl font-semibold"
         fontSize="24"
         fontWeight="600"
-        initial={{ opacity: 0 }}
+        initial={{ opacity: prefersReducedMotion ? 1 : 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
+        transition={
+          prefersReducedMotion ? { duration: 0 } : { duration: 0.4, delay: 0.2 }
+        }
       >
         {displayRemaining}
       </motion.text>
@@ -135,9 +148,11 @@ export function SemicircularGauge({
         textAnchor="middle"
         className="fill-white/50"
         fontSize="10"
-        initial={{ opacity: 0 }}
+        initial={{ opacity: prefersReducedMotion ? 1 : 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, delay: 0.5 }}
+        transition={
+          prefersReducedMotion ? { duration: 0 } : { duration: 0.4, delay: 0.5 }
+        }
       >
         PENDIENTE
       </motion.text>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { WidgetIcon } from "../icons/WidgetIcon";
 import { LayersIcon } from "../icons/LayersIcons";
@@ -26,9 +26,17 @@ const tabs = [
 
 export function BottomDock() {
   const pathname = usePathname();
+  const prefersReducedMotion = useReducedMotion();
+
+  const springTransition = prefersReducedMotion
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 400, damping: 30 };
 
   return (
-    <nav className="fixed bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2">
+    <nav
+      aria-label="Navegación principal"
+      className="fixed bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2"
+    >
       <div className="flex items-center gap-1 rounded-full border border-neutral-800/60 bg-neutral-900/80 p-1.5 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] backdrop-blur-xl">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;
@@ -37,8 +45,10 @@ export function BottomDock() {
               key={tab.href}
               href={tab.href}
               prefetch
+              aria-current={isActive ? "page" : undefined}
+              aria-label={tab.label}
               className={cn(
-                "group relative flex items-center justify-center rounded-full transition-colors",
+                "group relative flex items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                 isActive
                   ? "text-neutral-200"
                   : "h-11 w-11 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200",
@@ -48,11 +58,7 @@ export function BottomDock() {
                 <motion.div
                   layoutId="dock-active-bg"
                   className="absolute inset-0 rounded-full bg-linear-to-b from-white/20 via-white/5 to-white/10"
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30,
-                  }}
+                  transition={springTransition}
                 />
               )}
 
@@ -86,12 +92,16 @@ export function BottomDock() {
                       initial={{ width: 0, opacity: 0 }}
                       animate={{ width: "auto", opacity: 1 }}
                       exit={{ width: 0, opacity: 0 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 30,
-                        opacity: { duration: 0.15 },
-                      }}
+                      transition={
+                        prefersReducedMotion
+                          ? { duration: 0 }
+                          : {
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 30,
+                              opacity: { duration: 0.15 },
+                            }
+                      }
                       className="overflow-hidden whitespace-nowrap font-sans text-sm tracking-tight text-neutral-100"
                     >
                       {tab.label}

@@ -96,9 +96,8 @@ export function MemberPaymentRow({
   const config = memberStatusConfig[payment.status];
   const totalOwed =
     Number(payment.amount_due) + Number(payment.accumulated_debt);
-  const remaining = Math.round(
-    (totalOwed - Number(payment.amount_paid)) * 100,
-  ) / 100;
+  const remaining =
+    Math.round((totalOwed - Number(payment.amount_paid)) * 100) / 100;
   const isActionable =
     payment.status === "pending" ||
     payment.status === "partial" ||
@@ -106,11 +105,7 @@ export function MemberPaymentRow({
 
   function handleRegister(amount: number, note?: string) {
     startTransition(async () => {
-      const result = await registerAndConfirmPayment(
-        payment.id,
-        amount,
-        note,
-      );
+      const result = await registerAndConfirmPayment(payment.id, amount, note);
       if (result.success) {
         setModalOpen(false);
         toast.success(
@@ -291,10 +286,7 @@ export function MemberPaymentRow({
       )}
 
       {/* Payment notes */}
-      <PaymentNotesSection
-        notes={payment.payment_notes}
-        isOwner={true}
-      />
+      <PaymentNotesSection notes={payment.payment_notes} isOwner={true} />
     </div>
   );
 }

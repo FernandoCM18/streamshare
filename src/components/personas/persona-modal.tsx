@@ -76,7 +76,7 @@ export function PersonaModal({
                 : "Agrega un contacto para compartir servicios"}
             </p>
           </div>
-          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-all duration-150 focus:outline-none shrink-0 mt-0.5">
+          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 shrink-0 mt-0.5">
             <Icon icon="solar:close-square-linear" width={15} />
           </DialogClose>
         </div>
@@ -97,7 +97,7 @@ export function PersonaModal({
                 "w-full h-11 bg-neutral-900/20 border border-neutral-800",
                 "focus:border-neutral-600 rounded-xl pl-10 pr-4",
                 "text-neutral-200 placeholder:text-neutral-600 text-sm",
-                "focus:outline-none focus:ring-0 transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 focus:ring-0 transition-colors",
               )}
             />
           </div>
@@ -117,7 +117,7 @@ export function PersonaModal({
                 "w-full h-11 bg-neutral-900/20 border border-neutral-800",
                 "focus:border-neutral-600 rounded-xl pl-10 pr-4",
                 "text-neutral-200 placeholder:text-neutral-600 text-sm",
-                "focus:outline-none focus:ring-0 transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 focus:ring-0 transition-colors",
               )}
             />
           </div>
@@ -136,7 +136,7 @@ export function PersonaModal({
                 "w-full h-11 bg-neutral-900/20 border border-neutral-800",
                 "focus:border-neutral-600 rounded-xl pl-10 pr-4",
                 "text-neutral-200 placeholder:text-neutral-600 text-sm",
-                "focus:outline-none focus:ring-0 transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 focus:ring-0 transition-colors",
               )}
             />
           </div>

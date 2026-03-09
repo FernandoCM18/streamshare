@@ -5,7 +5,6 @@ import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -25,6 +24,7 @@ interface ServiceActionsProps {
   members: Pick<Member, "id" | "name" | "email">[];
   isOwner: boolean;
   onEdit: () => void;
+  onDeletingChange?: (deleting: boolean) => void;
 }
 
 const cardBtn =
@@ -34,6 +34,7 @@ export function ServiceActions({
   service,
   isOwner,
   onEdit,
+  onDeletingChange,
 }: ServiceActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -57,14 +58,17 @@ export function ServiceActions({
   }
 
   function handleDelete() {
+    onDeletingChange?.(true);
     startTransition(async () => {
       const result = await deleteService(service.id);
       if (result.success) {
         toast.success(`${service.name} eliminado`);
+        // Don't close dialog — component unmounts from revalidation
       } else {
         toast.error(result.error);
+        onDeletingChange?.(false);
+        setShowDeleteDialog(false);
       }
-      setShowDeleteDialog(false);
     });
   }
 
@@ -130,8 +134,21 @@ export function ServiceActions({
         </Button>
       )}
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-neutral-950 border-neutral-800">
+      <AlertDialog
+        open={showDeleteDialog}
+        onOpenChange={(open) => {
+          if (!isPending) setShowDeleteDialog(open);
+        }}
+      >
+        <AlertDialogContent
+          className="bg-neutral-950 border-neutral-800"
+          onPointerDownOutside={(e) => {
+            if (isPending) e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            if (isPending) e.preventDefault();
+          }}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle className="text-neutral-100">
               Eliminar servicio
@@ -149,13 +166,13 @@ export function ServiceActions({
             <AlertDialogCancel className="bg-neutral-900 border-neutral-800 text-neutral-200 hover:bg-neutral-800 hover:text-white">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               onClick={handleDelete}
               disabled={isPending}
               className="bg-red-500 text-white hover:bg-red-600"
             >
               {isPending ? "Eliminando..." : "Eliminar"}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

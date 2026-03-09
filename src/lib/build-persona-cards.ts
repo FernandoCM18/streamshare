@@ -67,7 +67,9 @@ export function buildPersonaCards(data: PersonasDataInput): PersonaCardData[] {
           amount_due:
             sm.custom_amount ??
             (svc?.monthly_cost ?? 0) / Math.max(memberCount + 1, 1),
-          status: (latestPayment?.status as PersonaCardData["services"][number]["status"]) ?? null,
+          status:
+            (latestPayment?.status as PersonaCardData["services"][number]["status"]) ??
+            null,
         };
       });
 

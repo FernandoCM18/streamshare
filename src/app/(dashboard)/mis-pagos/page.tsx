@@ -17,7 +17,13 @@ export default async function MisPagosPage() {
   // Build a map of payment_id -> notes[]
   const notesMap: Record<
     string,
-    { id: string; content: string; author_id: string; is_edited: boolean; created_at: string }[]
+    {
+      id: string;
+      content: string;
+      author_id: string;
+      is_edited: boolean;
+      created_at: string;
+    }[]
   > = {};
   for (const note of allNotes) {
     if (!notesMap[note.payment_id]) notesMap[note.payment_id] = [];

@@ -43,7 +43,10 @@ export async function createPersona(formData: FormData): Promise<{
 
   const parsed = createPersonaSchema.safeParse(raw);
   if (!parsed.success)
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+    };
 
   const { data, error } = await supabase
     .from("members")
@@ -88,7 +91,10 @@ export async function updatePersona(
 
   const parsed = updatePersonaSchema.safeParse(raw);
   if (!parsed.success)
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+    };
 
   const { id, ...updates } = parsed.data;
   // Remove undefined fields
@@ -96,8 +102,7 @@ export async function updatePersona(
     Object.entries(updates).filter(([, v]) => v !== undefined),
   );
 
-  if (Object.keys(cleanUpdates).length === 0)
-    return { success: true };
+  if (Object.keys(cleanUpdates).length === 0) return { success: true };
 
   const { error } = await supabase
     .from("members")

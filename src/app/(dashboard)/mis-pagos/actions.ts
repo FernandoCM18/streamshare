@@ -24,8 +24,7 @@ export async function markMyPaymentAsPaid(
     customAmount,
     note: note || undefined,
   });
-  if (!parsed.success)
-    return { success: false, error: "Datos inválidos" };
+  if (!parsed.success) return { success: false, error: "Datos inválidos" };
 
   const supabase = await createClient();
   const {
@@ -50,14 +49,12 @@ export async function markMyPaymentAsPaid(
       .eq("id", parsed.data.paymentId)
       .single();
 
-    const { error: noteError } = await supabase
-      .from("payment_notes")
-      .insert({
-        payment_id: parsed.data.paymentId,
-        author_id: user.id,
-        owner_id: payment?.owner_id ?? user.id,
-        content: parsed.data.note,
-      });
+    const { error: noteError } = await supabase.from("payment_notes").insert({
+      payment_id: parsed.data.paymentId,
+      author_id: user.id,
+      owner_id: payment?.owner_id ?? user.id,
+      content: parsed.data.note,
+    });
     if (noteError) {
       console.error("Error inserting payment note:", noteError);
     }

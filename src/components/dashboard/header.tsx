@@ -135,7 +135,7 @@ export function Header({
         <div className="w-auto sm:w-full sm:max-w-md">
           <button
             onClick={() => setCommandOpen(true)}
-            className="flex hover:bg-neutral-800/60 transition-colors focus:outline-none group text-sm text-neutral-500 bg-neutral-900/40 w-auto sm:w-full border-neutral-800/80 border rounded-lg py-1.5 px-2 sm:px-3 items-center justify-between gap-2"
+            className="flex hover:bg-neutral-800/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 group text-sm text-neutral-500 bg-neutral-900/40 w-auto sm:w-full border-neutral-800/80 border rounded-lg py-1.5 px-2 sm:px-3 items-center justify-between gap-2"
           >
             <div className="flex items-center gap-2 sm:gap-2.5">
               <SearchIcon />
@@ -156,9 +156,15 @@ export function Header({
         </div>
         {/* Notificaciones y Usuario */}
         <div className="flex items-center gap-3">
-          <button className="relative p-2 rounded-lg hover:bg-neutral-800/40 transition-colors">
+          <button
+            aria-label="Notificaciones"
+            className="relative p-2 rounded-lg hover:bg-neutral-800/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
+          >
             <BellIcon />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-orange-400" />
+            <span
+              className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-orange-400"
+              aria-hidden="true"
+            />
           </button>
 
           <UserMenu

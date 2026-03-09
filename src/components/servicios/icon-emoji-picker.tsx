@@ -154,7 +154,7 @@ export default function IconEmojiPicker({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="w-12 h-12 rounded-xl border border-neutral-800 bg-neutral-900/50 flex items-center justify-center relative overflow-hidden hover:border-neutral-700 transition-colors focus:outline-none group"
+        className="w-12 h-12 rounded-xl border border-neutral-800 bg-neutral-900/50 flex items-center justify-center relative overflow-hidden hover:border-neutral-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 group"
       >
         {value ? (
           isEmoji(value) ? (
@@ -191,7 +191,7 @@ export default function IconEmojiPicker({
               type="button"
               onClick={() => setTab("icons")}
               className={cn(
-                "flex-1 py-2.5 text-xs font-medium transition-colors focus:outline-none",
+                "flex-1 py-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                 tab === "icons"
                   ? "text-white border-b-2 border-white"
                   : "text-neutral-500 hover:text-neutral-300",
@@ -203,7 +203,7 @@ export default function IconEmojiPicker({
               type="button"
               onClick={() => setTab("emojis")}
               className={cn(
-                "flex-1 py-2.5 text-xs font-medium transition-colors focus:outline-none",
+                "flex-1 py-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                 tab === "emojis"
                   ? "text-white border-b-2 border-white"
                   : "text-neutral-500 hover:text-neutral-300",
@@ -233,7 +233,7 @@ export default function IconEmojiPicker({
                           onClick={() => selectValue(item.icon)}
                           title={item.label}
                           className={cn(
-                            "w-9 h-9 rounded-lg flex items-center justify-center transition-all focus:outline-none",
+                            "w-9 h-9 rounded-lg flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                             value === item.icon
                               ? "bg-neutral-700 ring-1 ring-white/20"
                               : "hover:bg-neutral-800",
@@ -261,7 +261,7 @@ export default function IconEmojiPicker({
                           type="button"
                           onClick={() => selectValue(emoji)}
                           className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center text-base transition-all focus:outline-none",
+                            "w-8 h-8 rounded-lg flex items-center justify-center text-base transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                             value === emoji
                               ? "bg-neutral-700 ring-1 ring-white/20"
                               : "hover:bg-neutral-800",
@@ -284,7 +284,7 @@ export default function IconEmojiPicker({
                   onChange("");
                   setOpen(false);
                 }}
-                className="w-full py-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors focus:outline-none"
+                className="w-full py-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
               >
                 Quitar icono
               </button>

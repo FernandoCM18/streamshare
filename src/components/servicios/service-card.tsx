@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { cn, formatCurrency, getInitials } from "@/lib/utils";
 import { ServiceActions } from "./service-actions";
@@ -13,15 +13,13 @@ import {
 } from "@/components/ui/avatar";
 import dynamic from "next/dynamic";
 
-const ServiceDetailModal = dynamic(
-  () => import("./service-detail-modal"),
-  { ssr: false },
-);
+const ServiceDetailModal = dynamic(() => import("./service-detail-modal"), {
+  ssr: false,
+});
 
-const EditServiceDrawer = dynamic(
-  () => import("./edit-service-drawer"),
-  { ssr: false },
-);
+const EditServiceDrawer = dynamic(() => import("./edit-service-drawer"), {
+  ssr: false,
+});
 import type { ServiceSummary, Member } from "@/types/database";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
 
@@ -62,18 +60,27 @@ export function ServiceCard({
 }: ServiceCardProps) {
   const [showDetail, setShowDetail] = useState(false);
   const [showEditDrawer, setShowEditDrawer] = useState(false);
+  const blockedRef = useRef(false);
   const serviceMembers = service.members ?? [];
   const isInactive = service.status !== "active";
   const status = statusConfig[service.status] ?? statusConfig.pending;
 
   return (
     <>
-      <div
+      <article
+        role="button"
+        tabIndex={0}
         onClick={() => {
-          if (!showEditDrawer) setShowDetail(true);
+          if (!showEditDrawer && !blockedRef.current) setShowDetail(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (!showEditDrawer && !blockedRef.current) setShowDetail(true);
+          }
         }}
         className={cn(
-          "group relative flex flex-col justify-between p-5 rounded-[1.5rem] border transition-all cursor-pointer backdrop-blur-sm",
+          "group relative flex flex-col justify-between p-5 rounded-[1.5rem] border transition-colors cursor-pointer backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
           isInactive
             ? "bg-neutral-900/10 border-dashed border-neutral-800 opacity-70 hover:opacity-100 hover:border-neutral-600 hover:bg-neutral-900/30"
             : "bg-neutral-900/30 border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/50",
@@ -102,12 +109,18 @@ export function ServiceCard({
               }}
             >
               {service.icon_url ? (
-                <Icon
-                  icon={service.icon_url}
-                  width={24}
-                  style={{ color: isInactive ? undefined : service.color }}
-                  className={cn(isInactive && "text-neutral-500")}
-                />
+                service.icon_url.includes(":") ? (
+                  <Icon
+                    icon={service.icon_url}
+                    width={24}
+                    style={{ color: isInactive ? undefined : service.color }}
+                    className={cn(isInactive && "text-neutral-500")}
+                  />
+                ) : (
+                  <span className="text-xl leading-none">
+                    {service.icon_url}
+                  </span>
+                )
               ) : (
                 <Icon
                   icon="solar:tv-bold"
@@ -206,9 +219,10 @@ export function ServiceCard({
             members={members}
             isOwner={isOwner}
             onEdit={() => setShowEditDrawer(true)}
+            onDeletingChange={(v) => { blockedRef.current = v; }}
           />
         </div>
-      </div>
+      </article>
 
       <ServiceDetailModal
         open={showDetail}

@@ -34,8 +34,7 @@ export async function registerPayment(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user)
-    return { success: false, error: "No autenticado", result: null };
+  if (!user) return { success: false, error: "No autenticado", result: null };
 
   const { data, error } = await supabase.rpc("register_payment", {
     p_payment_id: parsed.data.paymentId,
@@ -276,8 +275,7 @@ export async function editPaymentAmount(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user)
-    return { success: false, error: "No autenticado", result: null };
+  if (!user) return { success: false, error: "No autenticado", result: null };
 
   const { data, error } = await supabase.rpc("edit_payment_amount", {
     p_payment_id: parsed.data.paymentId,

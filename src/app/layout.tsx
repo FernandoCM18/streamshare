@@ -175,6 +175,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <link
+          rel="preconnect"
+          href="https://api.iconify.design"
+          crossOrigin="anonymous"
+        />
         <style dangerouslySetInnerHTML={{ __html: LOADER_KEYFRAMES }} />
       </head>
       <body

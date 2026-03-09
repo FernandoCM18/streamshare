@@ -36,7 +36,7 @@ export function UserMenu({ displayName, avatarUrl, email }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-violet-500/30">
+        <button className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70">
           <Avatar className="h-8 w-8 border border-neutral-700">
             {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
             <AvatarFallback className="bg-neutral-800 text-white/70 text-xs">

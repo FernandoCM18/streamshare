@@ -5,7 +5,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/dashboard", "/servicios", "/personas", "/mis-pagos", "/configuracion"],
+      disallow: [
+        "/dashboard",
+        "/servicios",
+        "/personas",
+        "/mis-pagos",
+        "/configuracion",
+      ],
     },
   };
 }

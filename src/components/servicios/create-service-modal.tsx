@@ -388,7 +388,7 @@ export default function CreateServiceModal({
           <DialogTitle className="text-lg font-medium text-white tracking-tight">
             {isEdit ? "Editar Servicio" : "Agregar Servicio"}
           </DialogTitle>
-          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-all duration-150 focus:outline-none">
+          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70">
             <Icon icon="solar:close-square-linear" width={15} />
           </DialogClose>
         </div>
@@ -413,9 +413,10 @@ export default function CreateServiceModal({
                         <button
                           key={t.name}
                           type="button"
+                          aria-pressed={activeTemplate === t.name}
                           onClick={() => applyTemplate(t)}
                           className={cn(
-                            "flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-all min-w-[76px] shrink-0",
+                            "flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-colors min-w-[76px] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                             isActive
                               ? "border-neutral-700 bg-neutral-800/50 ring-1 ring-white/10 ring-offset-1 ring-offset-neutral-950"
                               : "border-neutral-800/60 bg-neutral-900/30 hover:bg-neutral-800/50 hover:border-neutral-700",
@@ -460,19 +461,28 @@ export default function CreateServiceModal({
                 {/* Plan Selector (when template is active with multiple plans) */}
                 {activeService && activeService.plans.length > 1 && (
                   <div className="space-y-3">
-                    <label className="text-xs font-medium text-neutral-400 block tracking-wide">
+                    <span
+                      id="plan-selector-label"
+                      className="text-xs font-medium text-neutral-400 block tracking-wide"
+                    >
                       ELIGE TU PLAN
-                    </label>
-                    <div className="grid gap-2">
+                    </span>
+                    <div
+                      className="grid gap-2"
+                      role="radiogroup"
+                      aria-labelledby="plan-selector-label"
+                    >
                       {activeService.plans.map((plan, idx) => {
                         const isSelected = selectedPlanIndex === idx;
                         return (
                           <button
                             key={idx}
                             type="button"
+                            role="radio"
+                            aria-checked={isSelected}
                             onClick={() => selectPlan(idx)}
                             className={cn(
-                              "flex items-center justify-between p-3.5 rounded-xl border transition-all text-left group",
+                              "flex items-center justify-between p-3.5 rounded-xl border transition-colors text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                               isSelected
                                 ? "border-white/20 bg-white/4 ring-1 ring-white/10"
                                 : "border-neutral-800/60 bg-neutral-900/20 hover:border-neutral-700 hover:bg-neutral-800/30",
@@ -537,7 +547,10 @@ export default function CreateServiceModal({
             <div className="space-y-5">
               {/* Name & Icon */}
               <div className="space-y-3">
-                <label className="text-xs font-medium text-neutral-400">
+                <label
+                  htmlFor="service-name"
+                  className="text-xs font-medium text-neutral-400"
+                >
                   Nombre e icono
                 </label>
                 <div className="flex gap-3">
@@ -548,9 +561,10 @@ export default function CreateServiceModal({
                   />
                   <div className="flex-1">
                     <input
+                      id="service-name"
                       {...form.register("name")}
                       placeholder="Ej. ChatGPT Plus"
-                      className="w-full h-12 bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl px-4 text-sm font-medium text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
+                      className="w-full h-12 bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl px-4 text-sm font-medium text-neutral-200 placeholder:text-neutral-600 outline-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                     />
                   </div>
                 </div>
@@ -561,20 +575,31 @@ export default function CreateServiceModal({
                 )}
 
                 {/* Color Palette */}
-                <div className="flex items-center gap-3 py-1">
+                <div
+                  className="flex items-center gap-1 py-1"
+                  role="radiogroup"
+                  aria-label="Color del servicio"
+                >
                   {COLOR_OPTIONS.map((c) => (
                     <button
                       key={c.value}
                       type="button"
+                      role="radio"
+                      aria-checked={watchedColor === c.value}
+                      aria-label={c.value}
                       onClick={() => form.setValue("color", c.value)}
-                      className={cn(
-                        "w-5 h-5 rounded-full cursor-pointer focus:outline-none transition-opacity",
-                        c.tw,
-                        watchedColor === c.value
-                          ? "ring-2 ring-offset-2 ring-offset-neutral-950 ring-white"
-                          : "opacity-30 hover:opacity-100",
-                      )}
-                    />
+                      className="relative flex items-center justify-center w-10 h-10 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
+                    >
+                      <span
+                        className={cn(
+                          "w-5 h-5 rounded-full transition-opacity",
+                          c.tw,
+                          watchedColor === c.value
+                            ? "ring-2 ring-offset-2 ring-offset-neutral-950 ring-white"
+                            : "opacity-30 group-hover:opacity-100",
+                        )}
+                      />
+                    </button>
                   ))}
                 </div>
               </div>
@@ -582,7 +607,10 @@ export default function CreateServiceModal({
               {/* Price & Payment Cycle Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-neutral-400">
+                  <label
+                    htmlFor="service-price"
+                    className="text-xs font-medium text-neutral-400"
+                  >
                     Precio total
                   </label>
                   <div className="relative">
@@ -590,10 +618,12 @@ export default function CreateServiceModal({
                       $
                     </span>
                     <input
+                      id="service-price"
                       {...form.register("monthly_cost", {
                         valueAsNumber: true,
                       })}
                       type="number"
+                      inputMode="decimal"
                       step="0.01"
                       min="0"
                       placeholder="0.00"
@@ -603,7 +633,7 @@ export default function CreateServiceModal({
                         if (dec && dec.length > 2)
                           el.value = parseFloat(el.value).toFixed(2);
                       }}
-                      className="w-full h-10 bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl pl-8 pr-4 text-sm font-medium text-neutral-200 outline-none transition-all"
+                      className="w-full h-10 bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl pl-8 pr-4 text-sm font-medium text-neutral-200 outline-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                     />
                   </div>
                   {form.formState.errors.monthly_cost && (
@@ -623,15 +653,24 @@ export default function CreateServiceModal({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-neutral-400">
+                  <span
+                    className="text-xs font-medium text-neutral-400 block"
+                    id="billing-cycle-label"
+                  >
                     Ciclo de pago
-                  </label>
-                  <div className="flex p-1 bg-neutral-900/40 border border-neutral-800 rounded-xl h-10">
+                  </span>
+                  <div
+                    className="flex p-1 bg-neutral-900/40 border border-neutral-800 rounded-xl h-10"
+                    role="radiogroup"
+                    aria-labelledby="billing-cycle-label"
+                  >
                     <button
                       type="button"
+                      role="radio"
+                      aria-checked={billingCycle === "monthly"}
                       onClick={() => setBillingCycle("monthly")}
                       className={cn(
-                        "flex-1 text-xs font-medium rounded-lg transition-all flex items-center justify-center focus:outline-none",
+                        "flex-1 text-xs font-medium rounded-lg transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                         billingCycle === "monthly"
                           ? "text-white bg-neutral-700/60 shadow-sm"
                           : "text-neutral-500 hover:text-neutral-300",
@@ -641,9 +680,11 @@ export default function CreateServiceModal({
                     </button>
                     <button
                       type="button"
+                      role="radio"
+                      aria-checked={billingCycle === "annual"}
                       onClick={() => setBillingCycle("annual")}
                       className={cn(
-                        "flex-1 text-xs font-medium rounded-lg transition-all flex items-center justify-center focus:outline-none",
+                        "flex-1 text-xs font-medium rounded-lg transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                         billingCycle === "annual"
                           ? "text-white bg-neutral-700/60 shadow-sm"
                           : "text-neutral-500 hover:text-neutral-300",
@@ -657,14 +698,18 @@ export default function CreateServiceModal({
 
               {/* Next Payment Date (Calendar Picker) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-neutral-400">
+                <label
+                  htmlFor="service-billing-date"
+                  className="text-xs font-medium text-neutral-400"
+                >
                   Próximo cobro
                 </label>
                 <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                   <PopoverTrigger asChild>
                     <button
+                      id="service-billing-date"
                       type="button"
-                      className="w-full h-10 bg-neutral-900/20 border border-neutral-800 hover:border-neutral-700 rounded-xl px-4 text-sm font-medium text-neutral-200 outline-none transition-all flex items-center justify-between group focus:outline-none"
+                      className="w-full h-10 bg-neutral-900/20 border border-neutral-800 hover:border-neutral-700 rounded-xl px-4 text-sm font-medium text-neutral-200 outline-none transition-colors flex items-center justify-between group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                     >
                       <span className="flex items-center gap-2.5">
                         <Icon
@@ -753,7 +798,10 @@ export default function CreateServiceModal({
               {!isEdit && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-neutral-400">
+                    <label
+                      htmlFor="member-search"
+                      className="text-xs font-medium text-neutral-400"
+                    >
                       Miembros compartidos
                     </label>
                     <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-md border border-neutral-800">
@@ -819,10 +867,12 @@ export default function CreateServiceModal({
                           className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
                         />
                         <input
+                          id="member-search"
+                          type="search"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="Buscar persona..."
-                          className="w-full h-9 bg-neutral-900/40 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl pl-9 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
+                          className="w-full h-9 bg-neutral-900/40 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl pl-9 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                         />
                       </div>
                     )}
@@ -892,16 +942,18 @@ export default function CreateServiceModal({
                                 </span>
                                 <input
                                   type="number"
+                                  inputMode="decimal"
                                   step="0.01"
                                   min="0"
                                   placeholder="Monto asignado"
+                                  aria-label={`Monto personalizado para ${m.name}`}
                                   value={customAmounts[m.id] || ""}
                                   onChange={(e) => {
                                     const v = e.target.value;
                                     if (v === "" || /^\d*\.?\d{0,2}$/.test(v))
                                       setCustomAmount(m.id, parseFloat(v) || 0);
                                   }}
-                                  className="w-full h-8 bg-neutral-950/50 border border-neutral-700 focus:border-neutral-500 focus:ring-0 rounded-lg pl-7 pr-3 text-sm font-mono text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
+                                  className="w-full h-8 bg-neutral-950/50 border border-neutral-700 focus:border-neutral-500 focus:ring-0 rounded-lg pl-7 pr-3 text-sm font-mono text-neutral-200 placeholder:text-neutral-600 outline-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                                 />
                               </div>
                             </div>
@@ -966,14 +1018,14 @@ export default function CreateServiceModal({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors focus:outline-none"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-black bg-white hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-black bg-white hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 disabled:opacity-50"
             >
               {submitting
                 ? "Guardando..."

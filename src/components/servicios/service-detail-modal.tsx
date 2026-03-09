@@ -128,13 +128,7 @@ interface NoteData {
   profiles?: { display_name: string | null; avatar_url: string | null } | null;
 }
 
-function NoteItem({
-  note,
-  isOwner,
-}: {
-  note: NoteData;
-  isOwner: boolean;
-}) {
+function NoteItem({ note, isOwner }: { note: NoteData; isOwner: boolean }) {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(note.content);
   const [isPending, startTransition] = useTransition();
@@ -335,7 +329,12 @@ function AddNoteForm({
   }
 
   return (
-    <div className={cn("flex flex-col gap-1.5", isPending && "opacity-60 pointer-events-none")}>
+    <div
+      className={cn(
+        "flex flex-col gap-1.5",
+        isPending && "opacity-60 pointer-events-none",
+      )}
+    >
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
@@ -360,7 +359,11 @@ function AddNoteForm({
           onClick={handleSubmit}
         >
           {isPending ? (
-            <Icon icon="solar:refresh-bold" width={10} className="animate-spin" />
+            <Icon
+              icon="solar:refresh-bold"
+              width={10}
+              className="animate-spin"
+            />
           ) : (
             <Icon icon="solar:chat-line-bold" width={10} />
           )}
@@ -388,9 +391,15 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
   const [editAmount, setEditAmount] = useState("");
   const [isPending, startTransition] = useTransition();
   const member = Array.isArray(payment.members)
-    ? (payment.members as unknown as { name: string; avatar_url: string | null }[])[0]
+    ? (
+        payment.members as unknown as {
+          name: string;
+          avatar_url: string | null;
+        }[]
+      )[0]
     : payment.members;
-  const statusCfg = paymentStatusConfig[payment.status] ?? paymentStatusConfig.pending;
+  const statusCfg =
+    paymentStatusConfig[payment.status] ?? paymentStatusConfig.pending;
   const paidDate = payment.confirmed_at ?? payment.paid_at;
   const notes = payment.payment_notes ?? [];
   const period = payment.billing_cycles
@@ -420,8 +429,13 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
       if (result.success) {
         setEditing(false);
         toast.success("Monto actualizado");
-        if (result.result?.credit_generated && result.result.credit_generated > 0) {
-          toast.info(`Se generó un crédito de ${formatCurrency(result.result.credit_generated)}`);
+        if (
+          result.result?.credit_generated &&
+          result.result.credit_generated > 0
+        ) {
+          toast.info(
+            `Se generó un crédito de ${formatCurrency(result.result.credit_generated)}`,
+          );
         }
       } else {
         toast.error("Error al editar pago", { description: result.error });
@@ -430,7 +444,9 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
   }
 
   return (
-    <div className={cn("px-4 py-3", isPending && "opacity-60 pointer-events-none")}>
+    <div
+      className={cn("px-4 py-3", isPending && "opacity-60 pointer-events-none")}
+    >
       {/* Main row */}
       <div className="flex items-center gap-3">
         {/* Avatar */}
@@ -461,9 +477,7 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
                 {formatPaymentDate(paidDate)}
               </span>
             ) : (
-              <span className="text-[10px] text-neutral-600">
-                Sin pagar
-              </span>
+              <span className="text-[10px] text-neutral-600">Sin pagar</span>
             )}
             {period && (
               <>
@@ -487,7 +501,9 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
                     : "text-neutral-400",
               )}
             >
-              {formatCurrency(Number(payment.amount_paid) || Number(payment.amount_due))}
+              {formatCurrency(
+                Number(payment.amount_paid) || Number(payment.amount_due),
+              )}
             </span>
             {Number(payment.amount_paid) > 0 &&
               Number(payment.amount_paid) < Number(payment.amount_due) && (
@@ -656,10 +672,7 @@ export default function ServiceDetailModal({
   const totalCost = service.monthly_cost;
   const collectedPercent =
     totalCost > 0
-      ? Math.min(
-          100,
-          Math.round((service.collected_amount / totalCost) * 100),
-        )
+      ? Math.min(100, Math.round((service.collected_amount / totalCost) * 100))
       : 0;
 
   // Sort payments: most recent first
@@ -696,11 +709,17 @@ export default function ServiceDetailModal({
                   boxShadow: `0 4px 20px ${service.color}26, 0 0 0 1px ${service.color}10`,
                 }}
               >
-                <Icon
-                  icon={service.icon_url ?? "solar:tv-bold"}
-                  width={26}
-                  style={{ color: service.color }}
-                />
+                {service.icon_url && !service.icon_url.includes(":") ? (
+                  <span className="text-2xl leading-none">
+                    {service.icon_url}
+                  </span>
+                ) : (
+                  <Icon
+                    icon={service.icon_url ?? "solar:tv-bold"}
+                    width={26}
+                    style={{ color: service.color }}
+                  />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -738,7 +757,7 @@ export default function ServiceDetailModal({
                 </div>
               </div>
             </div>
-            <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-all duration-150 focus:outline-none shrink-0 mt-0.5">
+            <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 shrink-0 mt-0.5">
               <Icon icon="solar:close-square-linear" width={15} />
             </DialogClose>
           </div>
@@ -833,10 +852,7 @@ export default function ServiceDetailModal({
                       : 0;
 
                   return (
-                    <div
-                      key={member.member_id}
-                      className="px-4 py-3"
-                    >
+                    <div key={member.member_id} className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-neutral-800 border border-neutral-700/50 flex items-center justify-center text-[10px] font-semibold text-neutral-300 shrink-0">
                           {getInitials(member.name)}
@@ -885,7 +901,10 @@ export default function ServiceDetailModal({
               </span>
             </div>
             {sortedPayments.length > 0 ? (
-              <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden divide-y divide-neutral-800/40" style={{ contentVisibility: "auto" }}>
+              <div
+                className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden divide-y divide-neutral-800/40"
+                style={{ contentVisibility: "auto" }}
+              >
                 {sortedPayments.map((payment) => (
                   <PaymentRow key={payment.id} payment={payment} />
                 ))}

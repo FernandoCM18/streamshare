@@ -70,11 +70,17 @@ export function DashboardServiceCard({
               boxShadow: `0 4px 14px ${service.color}1a`,
             }}
           >
-            <Icon
-              icon={service.icon_url ?? "solar:tv-bold"}
-              width={28}
-              style={{ color: service.color }}
-            />
+            {service.icon_url && !service.icon_url.includes(":") ? (
+              <span className="text-2xl leading-none">
+                {service.icon_url}
+              </span>
+            ) : (
+              <Icon
+                icon={service.icon_url ?? "solar:tv-bold"}
+                width={28}
+                style={{ color: service.color }}
+              />
+            )}
           </div>
           <div>
             <h3 className="text-lg font-medium text-neutral-200">

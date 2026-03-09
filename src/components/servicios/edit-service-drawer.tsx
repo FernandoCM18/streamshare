@@ -312,7 +312,7 @@ export default function EditServiceDrawer({
           </div>
           <button
             onClick={() => onOpenChange(false)}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors focus:outline-none"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
           >
             <Icon icon="solar:close-circle-linear" width={20} />
           </button>
@@ -339,7 +339,7 @@ export default function EditServiceDrawer({
                   <input
                     {...form.register("name")}
                     placeholder="Ej. Netflix"
-                    className="w-full h-12 bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl px-4 text-sm font-medium text-neutral-200 placeholder:text-neutral-600 outline-none transition-all"
+                    className="w-full h-12 bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl px-4 text-sm font-medium text-neutral-200 placeholder:text-neutral-600 outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -357,7 +357,7 @@ export default function EditServiceDrawer({
                     type="button"
                     onClick={() => form.setValue("color", c.value)}
                     className={cn(
-                      "w-5 h-5 rounded-full cursor-pointer focus:outline-none transition-opacity",
+                      "w-5 h-5 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 transition-opacity",
                       c.tw,
                       watchedColor === c.value
                         ? "ring-2 ring-offset-2 ring-offset-neutral-950 ring-white"
@@ -389,7 +389,7 @@ export default function EditServiceDrawer({
                     if (dec && dec.length > 2)
                       el.value = parseFloat(el.value).toFixed(2);
                   }}
-                  className="w-full h-12 bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl pl-8 pr-4 text-sm font-medium text-neutral-200 outline-none transition-all"
+                  className="w-full h-12 bg-neutral-900/20 border border-neutral-800 focus:border-neutral-600 focus:ring-0 rounded-xl pl-8 pr-4 text-sm font-medium text-neutral-200 outline-none transition-colors"
                 />
               </div>
               {form.formState.errors.monthly_cost && (
@@ -419,7 +419,7 @@ export default function EditServiceDrawer({
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="w-full h-12 bg-neutral-900/20 border border-neutral-800 hover:border-neutral-700 rounded-xl px-4 text-sm font-medium text-neutral-200 outline-none transition-all flex items-center justify-between group focus:outline-none"
+                    className="w-full h-12 bg-neutral-900/20 border border-neutral-800 hover:border-neutral-700 rounded-xl px-4 text-sm font-medium text-neutral-200 outline-none transition-colors flex items-center justify-between group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                   >
                     <span className="flex items-center gap-2.5">
                       <Icon
@@ -466,7 +466,7 @@ export default function EditServiceDrawer({
                   type="button"
                   onClick={() => form.setValue("split_type", "equal")}
                   className={cn(
-                    "flex-1 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 focus:outline-none",
+                    "flex-1 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                     watchedSplit === "equal"
                       ? "text-white bg-neutral-700/60 shadow-sm"
                       : "text-neutral-500 hover:text-neutral-300",
@@ -479,7 +479,7 @@ export default function EditServiceDrawer({
                   type="button"
                   onClick={() => form.setValue("split_type", "custom")}
                   className={cn(
-                    "flex-1 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 focus:outline-none",
+                    "flex-1 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
                     watchedSplit === "custom"
                       ? "text-white bg-neutral-700/60 shadow-sm"
                       : "text-neutral-500 hover:text-neutral-300",
@@ -583,7 +583,7 @@ export default function EditServiceDrawer({
                               <button
                                 type="button"
                                 onClick={() => handleSaveCustomAmount(member)}
-                                className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/20 transition-colors focus:outline-none"
+                                className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                               >
                                 <Icon
                                   icon="solar:check-read-linear"
@@ -596,7 +596,7 @@ export default function EditServiceDrawer({
                                   setEditingAmountFor(null);
                                   setEditAmountValue("");
                                 }}
-                                className="w-7 h-7 rounded-lg bg-neutral-800/40 flex items-center justify-center text-neutral-400 hover:text-neutral-200 transition-colors focus:outline-none"
+                                className="w-7 h-7 rounded-lg bg-neutral-800/40 flex items-center justify-center text-neutral-400 hover:text-neutral-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                               >
                                 <Icon
                                   icon="solar:close-circle-linear"
@@ -615,7 +615,7 @@ export default function EditServiceDrawer({
                                     : "",
                                 );
                               }}
-                              className="px-2 h-7 rounded-lg bg-neutral-800/40 border border-neutral-800 hover:border-neutral-600 text-xs font-mono text-neutral-400 hover:text-neutral-200 transition-all flex items-center gap-1.5 focus:outline-none"
+                              className="px-2 h-7 rounded-lg bg-neutral-800/40 border border-neutral-800 hover:border-neutral-600 text-xs font-mono text-neutral-400 hover:text-neutral-200 transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                             >
                               {member.custom_amount != null
                                 ? formatCurrency(member.custom_amount)
@@ -635,7 +635,7 @@ export default function EditServiceDrawer({
                         <button
                           type="button"
                           onClick={() => handleRemoveMember(member)}
-                          className="w-7 h-7 rounded-lg opacity-0 group-hover/member:opacity-100 bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all focus:outline-none"
+                          className="w-7 h-7 rounded-lg opacity-0 group-hover/member:opacity-100 bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                         >
                           <Icon
                             icon="solar:trash-bin-trash-linear"
@@ -657,7 +657,7 @@ export default function EditServiceDrawer({
                       <button
                         type="button"
                         onClick={() => setShowAddMember(false)}
-                        className="text-neutral-500 hover:text-neutral-300 transition-colors focus:outline-none"
+                        className="text-neutral-500 hover:text-neutral-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                       >
                         <Icon icon="solar:close-circle-linear" width={16} />
                       </button>
@@ -671,7 +671,7 @@ export default function EditServiceDrawer({
                             key={m.id}
                             type="button"
                             onClick={() => handleAddMember(m)}
-                            className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-neutral-800/50 transition-colors text-left focus:outline-none"
+                            className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-neutral-800/50 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                           >
                             <div className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-[10px] font-medium text-neutral-400 shrink-0">
                               {getInitials(m.name)}
@@ -711,7 +711,7 @@ export default function EditServiceDrawer({
                   <button
                     type="button"
                     onClick={() => setShowAddMember(true)}
-                    className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border border-dashed border-neutral-700 hover:border-neutral-500 hover:bg-neutral-900/50 text-neutral-400 hover:text-neutral-200 transition-all text-sm font-medium focus:outline-none"
+                    className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border border-dashed border-neutral-700 hover:border-neutral-500 hover:bg-neutral-900/50 text-neutral-400 hover:text-neutral-200 transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                   >
                     <Icon icon="solar:user-plus-linear" width={18} />
                     Agregar primer miembro
@@ -779,14 +779,14 @@ export default function EditServiceDrawer({
             <button
               type="button"
               onClick={() => handleOpenChange(false)}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors focus:outline-none"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-black bg-white hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.15)] focus:outline-none disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-black bg-white hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 disabled:opacity-50"
             >
               {isPending ? "Guardando..." : "Actualizar"}
             </button>

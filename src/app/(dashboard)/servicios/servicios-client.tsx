@@ -72,9 +72,7 @@ export function ServiciosClient({
                 <ServiceCard
                   service={service}
                   members={members}
-                  payments={payments.filter(
-                    (p) => p.service_id === service.id,
-                  )}
+                  payments={payments.filter((p) => p.service_id === service.id)}
                   isOwner={true}
                 />
               </motion.div>

@@ -21,7 +21,10 @@ interface MisPagosClientProps {
   notesMap?: Record<string, PaymentNoteData[]>;
 }
 
-export function MisPagosClient({ payments, notesMap = {} }: MisPagosClientProps) {
+export function MisPagosClient({
+  payments,
+  notesMap = {},
+}: MisPagosClientProps) {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const counts: Record<string, number> = { all: payments.length };
@@ -104,9 +107,7 @@ export function MisPagosClient({ payments, notesMap = {} }: MisPagosClientProps)
               }
               iconContainerClassName="bg-neutral-500/10"
               title={
-                payments.length === 0
-                  ? "No tienes pagos aun"
-                  : "Sin resultados"
+                payments.length === 0 ? "No tienes pagos aun" : "Sin resultados"
               }
               description={
                 payments.length === 0

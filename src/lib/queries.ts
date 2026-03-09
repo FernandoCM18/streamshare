@@ -70,10 +70,7 @@ export const cleanupOrphanedPayments = cache(async (userId: string) => {
     }
 
     if (duplicateIds.length > 0) {
-      await supabase
-        .from("payments")
-        .delete()
-        .in("id", duplicateIds);
+      await supabase.from("payments").delete().in("id", duplicateIds);
     }
   }
 

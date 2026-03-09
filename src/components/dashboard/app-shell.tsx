@@ -37,9 +37,7 @@ export function AppShell({
         personas={personas}
         myPayments={myPayments}
       />
-      <div className="animate-[fadeIn_0.3s_ease-out]">
-        {children}
-      </div>
+      <div className="animate-[fadeIn_0.3s_ease-out]">{children}</div>
       <BottomDock />
     </div>
   );

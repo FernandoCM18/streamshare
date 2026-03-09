@@ -203,11 +203,17 @@ export function CommandPalette({
                           boxShadow: `0 2px 8px ${s.color}15`,
                         }}
                       >
-                        <Icon
-                          icon={s.icon_url ?? "solar:tv-bold"}
-                          width={18}
-                          style={{ color: s.color }}
-                        />
+                        {s.icon_url && !s.icon_url.includes(":") ? (
+                          <span className="text-base leading-none">
+                            {s.icon_url}
+                          </span>
+                        ) : (
+                          <Icon
+                            icon={s.icon_url ?? "solar:tv-bold"}
+                            width={18}
+                            style={{ color: s.color }}
+                          />
+                        )}
                       </div>
 
                       <div className="flex-1 min-w-0">
