@@ -11,6 +11,9 @@ import {
   AvatarGroup,
   AvatarGroupCount,
 } from "@/components/ui/avatar";
+import { ServiceIconBox } from "@/components/shared/service-icon-box";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { serviceStatusConfig } from "@/lib/status-config";
 import dynamic from "next/dynamic";
 
 const ServiceDetailModal = dynamic(() => import("./service-detail-modal"), {
@@ -22,28 +25,6 @@ const EditServiceDrawer = dynamic(() => import("./edit-service-drawer"), {
 });
 import type { ServiceSummary, Member } from "@/types/database";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
-
-const statusConfig: Record<
-  string,
-  { label: string; dotClass: string; badgeClass: string }
-> = {
-  active: {
-    label: "Al día",
-    dotClass: "",
-    badgeClass:
-      "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
-  },
-  pending: {
-    label: "Pausado",
-    dotClass: "",
-    badgeClass: "bg-neutral-800 border border-neutral-700 text-neutral-500",
-  },
-  overdue: {
-    label: "Vence pronto",
-    dotClass: "animate-pulse",
-    badgeClass: "bg-red-500/10 border border-red-500/20 text-red-400",
-  },
-};
 
 interface ServiceCardProps {
   service: ServiceSummary;
@@ -63,7 +44,7 @@ export function ServiceCard({
   const blockedRef = useRef(false);
   const serviceMembers = service.members ?? [];
   const isInactive = service.status !== "active";
-  const status = statusConfig[service.status] ?? statusConfig.pending;
+  const status = serviceStatusConfig[service.status] ?? serviceStatusConfig.pending;
 
   return (
     <>
@@ -95,41 +76,12 @@ export function ServiceCard({
         {/* Header: icon + name */}
         <div className="flex items-start justify-between relative z-10">
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div
-              className={cn(
-                "w-12 h-12 rounded-xl border flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300",
-                isInactive
-                  ? "bg-neutral-900 border-neutral-800 grayscale group-hover:grayscale-0"
-                  : "bg-black border-neutral-800",
-              )}
-              style={{
-                boxShadow: isInactive
-                  ? undefined
-                  : `0 4px 14px ${service.color}1a`,
-              }}
-            >
-              {service.icon_url ? (
-                service.icon_url.includes(":") ? (
-                  <Icon
-                    icon={service.icon_url}
-                    width={24}
-                    style={{ color: isInactive ? undefined : service.color }}
-                    className={cn(isInactive && "text-neutral-500")}
-                  />
-                ) : (
-                  <span className="text-xl leading-none">
-                    {service.icon_url}
-                  </span>
-                )
-              ) : (
-                <Icon
-                  icon="solar:tv-bold"
-                  width={24}
-                  style={{ color: isInactive ? undefined : service.color }}
-                  className={cn(isInactive && "text-neutral-500")}
-                />
-              )}
-            </div>
+            <ServiceIconBox
+              iconUrl={service.icon_url}
+              color={service.color}
+              inactive={isInactive}
+              className="group-hover:scale-105 transition-transform duration-300"
+            />
             <div>
               <h3
                 className={cn(
@@ -192,24 +144,12 @@ export function ServiceCard({
               </span>
             )}
           </div>
-          <div
-            className={cn(
-              "px-2.5 py-1 rounded-full text-[10px] font-medium flex items-center gap-1.5",
-              status.badgeClass,
-            )}
-          >
-            {service.status === "overdue" ? (
-              <span
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full bg-current",
-                  status.dotClass,
-                )}
-              />
-            ) : service.status === "active" ? (
-              <Icon icon="solar:check-circle-bold" width={10} />
-            ) : null}
-            {status.label}
-          </div>
+          <StatusBadge
+            badgeClass={status.badgeClass}
+            label={service.status === "active" ? "Al día" : status.label}
+            icon={status.icon}
+            dotClass={status.dotClass}
+          />
         </div>
 
         {/* Action buttons */}

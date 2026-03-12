@@ -4,20 +4,12 @@ import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/button";
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   toggleServiceStatus,
   deleteService,
 } from "@/app/(dashboard)/servicios/actions";
 import { toast } from "sonner";
 import type { ServiceSummary, Member } from "@/types/database";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 interface ServiceActionsProps {
   service: ServiceSummary;
@@ -134,48 +126,25 @@ export function ServiceActions({
         </Button>
       )}
 
-      <AlertDialog
+      <ConfirmDialog
         open={showDeleteDialog}
-        onOpenChange={(open) => {
-          if (!isPending) setShowDeleteDialog(open);
-        }}
-      >
-        <AlertDialogContent
-          className="bg-neutral-950 border-neutral-800"
-          onPointerDownOutside={(e) => {
-            if (isPending) e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            if (isPending) e.preventDefault();
-          }}
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-neutral-100">
-              Eliminar servicio
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-neutral-400">
-              ¿Estás seguro de que deseas eliminar{" "}
-              <span className="text-neutral-100 font-medium">
-                {service.name}
-              </span>
-              ? Esta acción no se puede deshacer. Se eliminarán todos los ciclos
-              de cobro y pagos asociados.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-neutral-900 border-neutral-800 text-neutral-200 hover:bg-neutral-800 hover:text-white">
-              Cancelar
-            </AlertDialogCancel>
-            <Button
-              onClick={handleDelete}
-              disabled={isPending}
-              className="bg-red-500 text-white hover:bg-red-600"
-            >
-              {isPending ? "Eliminando..." : "Eliminar"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onOpenChange={setShowDeleteDialog}
+        title="Eliminar servicio"
+        description={
+          <>
+            ¿Estás seguro de que deseas eliminar{" "}
+            <span className="text-neutral-100 font-medium">
+              {service.name}
+            </span>
+            ? Esta acción no se puede deshacer. Se eliminarán todos los ciclos
+            de cobro y pagos asociados.
+          </>
+        }
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
+        isPending={isPending}
+        variant="destructive"
+      />
     </>
   );
 }

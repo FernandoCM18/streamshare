@@ -6,48 +6,16 @@ import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
-  DialogClose,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
 import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
 import type { MyPayment } from "@/types/database";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
-
-// ── Helpers ───────────────────────────────────────────────────
-
-const statusConfig: Record<
-  string,
-  { label: string; badgeClass: string; description: string }
-> = {
-  pending: {
-    label: "Pendiente",
-    badgeClass: "bg-orange-400/10 border border-orange-400/20 text-orange-400",
-    description: "Aun no has realizado el pago.",
-  },
-  partial: {
-    label: "Parcial",
-    badgeClass: "bg-orange-400/10 border border-orange-400/20 text-orange-400",
-    description: "Has pagado una parte del monto total.",
-  },
-  paid: {
-    label: "En verificacion",
-    badgeClass: "bg-blue-500/10 border border-blue-500/20 text-blue-400",
-    description: "Tu pago esta siendo verificado por el propietario.",
-  },
-  confirmed: {
-    label: "Confirmado",
-    badgeClass:
-      "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
-    description: "El propietario confirmo tu pago.",
-  },
-  overdue: {
-    label: "Vencido",
-    badgeClass: "bg-red-500/10 border border-red-500/20 text-red-400",
-    description: "La fecha de vencimiento ya paso.",
-  },
-};
+import { paymentStatusConfig } from "@/lib/status-config";
+import { ModalHeader } from "@/components/shared/modal-header";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { PaymentProgressBar } from "@/components/shared/payment-progress-bar";
 
 // ── Component ─────────────────────────────────────────────────
 
@@ -81,7 +49,7 @@ export function MyPaymentDetailModal({
     payment.status === "pending" ||
     payment.status === "partial" ||
     payment.status === "overdue";
-  const status = statusConfig[payment.status] ?? statusConfig.pending;
+  const status = paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] ?? paymentStatusConfig.pending;
 
   function handleMarkPaid(amount: number, note?: string) {
     startTransition(async () => {
@@ -118,55 +86,25 @@ export function MyPaymentDetailModal({
         </div>
 
         {/* Header with colored accent */}
-        <div className="relative shrink-0 overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
-              background: `linear-gradient(135deg, ${payment.service_color} 0%, transparent 60%)`,
-            }}
-          />
-          <div className="relative flex bg-neutral-950/60 border-b border-neutral-800/80 pt-3 pr-5 pb-4 pl-5 sm:px-6 sm:pt-5 backdrop-blur-xl items-start justify-between gap-4">
-            <div className="flex items-start gap-4 flex-1 min-w-0">
-              <div
-                className="w-[52px] h-[52px] rounded-2xl bg-black/80 border border-neutral-700/50 flex items-center justify-center shrink-0"
-                style={{
-                  boxShadow: `0 4px 20px ${payment.service_color}26, 0 0 0 1px ${payment.service_color}10`,
-                }}
-              >
-                <Icon
-                  icon={payment.service_icon ?? "solar:tv-bold"}
-                  width={26}
-                  style={{ color: payment.service_color }}
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <DialogTitle className="text-lg font-bold text-white tracking-tight">
-                    {payment.service_name}
-                  </DialogTitle>
-                  <span
-                    className={cn(
-                      "px-2.5 py-1 rounded-full text-[10px] font-medium",
-                      status.badgeClass,
-                    )}
-                  >
-                    {status.label}
-                  </span>
-                </div>
-                <div className="mt-1.5 flex items-center gap-2 text-[13px] text-neutral-400">
-                  <span>Propietario:</span>
-                  <span className="font-medium text-neutral-300">
-                    {payment.owner_name}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 shrink-0 mt-0.5">
-              <Icon icon="solar:close-square-linear" width={15} />
-            </DialogClose>
-          </div>
-        </div>
+        <ModalHeader
+          color={payment.service_color}
+          iconUrl={payment.service_icon}
+          title={payment.service_name}
+          badge={
+            <StatusBadge
+              badgeClass={status.badgeClass}
+              label={payment.status === "paid" ? "En verificacion" : status.label}
+            />
+          }
+          subtitle={
+            <>
+              <span>Propietario:</span>
+              <span className="font-medium text-neutral-300">
+                {payment.owner_name}
+              </span>
+            </>
+          }
+        />
 
         {/* Content */}
         <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-5">
@@ -185,28 +123,11 @@ export function MyPaymentDetailModal({
           {/* Amount breakdown — unified card */}
           <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden">
             {/* Progress header */}
-            <div className="px-4 pt-4 pb-3">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
-                  Progreso de pago
-                </span>
-                <span className="text-[11px] font-medium text-neutral-400 tabular-nums">
-                  {paidPercent}%
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-neutral-800/80 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${paidPercent}%`,
-                    background:
-                      paidPercent === 100
-                        ? "linear-gradient(90deg, #34d399, #10b981)"
-                        : `linear-gradient(90deg, ${payment.service_color}cc, ${payment.service_color})`,
-                  }}
-                />
-              </div>
-            </div>
+            <PaymentProgressBar
+              percent={paidPercent}
+              color={payment.service_color}
+              label="Progreso de pago"
+            />
 
             {/* Breakdown rows */}
             <div className="divide-y divide-neutral-800/40">

@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedClient } from "@/lib/supabase/auth-action";
 import { z } from "zod";
 import { revalidatePersonas } from "@/lib/revalidate";
 
@@ -28,11 +28,7 @@ export async function createPersona(formData: FormData): Promise<{
   error?: string;
   persona?: { id: string; name: string; email: string };
 }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const raw = {
     name: formData.get("name") as string,
@@ -74,11 +70,7 @@ export async function createPersona(formData: FormData): Promise<{
 export async function updatePersona(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const raw: Record<string, unknown> = { id: formData.get("id") };
   const fields = ["name", "email", "phone", "notes"];
@@ -122,11 +114,7 @@ export async function deletePersona(
   const parsed = z.string().uuid().safeParse(personaId);
   if (!parsed.success) return { success: false, error: "ID inválido" };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const { error } = await supabase
     .from("members")

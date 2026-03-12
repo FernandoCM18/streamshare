@@ -6,8 +6,6 @@ import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
-  DialogClose,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,270 +35,17 @@ import {
   voidPayment,
   editPaymentAmount,
 } from "@/app/(dashboard)/dashboard/actions";
-
-const serviceStatusConfig: Record<
-  string,
-  { label: string; badgeClass: string; icon?: string; dotClass?: string }
-> = {
-  active: {
-    label: "Activo",
-    badgeClass:
-      "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
-    icon: "solar:check-circle-bold",
-  },
-  pending: {
-    label: "Pausado",
-    badgeClass: "bg-neutral-800 border border-neutral-700 text-neutral-500",
-  },
-  overdue: {
-    label: "Vence pronto",
-    badgeClass: "bg-red-500/10 border border-red-500/20 text-red-400",
-    dotClass: "animate-pulse",
-  },
-};
+import { serviceStatusConfig, paymentStatusConfig } from "@/lib/status-config";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { ModalHeader } from "@/components/shared/modal-header";
+import { PaymentProgressBar } from "@/components/shared/payment-progress-bar";
+import { NoteItem } from "@/components/shared/note-item";
+import type { NoteData } from "@/components/shared/note-item";
 
 const splitTypeLabels: Record<string, string> = {
   equal: "Dividido igual",
   custom: "Montos personalizados",
 };
-
-const paymentStatusConfig: Record<
-  string,
-  { label: string; textClass: string; bgClass: string; borderClass: string }
-> = {
-  confirmed: {
-    label: "Confirmado",
-    textClass: "text-emerald-400",
-    bgClass: "bg-emerald-500/10",
-    borderClass: "border-emerald-500/20",
-  },
-  paid: {
-    label: "Por confirmar",
-    textClass: "text-emerald-400",
-    bgClass: "bg-emerald-500/10",
-    borderClass: "border-emerald-500/20",
-  },
-  partial: {
-    label: "Parcial",
-    textClass: "text-orange-400",
-    bgClass: "bg-orange-400/10",
-    borderClass: "border-orange-400/20",
-  },
-  pending: {
-    label: "Pendiente",
-    textClass: "text-orange-400",
-    bgClass: "bg-orange-400/10",
-    borderClass: "border-orange-400/20",
-  },
-  overdue: {
-    label: "Vencido",
-    textClass: "text-red-400",
-    bgClass: "bg-red-500/10",
-    borderClass: "border-red-500/20",
-  },
-};
-
-function formatRelativeDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return "ahora";
-  if (diffMins < 60) return `hace ${diffMins}m`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `hace ${diffHours}h`;
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `hace ${diffDays}d`;
-  return date.toLocaleDateString("es-MX", {
-    day: "numeric",
-    month: "short",
-  });
-}
-
-/* ─── Inline Note Item (edit/delete) ─── */
-
-interface NoteData {
-  id: string;
-  content: string;
-  author_id: string;
-  is_edited: boolean;
-  created_at: string;
-  profiles?: { display_name: string | null; avatar_url: string | null } | null;
-}
-
-function NoteItem({ note, isOwner }: { note: NoteData; isOwner: boolean }) {
-  const [editing, setEditing] = useState(false);
-  const [editContent, setEditContent] = useState(note.content);
-  const [isPending, startTransition] = useTransition();
-
-  const authorName = note.profiles?.display_name ?? "Usuario";
-  const authorAvatar = note.profiles?.avatar_url;
-  const initials = getInitials(authorName);
-
-  function handleSave() {
-    if (!editContent.trim()) return;
-    startTransition(async () => {
-      const result = await updatePaymentNote(note.id, editContent.trim());
-      if (result.success) {
-        setEditing(false);
-        toast.success("Nota actualizada");
-      } else {
-        toast.error("Error al actualizar nota", {
-          description: result.error,
-        });
-      }
-    });
-  }
-
-  function handleDelete() {
-    startTransition(async () => {
-      const result = await deletePaymentNote(note.id);
-      if (result.success) {
-        toast.success("Nota eliminada");
-      } else {
-        toast.error("Error al eliminar nota", {
-          description: result.error,
-        });
-      }
-    });
-  }
-
-  return (
-    <div
-      className={cn(
-        "flex gap-2.5 px-2.5 py-2 rounded-lg bg-neutral-800/30",
-        isPending && "opacity-60 pointer-events-none",
-      )}
-    >
-      {/* Author avatar */}
-      {authorAvatar ? (
-        <img
-          src={authorAvatar}
-          alt={authorName}
-          className="w-5 h-5 rounded-full object-cover border border-neutral-700 shrink-0 mt-0.5"
-        />
-      ) : (
-        <div className="w-5 h-5 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center shrink-0 mt-0.5">
-          <span className="text-[7px] font-semibold text-neutral-400">
-            {initials}
-          </span>
-        </div>
-      )}
-
-      <div className="flex-1 min-w-0">
-        {editing ? (
-          <div className="flex flex-col gap-1.5">
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className={cn(
-                "w-full bg-neutral-900/20 border border-neutral-800",
-                "focus:border-neutral-600 rounded-lg px-2.5 py-1.5",
-                "text-neutral-200 placeholder:text-neutral-600",
-                "text-[11px] focus:outline-none focus:ring-0",
-                "transition-all resize-none",
-              )}
-              rows={2}
-              autoFocus
-            />
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="ghost"
-                size="xs"
-                className="px-2 py-0.5 text-[10px] font-medium bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20"
-                type="button"
-                disabled={isPending || !editContent.trim()}
-                onClick={handleSave}
-              >
-                <Icon icon="solar:check-read-bold" width={10} />
-                Guardar
-              </Button>
-              <Button
-                variant="ghost"
-                size="xs"
-                className="px-2 py-0.5 text-[10px] font-medium bg-neutral-800/40 hover:bg-neutral-700/60 text-neutral-400"
-                type="button"
-                onClick={() => {
-                  setEditing(false);
-                  setEditContent(note.content);
-                }}
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <span className="text-[10px] font-medium text-neutral-400">
-                {authorName}
-              </span>
-              <p className="text-[11px] text-neutral-300 break-words mt-0.5">
-                {note.content}
-              </p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[9px] text-neutral-600">
-                  {formatRelativeDate(note.created_at)}
-                </span>
-                {note.is_edited && (
-                  <span className="text-[9px] text-neutral-600 italic">
-                    (editado)
-                  </span>
-                )}
-              </div>
-            </div>
-            {isOwner && (
-              <div className="flex items-center gap-0.5 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  className="h-5 w-5 text-neutral-600 hover:text-neutral-300"
-                  type="button"
-                  onClick={() => setEditing(true)}
-                >
-                  <Icon icon="solar:pen-linear" width={10} />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      className="h-5 w-5 text-neutral-600 hover:text-red-400"
-                      type="button"
-                    >
-                      <Icon icon="solar:trash-bin-2-linear" width={10} />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="bg-neutral-950 border-neutral-800">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="text-neutral-100">
-                        Eliminar nota
-                      </AlertDialogTitle>
-                      <AlertDialogDescription className="text-neutral-400">
-                        Esta accion no se puede deshacer.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="bg-neutral-900 border-neutral-800 text-neutral-200 hover:bg-neutral-800 hover:text-white">
-                        Cancelar
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20"
-                        onClick={handleDelete}
-                      >
-                        Eliminar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /* ─── Add Note Inline Form ─── */
 
@@ -399,7 +144,7 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
       )[0]
     : payment.members;
   const statusCfg =
-    paymentStatusConfig[payment.status] ?? paymentStatusConfig.pending;
+    paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] ?? paymentStatusConfig.pending;
   const paidDate = payment.confirmed_at ?? payment.paid_at;
   const notes = payment.payment_notes ?? [];
   const period = payment.billing_cycles
@@ -623,7 +368,13 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
       {notes.length > 0 && (
         <div className="mt-2 ml-11 flex flex-col gap-1">
           {notes.map((note) => (
-            <NoteItem key={note.id} note={note} isOwner={true} />
+            <NoteItem
+              key={note.id}
+              note={note as NoteData}
+              isOwner={true}
+              onUpdate={updatePaymentNote}
+              onDelete={deletePaymentNote}
+            />
           ))}
         </div>
       )}
@@ -694,101 +445,49 @@ export default function ServiceDetailModal({
         </div>
 
         {/* Header with colored accent */}
-        <div className="relative shrink-0 overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
-              background: `linear-gradient(135deg, ${service.color} 0%, transparent 60%)`,
-            }}
-          />
-          <div className="relative sm:px-6 flex bg-neutral-950/60 border-neutral-800/80 border-b pt-3 pr-5 pb-4 pl-5 sm:pt-5 backdrop-blur-xl items-start justify-between gap-4">
-            <div className="flex items-start gap-4 flex-1 min-w-0">
-              <div
-                className="w-[52px] h-[52px] rounded-2xl bg-black/80 border border-neutral-700/50 flex items-center justify-center shrink-0"
-                style={{
-                  boxShadow: `0 4px 20px ${service.color}26, 0 0 0 1px ${service.color}10`,
-                }}
-              >
-                {service.icon_url && !service.icon_url.includes(":") ? (
-                  <span className="text-2xl leading-none">
-                    {service.icon_url}
-                  </span>
-                ) : (
-                  <Icon
-                    icon={service.icon_url ?? "solar:tv-bold"}
-                    width={26}
-                    style={{ color: service.color }}
-                  />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <DialogTitle className="text-lg font-bold text-white tracking-tight">
-                    {service.name}
-                  </DialogTitle>
-                  <div
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-medium flex items-center gap-1.5 ${status.badgeClass}`}
-                  >
-                    {service.status === "overdue" ? (
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full bg-current ${status.dotClass ?? ""}`}
-                      />
-                    ) : status.icon ? (
-                      <Icon icon={status.icon} width={10} />
-                    ) : null}
-                    {status.label}
-                  </div>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-[9px] font-medium text-violet-400">
-                    <Icon icon="solar:crown-bold" width={9} />
-                    Propietario
-                  </span>
-                </div>
-                <div className="mt-1.5 flex items-center gap-2 text-[13px] text-neutral-400">
-                  <span className="font-medium text-neutral-300">
-                    {formatCurrency(service.monthly_cost)}
-                  </span>
-                  <span className="text-neutral-600">/mes</span>
-                  <span className="w-1 h-1 rounded-full bg-neutral-700" />
-                  <span>Dia {service.billing_day}</span>
-                  <span className="w-1 h-1 rounded-full bg-neutral-700" />
-                  <span>
-                    {splitTypeLabels[service.split_type] ?? service.split_type}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 shrink-0 mt-0.5">
-              <Icon icon="solar:close-square-linear" width={15} />
-            </DialogClose>
-          </div>
-        </div>
+        <ModalHeader
+          color={service.color}
+          iconUrl={service.icon_url}
+          title={service.name}
+          badge={
+            <>
+              <StatusBadge
+                badgeClass={status.badgeClass}
+                label={status.label}
+                icon={status.icon}
+                dotClass={status.dotClass}
+              />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-[9px] font-medium text-violet-400">
+                <Icon icon="solar:crown-bold" width={9} />
+                Propietario
+              </span>
+            </>
+          }
+          subtitle={
+            <>
+              <span className="font-medium text-neutral-300">
+                {formatCurrency(service.monthly_cost)}
+              </span>
+              <span className="text-neutral-600">/mes</span>
+              <span className="w-1 h-1 rounded-full bg-neutral-700" />
+              <span>Dia {service.billing_day}</span>
+              <span className="w-1 h-1 rounded-full bg-neutral-700" />
+              <span>
+                {splitTypeLabels[service.split_type] ?? service.split_type}
+              </span>
+            </>
+          }
+        />
 
         {/* Scrollable Content */}
         <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-5">
           {/* Financial Overview */}
           <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden">
-            <div className="px-4 pt-4 pb-3">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
-                  Cobro del mes
-                </span>
-                <span className="text-[11px] font-medium text-neutral-400 tabular-nums">
-                  {collectedPercent}%
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-neutral-800/80 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${collectedPercent}%`,
-                    background:
-                      collectedPercent === 100
-                        ? "linear-gradient(90deg, #34d399, #10b981)"
-                        : `linear-gradient(90deg, ${service.color}cc, ${service.color})`,
-                  }}
-                />
-              </div>
-            </div>
+            <PaymentProgressBar
+              percent={collectedPercent}
+              color={service.color}
+              label="Cobro del mes"
+            />
             <div className="grid grid-cols-2 divide-x divide-neutral-800/60">
               <div className="px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-1">

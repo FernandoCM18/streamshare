@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedClient } from "@/lib/supabase/auth-action";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { revalidateSettings } from "@/lib/revalidate";
@@ -24,11 +25,7 @@ const settingsSchema = z.object({
 export async function updateProfile(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const raw = {
     display_name: formData.get("display_name") as string,
@@ -59,11 +56,7 @@ export async function updateProfile(
 export async function updateSettings(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const raw = {
     notify_before_days: Number(formData.get("notify_before_days") ?? 3),

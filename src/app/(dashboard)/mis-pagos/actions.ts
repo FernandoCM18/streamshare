@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedClient } from "@/lib/supabase/auth-action";
 import { z } from "zod";
 import { revalidateMyPayments } from "@/lib/revalidate";
 
@@ -26,11 +26,7 @@ export async function markMyPaymentAsPaid(
   });
   if (!parsed.success) return { success: false, error: "Datos inválidos" };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   // Use claim_payment RPC — this validates the member is the current user
   const { error } = await supabase.rpc("claim_payment", {

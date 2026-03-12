@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedClient } from "@/lib/supabase/auth-action";
 import { z } from "zod";
 import { revalidateServices, revalidateServiceMembers } from "@/lib/revalidate";
 import type { UpdateService } from "@/types/database";
@@ -57,11 +57,7 @@ const amountUpdateSchema = z.array(
 export async function createService(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string; serviceId?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const raw = {
     name: formData.get("name") as string,
@@ -143,11 +139,7 @@ export async function createService(
 export async function updateService(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const raw: Record<string, unknown> = { id: formData.get("id") };
   const fields = [
@@ -294,11 +286,7 @@ export async function toggleServiceStatus(
   if (!idParsed.success || !statusParsed.success)
     return { success: false, error: "Datos inválidos" };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const { error } = await supabase
     .from("services")
@@ -330,11 +318,7 @@ export async function addServiceMember(
   const parsed = schema.safeParse({ serviceId, memberId, customAmount });
   if (!parsed.success) return { success: false, error: "Datos inválidos" };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   // Check if a deactivated record already exists (re-adding a removed member)
   const { data: existing } = await supabase
@@ -404,11 +388,7 @@ export async function removeServiceMember(
   const parsed = schema.safeParse({ serviceId, memberId });
   if (!parsed.success) return { success: false, error: "Datos inválidos" };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   // Deactivate the service member
   const { error } = await supabase
@@ -446,11 +426,7 @@ export async function updateMemberAmount(
   const parsed = schema.safeParse({ serviceId, memberId, customAmount });
   if (!parsed.success) return { success: false, error: "Datos inválidos" };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const { error } = await supabase
     .from("service_members")
@@ -471,11 +447,7 @@ export async function deleteService(
   const parsed = z.string().uuid().safeParse(serviceId);
   if (!parsed.success) return { success: false, error: "ID inválido" };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "No autenticado" };
+  const { supabase, user } = await getAuthenticatedClient();
 
   const { error } = await supabase
     .from("services")

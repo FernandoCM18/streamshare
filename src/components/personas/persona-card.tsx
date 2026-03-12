@@ -5,45 +5,13 @@ import { Icon } from "@iconify/react";
 import { cn, formatCurrency, getInitials } from "@/lib/utils";
 import type { PersonaCardData, ServiceInfo } from "@/types/database";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { deletePersona } from "@/app/(dashboard)/personas/actions";
 import { RemindDrawer } from "@/components/dashboard/remind-drawer";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { personaStatusConfig } from "@/lib/status-config";
 import Image from "next/image";
-
-const statusConfig: Record<
-  string,
-  { label: string; badgeClass: string; dotClass?: string; icon?: string }
-> = {
-  overdue: {
-    label: "Vencido",
-    badgeClass: "bg-red-500/10 border-red-500/20 text-red-400",
-    dotClass: "bg-red-500 animate-pulse",
-  },
-  pending: {
-    label: "Pendiente",
-    badgeClass: "bg-orange-500/10 border-orange-500/20 text-orange-400",
-    dotClass: "bg-orange-500 animate-pulse",
-  },
-  confirmed: {
-    label: "Al día",
-    badgeClass: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
-    icon: "solar:check-circle-bold",
-  },
-  none: {
-    label: "Inactivo",
-    badgeClass: "bg-neutral-800 border-neutral-700 text-neutral-500",
-  },
-};
 
 function getOverallStatus(services: ServiceInfo[]): string {
   if (services.length === 0) return "none";
@@ -74,7 +42,7 @@ export function PersonaCard({
   const [isDeleting, startTransition] = useTransition();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const overallStatus = getOverallStatus(persona.services);
-  const status = statusConfig[overallStatus];
+  const status = personaStatusConfig[overallStatus];
   const hasServices = persona.services.length > 0;
   const isInactive = !hasServices;
   const hasPending = persona.services.some(
@@ -254,20 +222,12 @@ export function PersonaCard({
 
         {/* Status badge */}
         <div className="mb-4 flex items-center justify-between relative z-10">
-          <div
-            className={cn(
-              "px-2.5 py-1 rounded-full text-[10px] font-medium flex items-center gap-1.5 border",
-              status.badgeClass,
-            )}
-          >
-            {status.dotClass && (
-              <span
-                className={cn("w-1.5 h-1.5 rounded-full", status.dotClass)}
-              />
-            )}
-            {status.icon && <Icon icon={status.icon} width={10} />}
-            {status.label}
-          </div>
+          <StatusBadge
+            badgeClass={status.badgeClass}
+            label={status.label}
+            icon={status.icon}
+            dotClass={status.dotClass}
+          />
         </div>
 
         {/* Actions */}
@@ -361,34 +321,24 @@ export function PersonaCard({
           )}
         </div>
       </article>
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-neutral-950 border-neutral-800">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-neutral-100">
-              Eliminar persona
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-neutral-400">
-              ¿Estás seguro de que deseas eliminar a{" "}
-              <span className="text-neutral-100 font-medium">
-                {persona.name}
-              </span>
-              ? Se eliminará de todos los servicios asignados.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-neutral-900 border-neutral-800 text-neutral-200 hover:bg-neutral-800 hover:text-white">
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-red-500 text-white hover:bg-red-600"
-            >
-              {isDeleting ? "Eliminando..." : "Eliminar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Eliminar persona"
+        description={
+          <>
+            ¿Estás seguro de que deseas eliminar a{" "}
+            <span className="text-neutral-100 font-medium">
+              {persona.name}
+            </span>
+            ? Se eliminará de todos los servicios asignados.
+          </>
+        }
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
+        isPending={isDeleting}
+        variant="destructive"
+      />
     </>
   );
 }

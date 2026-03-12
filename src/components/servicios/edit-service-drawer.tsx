@@ -413,31 +413,59 @@ export default function EditServiceDrawer({
             {/* Billing Day */}
             <div className="space-y-3">
               <label className="text-xs font-medium text-neutral-400 tracking-wide">
-                DIA DE COBRO
+                DÍA DE COBRO
               </label>
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="w-full h-12 bg-neutral-900/20 border border-neutral-800 hover:border-neutral-700 rounded-xl px-4 text-sm font-medium text-neutral-200 outline-none transition-colors flex items-center justify-between group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
+                    className="w-full bg-neutral-900/20 border border-neutral-800 hover:border-neutral-700 rounded-xl px-4 py-3 outline-none transition-colors flex items-center gap-3.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
                   >
-                    <span className="flex items-center gap-2.5">
-                      <Icon
-                        icon="solar:calendar-linear"
-                        width={16}
-                        className="text-neutral-500 group-hover:text-neutral-300 transition-colors"
-                      />
-                      Día {form.watch("billing_day")} de cada mes
-                    </span>
-                    <span className="text-neutral-500 text-xs">
-                      Próximo: {formatBillingDate(billingDate)}
-                    </span>
+                    <div
+                      className="w-10 h-10 rounded-xl border border-neutral-800 group-hover:border-neutral-700 flex flex-col items-center justify-center shrink-0 transition-colors overflow-hidden"
+                      style={{
+                        background: `linear-gradient(to bottom, ${watchedColor}18, transparent)`,
+                      }}
+                    >
+                      <span
+                        className="text-[8px] font-bold uppercase leading-none tracking-wider"
+                        style={{ color: watchedColor }}
+                      >
+                        {billingDate.toLocaleString("es-MX", {
+                          month: "short",
+                        })}
+                      </span>
+                      <span className="text-sm font-bold text-white leading-tight">
+                        {billingDate.getDate()}
+                      </span>
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <span className="text-sm font-medium text-neutral-200 block">
+                        Día {form.watch("billing_day")} de cada mes
+                      </span>
+                      <span className="text-[11px] text-neutral-500 block">
+                        Próximo: {formatBillingDate(billingDate)}
+                      </span>
+                    </div>
+                    <Icon
+                      icon="solar:alt-arrow-down-linear"
+                      width={16}
+                      className="text-neutral-600 group-hover:text-neutral-400 transition-colors shrink-0"
+                    />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-auto p-0 bg-neutral-950 border-neutral-800 rounded-xl"
+                  className="w-auto p-0 bg-neutral-950 border-neutral-800 rounded-xl shadow-[0_8px_40px_rgba(0,0,0,0.5)] overflow-hidden"
                   align="start"
                 >
+                  <div className="px-4 pt-3.5 pb-2.5 border-b border-neutral-800/60">
+                    <p className="text-xs font-medium text-neutral-300">
+                      Selecciona la fecha de cobro
+                    </p>
+                    <p className="text-[10px] text-neutral-600 mt-0.5">
+                      Se usará el día para todos los ciclos futuros
+                    </p>
+                  </div>
                   <Calendar
                     mode="single"
                     selected={billingDate}
@@ -450,8 +478,36 @@ export default function EditServiceDrawer({
                     }}
                     locale={es}
                     defaultMonth={billingDate}
-                    className="bg-neutral-950 text-neutral-200"
+                    className="bg-neutral-950 text-neutral-200 p-3"
                   />
+                  <div className="px-4 pb-3 flex gap-2">
+                    {[1, 15, new Date().getDate()].filter(
+                      (v, i, a) => a.indexOf(v) === i,
+                    ).map((day) => (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => {
+                          const d = new Date(
+                            billingDate.getFullYear(),
+                            billingDate.getMonth(),
+                            day,
+                          );
+                          setBillingDate(d);
+                          form.setValue("billing_day", day);
+                          setCalendarOpen(false);
+                        }}
+                        className={cn(
+                          "flex-1 py-1.5 rounded-lg text-[11px] font-medium border transition-colors",
+                          billingDate.getDate() === day
+                            ? "bg-neutral-800 border-neutral-700 text-white"
+                            : "bg-neutral-900/40 border-neutral-800 text-neutral-500 hover:text-neutral-300 hover:border-neutral-700",
+                        )}
+                      >
+                        Día {day}
+                      </button>
+                    ))}
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
