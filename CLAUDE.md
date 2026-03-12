@@ -7,13 +7,17 @@ This file provides guidance to Claude Code when working with StreamShare.
 ## What is StreamShare
 
 StreamShare is a **dark-mode-only PWA** for managing shared streaming service payments.
-The owner tracks which people (personas) share each service, how much each owes, and confirms payments through a double-verification system.
+The owner tracks which people (members) share each service, how much each owes, and confirms payments through a double-verification system. Members with a StreamShare account can also view their own payments via the "Mis Pagos" screen.
 
 **Core flow:**
 1. Owner creates a **service** (Netflix, Spotify, etc.) with a monthly cost and billing day
-2. Owner adds **personas** (contacts) to the service — they may or may not have a StreamShare account
-3. Each month a **billing_cycle** is generated automatically, creating one **payment** per persona
-4. Personas pay → owner confirms → cycle closes
+2. Owner adds **members** (contacts) to the service — they may or may not have a StreamShare account
+3. Each month a **billing_cycle** is generated automatically, creating one **payment** per member
+4. Members pay → owner confirms → cycle closes
+
+**Guest flow (members with account):**
+1. Member logs in → sees `/mis-pagos` with their payments across all owners
+2. Member claims a payment → owner sees it as "paid" and confirms
 
 ---
 
@@ -22,6 +26,8 @@ The owner tracks which people (personas) share each service, how much each owes,
 - **Dev server:** `pnpm dev` (http://localhost:3000, Turbopack)
 - **Build:** `pnpm build` (uses `--webpack` flag, required by Serwist)
 - **Lint:** `pnpm lint` (ESLint + Prettier)
+- **Lint fix:** `pnpm lint:fix`
+- **Format:** `pnpm format` (Prettier)
 - **Add shadcn component:** `pnpm dlx shadcn add <component>`
 
 ---
@@ -35,8 +41,13 @@ The owner tracks which people (personas) share each service, how much each owes,
 | UI | shadcn/ui (`radix-nova`) + Radix UI + Lucide + @iconify/react (Solar icons) |
 | Backend | Supabase (auth, database, RLS) via `@supabase/ssr` |
 | Forms | React Hook Form + Zod v4 + @hookform/resolvers |
-| Animations | Motion (Framer Motion 12+) |
+| Animations | Motion (Framer Motion 12+) — import from `motion/react` |
 | Toasts | Sonner |
+| Dates | date-fns |
+| Date picker | react-day-picker |
+| Command palette | cmdk |
+| Drawers | Vaul |
+| Confetti | canvas-confetti |
 | PWA | Serwist (disabled in dev, active in prod only) |
 | Package manager | pnpm |
 
@@ -48,27 +59,69 @@ The owner tracks which people (personas) share each service, how much each owes,
 
 ```
 src/
-├── app/                    # App Router pages and layouts
-│   ├── (auth)/             # Login, register, invite flows
-│   ├── (app)/              # Authenticated app shell
-│   │   ├── page.tsx        # Home / Dashboard (gauge)
-│   │   ├── services/       # Services list + detail
-│   │   ├── personas/       # Personas list + detail
-│   │   └── settings/       # User settings
-│   ├── sw.ts               # Service worker (Serwist)
-│   └── manifest.ts         # PWA manifest
+├── app/                        # App Router pages and layouts
+│   ├── (auth)/                 # Login, register flows
+│   │   ├── login/page.tsx
+│   │   ├── register/page.tsx
+│   │   └── auth/callback/route.ts  # OAuth callback
+│   ├── (dashboard)/            # Authenticated app shell
+│   │   ├── layout.tsx          # Shared layout (app-shell, bottom dock)
+│   │   ├── template.tsx        # Page transition wrapper
+│   │   ├── loading.tsx         # Global loading state
+│   │   ├── dashboard/          # Home / Dashboard (gauge)
+│   │   ├── servicios/          # Services list + detail
+│   │   ├── personas/           # Personas/members list + detail
+│   │   ├── mis-pagos/          # Guest payment view (my payments)
+│   │   └── configuracion/      # User settings
+│   ├── page.tsx                # Root redirect
+│   ├── not-found.tsx           # 404 page
+│   ├── globals.css             # All CSS tokens + custom classes
+│   ├── sw.ts                   # Service worker (Serwist)
+│   ├── manifest.ts             # PWA manifest
+│   ├── robots.ts               # SEO robots
+│   └── sitemap.ts              # SEO sitemap
 ├── components/
-│   ├── ui/                 # shadcn/ui — DO NOT edit manually
-│   └── ...                 # App components
+│   ├── ui/                     # shadcn/ui — DO NOT edit manually
+│   ├── auth/                   # OAuth button, email-password form
+│   ├── dashboard/              # Gauge, service cards, payment rows, nav
+│   ├── servicios/              # Service cards, create/edit/detail modals
+│   ├── personas/               # Persona cards, create/edit/detail modals
+│   ├── mis-pagos/              # My payment cards + detail modal
+│   ├── configuracion/          # Profile, notifications, preferences cards
+│   ├── shared/                 # Reusable: status-badge, filter-bar, confirm-dialog, etc.
+│   ├── icons/                  # Custom SVG icon components
+│   └── providers.tsx           # App providers wrapper
 ├── lib/
 │   ├── supabase/
-│   │   ├── server.ts       # Supabase client for RSC (cookie-based)
-│   │   └── client.ts       # Supabase client for Client Components
-│   └── utils.ts            # cn() helper
+│   │   ├── server.ts           # Supabase client for RSC (cookie-based)
+│   │   ├── client.ts           # Supabase client for Client Components
+│   │   └── auth-action.ts      # Auth server actions (login, register, logout)
+│   ├── auth/
+│   │   └── user.ts             # getCurrentUser(), getRequiredUser() (React.cache)
+│   ├── queries.ts              # React.cache() wrapped data queries
+│   ├── revalidate.ts           # Granular revalidation helpers
+│   ├── compute-dashboard.ts    # Dashboard summary computed from payments
+│   ├── build-persona-cards.ts  # Transform raw data → PersonaCardData[]
+│   ├── status-config.ts        # Status label/color/icon config objects
+│   ├── utils.ts                # cn(), formatCurrency(), formatDate(), etc.
+│   └── mock-data.ts            # Test/seed data
 ├── types/
-│   └── database.ts         # Full schema types + composed types + helpers
-├── hooks/                  # Custom hooks
-└── proxy.ts                # Session refresh (Next.js 16 uses proxy.ts NOT middleware.ts)
+│   └── database.ts             # Full schema types + composed types + helpers
+├── hooks/
+│   ├── use-sw-update.ts        # PWA service worker update detection
+│   └── use-media-query.ts      # Responsive breakpoint hook
+└── proxy.ts                    # Session refresh (Next.js 16 uses proxy.ts NOT middleware.ts)
+```
+
+### Route structure per feature
+Each route under `(dashboard)/` follows this pattern:
+```
+feature/
+├── page.tsx              # Server component (data fetching)
+├── actions.ts            # Server actions ('use server')
+├── feature-client.tsx    # Client wrapper component (optional)
+├── loading.tsx           # Suspense fallback
+└── error.tsx             # Error boundary
 ```
 
 ---
@@ -80,29 +133,31 @@ src/
 |---|---|
 | `profiles` | Registered users (extends auth.users). Has `email` for auto-linking. |
 | `services` | Streaming services (name, color, monthly_cost, billing_day, split_type) |
-| `personas` | Contacts sharing services. `profile_id` is null if they have no account. |
-| `service_members` | Relation service ↔ persona. `custom_amount` for custom splits. |
+| `members` | Contacts sharing services. `profile_id` is null if they have no account. |
+| `service_members` | Relation service ↔ member. `custom_amount` for custom splits. `is_active` flag. |
 | `billing_cycles` | Monthly cycle per service (period_start, period_end, total_amount) |
-| `payments` | One payment per persona per cycle. Core of the app. |
-| `persona_credits` | Leftover credit when a persona overpays. Applied automatically next cycle. |
-| `payment_notes` | Notes on payments. Both owner and registered persona can write. |
-| `invitations` | Email invitations with token (7-day expiry) |
+| `payments` | One payment per member per cycle. Core of the app. |
+| `member_credits` | Leftover credit when a member overpays. Applied automatically next cycle. |
+| `payment_notes` | Notes on payments. Both owner and registered member can write. |
 | `activity_log` | Immutable event log (insert only, never update/delete) |
 | `user_settings` | Per-user config (notify_before_days, auto_generate_cycles, etc.) |
 
 ### Views (prefer these for UI queries)
 | View | Use for |
 |---|---|
-| `service_summary` | Services list — includes `pending_amount`, `collected_amount` |
+| `service_summary` | Services list — includes `pending_amount`, `collected_amount`, `members[]` |
 | `dashboard_summary` | Home gauge — `total_month_receivable`, `total_month_collected`, `overdue_count` |
-| `persona_debt_summary` | Personas list — `debt_by_month[]`, `total_debt`, `available_credit` |
+| `member_debt_summary` | Personas list — `debt_by_month[]`, `total_debt`, `available_credit` |
+| `my_payments` | Guest view — member's payments across all owners with service info |
+
+> **Note:** The dashboard now computes summary data client-side from payments via `computeDashboardFromPayments()` in `@/lib/compute-dashboard.ts` instead of relying solely on the `dashboard_summary` view. This ensures gauge and pending debtors use the same data source.
 
 ### RPC Functions (always use these, never mutate directly)
 ```typescript
 // Generate monthly billing cycle (call on service creation + monthly cron)
 supabase.rpc('generate_billing_cycle', { p_service_id: string })
 
-// Register payment with auto-reconciliation
+// Register payment with auto-reconciliation (owner action)
 supabase.rpc('register_payment', {
   p_payment_id: string,
   p_amount_paid: number,
@@ -111,11 +166,27 @@ supabase.rpc('register_payment', {
 })
 // Returns: { cycles_paid: [{payment_id, amount}], credit_generated: boolean, credit_amount: number }
 
+// Claim payment — member marks as paid (guest action, step 1 of double-verification)
+supabase.rpc('claim_payment', { p_payment_id: string, p_claimed_amount: number })
+
 // Confirm payment — owner only (step 2 of double-verification)
 supabase.rpc('confirm_payment', { p_payment_id: string })
 
+// Reject a payment claim — owner rejects member's claim
+supabase.rpc('reject_payment_claim', { p_payment_id: string })
+
+// Void a payment — owner cancels/voids a payment
+supabase.rpc('void_payment', { p_payment_id: string })
+
+// Edit payment amount after registration
+supabase.rpc('edit_payment_amount', { p_payment_id: string, p_new_amount: number })
+// Returns: { old_amount, new_amount, new_status, credit_cancelled, credit_generated }
+
 // Calculate amount for a member (equal or custom split)
-supabase.rpc('calculate_member_amount', { p_service_id: string, p_persona_id: string })
+supabase.rpc('calculate_member_amount', { p_service_id: string, p_member_id: string })
+
+// Add member to existing active billing cycles
+supabase.rpc('add_member_to_active_cycles', { p_service_id: string, p_member_id: string })
 ```
 
 ---
@@ -137,15 +208,15 @@ pending → partial → paid → confirmed
 
 ### Double-Verification (conditional)
 ```typescript
-// persona.profile_id !== null → requires_confirmation = true
-// Flow: persona marks paid → owner confirms
+// member.profile_id !== null → requires_confirmation = true
+// Flow: member claims payment → owner confirms
 
-// persona.profile_id === null → requires_confirmation = false  
+// member.profile_id === null → requires_confirmation = false
 // Flow: owner marks confirmed directly (no intermediate step)
 ```
 
 ### Credits System
-- If Ana pays $300 but only owes $99.67 → $200.33 saved as `persona_credits`
+- If Ana pays $300 but only owes $99.67 → $200.33 saved as `member_credits`
 - Credits are **per service** (Netflix credit ≠ Spotify credit)
 - Applied automatically FIFO when next cycle is generated
 - Owner can cancel a credit (sets status to `cancelled`)
@@ -157,7 +228,7 @@ pending → partial → paid → confirmed
 
 ### Accumulated Debt
 - If Ana skips February → in March her `payments.accumulated_debt` = February's amount
-- `persona_debt_summary.debt_by_month[]` shows breakdown per month
+- `member_debt_summary.debt_by_month[]` shows breakdown per month
 - `dashboard_summary.total_accumulated_debt` shows global total
 
 ### Data Mutations — What NOT to do
@@ -165,8 +236,8 @@ pending → partial → paid → confirmed
 // ❌ NEVER insert payments directly
 supabase.from('payments').insert(...)
 
-// ❌ NEVER insert persona_credits directly
-supabase.from('persona_credits').insert(...)
+// ❌ NEVER insert member_credits directly
+supabase.from('member_credits').insert(...)
 
 // ❌ NEVER insert activity_log directly
 supabase.from('activity_log').insert(...)
@@ -174,6 +245,7 @@ supabase.from('activity_log').insert(...)
 // ✅ Always use RPC functions
 supabase.rpc('generate_billing_cycle', { p_service_id })
 supabase.rpc('register_payment', { p_payment_id, p_amount_paid })
+supabase.rpc('claim_payment', { p_payment_id, p_claimed_amount })
 ```
 
 ---
@@ -220,21 +292,27 @@ emerald-400/500 → active, confirmed, paid  (bg-emerald-500/10 border-emerald-5
 orange-400      → pending, partial         (bg-orange-400/10  border-orange-400/20  text-orange-400)
 red-400/500     → overdue                  (bg-red-500/10     border-red-500/20     text-red-400)
 violet-400/500  → accent, CTA, primary actions
-blue-400        → info, links
+blue-400        → info, links, "paid awaiting confirmation"
 neutral-500     → inactive/paused          (bg-neutral-800    border-neutral-700    text-neutral-500)
 ```
 
 ### Custom CSS Classes (defined in globals.css)
 ```
-.vertical-lines          → decorative background pattern
-.glass-panel             → frosted glass effect (modals, overlays)
-.btn-cta-gold            → primary CTA with gradient + triple shadow
+.vertical-lines          → decorative background pattern (25% interval lines)
+.glass-panel             → frosted glass effect (header, bottom dock, overlays)
+.observ-card             → diagonal gradient overlay for premium cards
+.btn-cta-gold            → primary CTA with gradient + triple shadow + hover sweep
+.btn-confirm             → white confirm button with glow shadow
+.btn-confirm-sm          → small white confirm button (verification cards)
 .badge-active            → emerald status badge
 .badge-pending           → orange status badge
 .badge-overdue           → red status badge
-.service-glow-{color}    → card glow matching service color
-.gauge-glow              → glow for the semicircular gauge
-.center-dial-gradient    → gradient for gauge center
+.badge-inactive          → neutral status badge
+.card-inactive           → dashed border + muted opacity for inactive cards
+.service-glow            → generic absolute blur circle (card corners)
+.service-glow-{netflix|spotify|youtube|prime} → branded service glows
+.gauge-glow              → SVG drop shadow for the semicircular gauge arc
+.center-dial-gradient    → conic gradient for gauge center decoration
 ```
 
 ### Key Component Patterns
@@ -317,7 +395,7 @@ h-8 rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hove
 ```tsx
 <nav className="fixed bottom-0 inset-x-0 pb-safe">
   <div className="mx-4 mb-4 rounded-2xl bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 px-6 py-3 flex justify-around">
-    {/* Home | Servicios | Personas | Config */}
+    {/* Dashboard | Servicios | Personas | Mis Pagos | Config */}
   </div>
 </nav>
 ```
@@ -348,11 +426,44 @@ import { createClient } from '@/lib/supabase/client'
 const supabase = createClient()
 ```
 
+### Auth helpers — use these instead of raw supabase.auth.getUser()
+```typescript
+import { getCurrentUser, getRequiredUser } from '@/lib/auth/user'
+
+// Returns User | null (React.cache deduped)
+const user = await getCurrentUser()
+
+// Returns User or redirects to /login (React.cache deduped)
+const user = await getRequiredUser()
+```
+
+### Cached queries — deduplicated within same request
+```typescript
+import { getCachedServices, getCachedPayments, getCachedProfile } from '@/lib/queries'
+
+// Layout + page share the same request, so identical queries run only once
+const services = await getCachedServices(user.id)
+const payments = await getCachedPayments(user.id)
+```
+
+### Granular revalidation — use helpers from `@/lib/revalidate`
+```typescript
+import { revalidatePayments, revalidateServices, revalidatePersonas } from '@/lib/revalidate'
+
+// Instead of revalidatePath('/', 'layout'), use the specific helper:
+revalidatePayments()    // → /dashboard, /servicios, /mis-pagos
+revalidateServices()    // → /dashboard, /servicios, /personas
+revalidatePersonas()    // → /personas, /servicios, /dashboard
+revalidateNotes()       // → /dashboard, /mis-pagos
+revalidateSettings()    // → /configuracion, /dashboard
+revalidateMyPayments()  // → /mis-pagos, /dashboard
+```
+
 ### Server Actions pattern
 ```typescript
 'use server'
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePayments } from '@/lib/revalidate'
 import { z } from 'zod'
 
 const schema = z.object({ ... })
@@ -367,7 +478,7 @@ export async function myAction(formData: FormData) {
 
   // mutation...
 
-  revalidatePath('/services')
+  revalidatePayments()
   return { success: true }
 }
 ```
@@ -385,14 +496,30 @@ export async function myAction(formData: FormData) {
 - 2-space indent, 80 char width
 - RSC by default — add `'use client'` only when necessary
 
-### Utility functions (from `@/types/database`)
+### Status config — use centralized configs
 ```typescript
-formatCurrency(amount, currency?)  // es-MX locale
-calcCollectedPercent(summary)       // for gauge percentage
-statusColors[status]                // Tailwind class for payment/service status
-formatPeriod(periodStart)           // 'Feb 2026'
-canUseDoubleVerification(persona)   // boolean
-isNoteAuthor(note, userId)          // boolean
+import { paymentStatusConfig, serviceStatusConfig, personaStatusConfig } from '@/lib/status-config'
+
+// Each entry has: label, badgeClass, textClass, bgClass, borderClass, icon, description
+paymentStatusConfig['confirmed'].label  // "Confirmado"
+paymentStatusConfig['overdue'].badgeClass  // "bg-red-500/10 border ..."
+```
+
+### Utility functions (from `@/lib/utils`)
+```typescript
+cn(...classes)                        // clsx + tailwind-merge
+getInitials(name)                     // "Ana Ruiz" → "AR"
+getGreeting()                         // Spanish time-based greeting
+formatDate(date?)                     // "11 mar" or full current date
+formatPaymentDate(dateStr)            // "11 mar"
+formatRelativeTime(dateStr)           // "Vence en 3 días" / "Venció hace 2 días"
+formatRelativeDate(dateStr)           // "hace 5m" / "hace 2d" (for notes)
+formatPeriod(periodStart)             // "mar 2026"
+formatCurrency(amount, currency?)     // es-MX locale, default MXN
+calcCollectedPercent(summary)         // gauge percentage
+statusColors[status]                  // Tailwind text class for status
+canUseDoubleVerification(member)      // member.profile_id !== null
+isNoteAuthor(note, userId)            // note.author_id === userId
 ```
 
 ---
@@ -406,6 +533,8 @@ isNoteAuthor(note, userId)          // boolean
 - **Zod v4** — breaking changes from v3, use `z.string().min(1)` not `z.string().nonempty()`
 - **Motion not framer-motion** — import from `motion/react`, not `framer-motion`
 - **Solar icons** — use `@iconify/react` with `solar:*` icon names
+- **Spanish UI** — all labels, routes, and messages are in Spanish (es-MX locale)
+- **"Members" not "personas"** — DB tables use `members` and `member_credits`, though UI still shows "Personas"
 
 ### Environment variables
 ```
@@ -419,14 +548,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 | Route | Screen | Key data |
 |---|---|---|
-| `/` | Dashboard + gauge | `dashboard_summary` view |
-| `/services` | Services list | `service_summary` view |
-| `/services/[id]` | Service detail + payments | `services` + `payments` + `personas` |
-| `/services/new` | Add service form | Insert `services` + `service_members` |
-| `/personas` | Personas list | `persona_debt_summary` view |
-| `/personas/[id]` | Persona detail + debt history | `persona_debt_summary` + `payments` |
-| `/personas/new` | Add persona form | Insert `personas` |
-| `/settings` | User settings | `user_settings` |
-| `/auth/login` | Login | Supabase auth |
-| `/auth/register` | Register + auto-link | Supabase auth + trigger |
-| `/invite/[token]` | Accept invitation | `invitations` table |
+| `/dashboard` | Dashboard + gauge | `computeDashboardFromPayments()` + `getCachedPaymentsLite()` |
+| `/servicios` | Services list | `service_summary` view via `getCachedServices()` |
+| `/servicios` (detail modal) | Service detail + payments | `services` + `payments` + `members` |
+| `/personas` | Personas list | `getCachedPersonasData()` → `buildPersonaCards()` |
+| `/personas` (detail modal) | Persona detail + debt | Members + payments + services |
+| `/mis-pagos` | My payments (guest view) | `my_payments` view via `getCachedMyPayments()` |
+| `/configuracion` | User settings | `user_settings` + `profiles` |
+| `/login` | Login | Supabase auth (OAuth + email/password) |
+| `/register` | Register + auto-link | Supabase auth + profile trigger |
