@@ -83,6 +83,7 @@ export function NoteItem({ note, isOwner, onUpdate, onDelete }: NoteItemProps) {
       )}
     >
       {authorAvatar ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={authorAvatar}
           alt={authorName}

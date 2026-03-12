@@ -3,11 +3,8 @@
 import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
-import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
 import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
 import type { MyPayment } from "@/types/database";
@@ -49,7 +46,9 @@ export function MyPaymentDetailModal({
     payment.status === "pending" ||
     payment.status === "partial" ||
     payment.status === "overdue";
-  const status = paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] ?? paymentStatusConfig.pending;
+  const status =
+    paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] ??
+    paymentStatusConfig.pending;
 
   function handleMarkPaid(amount: number, note?: string) {
     startTransition(async () => {
@@ -93,7 +92,9 @@ export function MyPaymentDetailModal({
           badge={
             <StatusBadge
               badgeClass={status.badgeClass}
-              label={payment.status === "paid" ? "En verificacion" : status.label}
+              label={
+                payment.status === "paid" ? "En verificacion" : status.label
+              }
             />
           }
           subtitle={

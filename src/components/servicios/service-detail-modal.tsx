@@ -3,10 +3,7 @@
 import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -144,7 +141,8 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
       )[0]
     : payment.members;
   const statusCfg =
-    paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] ?? paymentStatusConfig.pending;
+    paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] ??
+    paymentStatusConfig.pending;
   const paidDate = payment.confirmed_at ?? payment.paid_at;
   const notes = payment.payment_notes ?? [];
   const period = payment.billing_cycles

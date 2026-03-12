@@ -328,9 +328,7 @@ export function PersonaCard({
         description={
           <>
             ¿Estás seguro de que deseas eliminar a{" "}
-            <span className="text-neutral-100 font-medium">
-              {persona.name}
-            </span>
+            <span className="text-neutral-100 font-medium">{persona.name}</span>
             ? Se eliminará de todos los servicios asignados.
           </>
         }

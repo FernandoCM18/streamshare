@@ -52,8 +52,7 @@ export function MyPaymentCard({
 
   const statusCfg = paymentStatusConfig[status];
   const statusStyles = statusCfg.badgeClass;
-  const statusLabel =
-    status === "paid" ? "En verificación" : statusCfg.label;
+  const statusLabel = status === "paid" ? "En verificación" : statusCfg.label;
 
   function handleMarkPaid() {
     startTransition(async () => {

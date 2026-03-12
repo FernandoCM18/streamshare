@@ -76,7 +76,9 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const router = useRouter();
   const openRef = useRef(open);
-  openRef.current = open;
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {

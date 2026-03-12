@@ -133,9 +133,7 @@ export function ServiceActions({
         description={
           <>
             ¿Estás seguro de que deseas eliminar{" "}
-            <span className="text-neutral-100 font-medium">
-              {service.name}
-            </span>
+            <span className="text-neutral-100 font-medium">{service.name}</span>
             ? Esta acción no se puede deshacer. Se eliminarán todos los ciclos
             de cobro y pagos asociados.
           </>

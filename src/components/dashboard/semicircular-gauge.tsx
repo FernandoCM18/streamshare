@@ -32,8 +32,6 @@ export function SemicircularGauge({
     normalizedTotal > 0
       ? Math.min(100, (normalizedCollected / normalizedTotal) * 100)
       : 0;
-  const hasDecimals = Math.abs(normalizedRemaining % 1) > Number.EPSILON;
-
   // Animated remaining amount
   const motionRemaining = useMotionValue(0);
   const springRemaining = useSpring(motionRemaining, {

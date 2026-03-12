@@ -44,7 +44,8 @@ export function ServiceCard({
   const blockedRef = useRef(false);
   const serviceMembers = service.members ?? [];
   const isInactive = service.status !== "active";
-  const status = serviceStatusConfig[service.status] ?? serviceStatusConfig.pending;
+  const status =
+    serviceStatusConfig[service.status] ?? serviceStatusConfig.pending;
 
   return (
     <>
@@ -159,7 +160,9 @@ export function ServiceCard({
             members={members}
             isOwner={isOwner}
             onEdit={() => setShowEditDrawer(true)}
-            onDeletingChange={(v) => { blockedRef.current = v; }}
+            onDeletingChange={(v) => {
+              blockedRef.current = v;
+            }}
           />
         </div>
       </article>

@@ -481,32 +481,32 @@ export default function EditServiceDrawer({
                     className="bg-neutral-950 text-neutral-200 p-3"
                   />
                   <div className="px-4 pb-3 flex gap-2">
-                    {[1, 15, new Date().getDate()].filter(
-                      (v, i, a) => a.indexOf(v) === i,
-                    ).map((day) => (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => {
-                          const d = new Date(
-                            billingDate.getFullYear(),
-                            billingDate.getMonth(),
-                            day,
-                          );
-                          setBillingDate(d);
-                          form.setValue("billing_day", day);
-                          setCalendarOpen(false);
-                        }}
-                        className={cn(
-                          "flex-1 py-1.5 rounded-lg text-[11px] font-medium border transition-colors",
-                          billingDate.getDate() === day
-                            ? "bg-neutral-800 border-neutral-700 text-white"
-                            : "bg-neutral-900/40 border-neutral-800 text-neutral-500 hover:text-neutral-300 hover:border-neutral-700",
-                        )}
-                      >
-                        Día {day}
-                      </button>
-                    ))}
+                    {[1, 15, new Date().getDate()]
+                      .filter((v, i, a) => a.indexOf(v) === i)
+                      .map((day) => (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            const d = new Date(
+                              billingDate.getFullYear(),
+                              billingDate.getMonth(),
+                              day,
+                            );
+                            setBillingDate(d);
+                            form.setValue("billing_day", day);
+                            setCalendarOpen(false);
+                          }}
+                          className={cn(
+                            "flex-1 py-1.5 rounded-lg text-[11px] font-medium border transition-colors",
+                            billingDate.getDate() === day
+                              ? "bg-neutral-800 border-neutral-700 text-white"
+                              : "bg-neutral-900/40 border-neutral-800 text-neutral-500 hover:text-neutral-300 hover:border-neutral-700",
+                          )}
+                        >
+                          Día {day}
+                        </button>
+                      ))}
                   </div>
                 </PopoverContent>
               </Popover>

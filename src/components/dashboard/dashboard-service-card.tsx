@@ -71,9 +71,7 @@ export function DashboardServiceCard({
             }}
           >
             {service.icon_url && !service.icon_url.includes(":") ? (
-              <span className="text-2xl leading-none">
-                {service.icon_url}
-              </span>
+              <span className="text-2xl leading-none">{service.icon_url}</span>
             ) : (
               <Icon
                 icon={service.icon_url ?? "solar:tv-bold"}

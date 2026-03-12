@@ -240,6 +240,8 @@ export const getCachedPaymentsLite = cache(async (userId: string) => {
 
 // --- My Payments (guest view) ---
 
+// userId param used for cache-busting (React cache keys by arguments)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const getCachedMyPayments = cache(async (userId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
