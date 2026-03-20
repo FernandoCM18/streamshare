@@ -424,11 +424,34 @@ export default function ServiceDetailModal({
       ? Math.min(100, Math.round((service.collected_amount / totalCost) * 100))
       : 0;
 
-  // Sort payments: most recent first
+  // Map member_id → their most recent cycle payment
+  const memberLatestPayment = new Map<string, MemberPayment>();
+  for (const payment of payments) {
+    const existing = memberLatestPayment.get(payment.member_id);
+    if (!existing) {
+      memberLatestPayment.set(payment.member_id, payment);
+    } else {
+      const existingPeriod = existing.billing_cycles?.period_start ?? "";
+      const newPeriod = payment.billing_cycles?.period_start ?? "";
+      if (newPeriod > existingPeriod) {
+        memberLatestPayment.set(payment.member_id, payment);
+      }
+    }
+  }
+
+  // Sort payments: current cycle first, then by status priority within same cycle
+  const statusPriority: Record<string, number> = {
+    overdue: 0,
+    pending: 1,
+    partial: 2,
+    paid: 3,
+    confirmed: 4,
+  };
   const sortedPayments = [...payments].sort((a, b) => {
-    const dateA = a.confirmed_at ?? a.paid_at ?? a.due_date;
-    const dateB = b.confirmed_at ?? b.paid_at ?? b.due_date;
-    return new Date(dateB).getTime() - new Date(dateA).getTime();
+    const periodA = a.billing_cycles?.period_start ?? "";
+    const periodB = b.billing_cycles?.period_start ?? "";
+    if (periodB !== periodA) return periodB.localeCompare(periodA);
+    return (statusPriority[a.status] ?? 5) - (statusPriority[b.status] ?? 5);
   });
 
   return (
@@ -547,6 +570,14 @@ export default function ServiceDetailModal({
                     totalCost > 0
                       ? Math.round((memberAmount / totalCost) * 100)
                       : 0;
+                  const latestPayment = memberLatestPayment.get(
+                    member.member_id,
+                  );
+                  const memberStatusCfg = latestPayment
+                    ? (paymentStatusConfig[
+                        latestPayment.status as keyof typeof paymentStatusConfig
+                      ] ?? null)
+                    : null;
 
                   return (
                     <div key={member.member_id} className="px-4 py-3">
@@ -555,9 +586,23 @@ export default function ServiceDetailModal({
                           {getInitials(member.name)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-[13px] font-medium text-neutral-200 truncate block">
-                            {member.name}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[13px] font-medium text-neutral-200 truncate">
+                              {member.name}
+                            </span>
+                            {memberStatusCfg && (
+                              <span
+                                className={cn(
+                                  "px-1.5 py-0.5 rounded-full text-[9px] font-medium border shrink-0",
+                                  memberStatusCfg.bgClass,
+                                  memberStatusCfg.borderClass,
+                                  memberStatusCfg.textClass,
+                                )}
+                              >
+                                {memberStatusCfg.label}
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[11px] text-neutral-500">
                             {memberPercent}% del total
                           </span>

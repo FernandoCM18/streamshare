@@ -424,6 +424,11 @@ const supabase = await createClient()
 // Client Components:
 import { createClient } from '@/lib/supabase/client'
 const supabase = createClient()
+
+// Server Actions — use this helper to get client + authenticated user in one call:
+import { getAuthenticatedClient } from '@/lib/supabase/auth-action'
+const { supabase, user } = await getAuthenticatedClient()
+// Throws "No autenticado" if no session — wrap in try/catch
 ```
 
 ### Auth helpers — use these instead of raw supabase.auth.getUser()
@@ -451,35 +456,38 @@ const payments = await getCachedPayments(user.id)
 import { revalidatePayments, revalidateServices, revalidatePersonas } from '@/lib/revalidate'
 
 // Instead of revalidatePath('/', 'layout'), use the specific helper:
-revalidatePayments()    // → /dashboard, /servicios, /mis-pagos
-revalidateServices()    // → /dashboard, /servicios, /personas
-revalidatePersonas()    // → /personas, /servicios, /dashboard
-revalidateNotes()       // → /dashboard, /mis-pagos
-revalidateSettings()    // → /configuracion, /dashboard
-revalidateMyPayments()  // → /mis-pagos, /dashboard
+revalidatePayments()         // → /dashboard, /servicios, /mis-pagos
+revalidateServices()         // → /dashboard, /servicios, /personas
+revalidateServiceMembers()   // → /dashboard, /servicios, /personas (member added/removed/amount changed)
+revalidatePersonas()         // → /personas, /servicios, /dashboard
+revalidateNotes()            // → /dashboard, /mis-pagos
+revalidateSettings()         // → /configuracion, /dashboard
+revalidateMyPayments()       // → /mis-pagos, /dashboard
 ```
 
 ### Server Actions pattern
 ```typescript
 'use server'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthenticatedClient } from '@/lib/supabase/auth-action'
 import { revalidatePayments } from '@/lib/revalidate'
 import { z } from 'zod'
 
 const schema = z.object({ ... })
 
 export async function myAction(formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Unauthorized' }
+  try {
+    const { supabase, user } = await getAuthenticatedClient()
 
-  const input = schema.safeParse(Object.fromEntries(formData))
-  if (!input.success) return { success: false, error: input.error.message }
+    const input = schema.safeParse(Object.fromEntries(formData))
+    if (!input.success) return { success: false, error: input.error.message }
 
-  // mutation...
+    // mutation...
 
-  revalidatePayments()
-  return { success: true }
+    revalidatePayments()
+    return { success: true }
+  } catch {
+    return { success: false, error: 'No autenticado' }
+  }
 }
 ```
 
@@ -526,7 +534,7 @@ isNoteAuthor(note, userId)            // note.author_id === userId
 
 ## Important Notes
 
-- **proxy.ts not middleware.ts** — Next.js 16 uses `proxy.ts` for session refresh
+- **proxy.ts not middleware.ts** — Next.js 16 uses `src/proxy.ts` for session refresh (not `middleware.ts`)
 - **Serwist disabled in dev** — PWA only active in production builds
 - **Build flag** — always `pnpm build` (uses `--webpack`, Serwist incompatible with Turbopack)
 - **React Compiler active** — don't add manual memoization
