@@ -30,6 +30,11 @@ interface PersonasDataInput {
     icon_url: string | null;
     monthly_cost: number;
   }[];
+  credits?: {
+    member_id: string;
+    service_id: string;
+    amount_remaining: number;
+  }[];
 }
 
 /**
@@ -48,6 +53,13 @@ export function buildPersonaCards(data: PersonasDataInput): PersonaCardData[] {
       sm.service_id,
       (memberCountByService.get(sm.service_id) ?? 0) + 1,
     );
+  }
+
+  // Build credit lookup: "memberId:serviceId" → total amount_remaining
+  const creditMap = new Map<string, number>();
+  for (const c of data.credits ?? []) {
+    const key = `${c.member_id}:${c.service_id}`;
+    creditMap.set(key, (creditMap.get(key) ?? 0) + c.amount_remaining);
   }
 
   return data.members.map((m) => {
@@ -70,6 +82,7 @@ export function buildPersonaCards(data: PersonasDataInput): PersonaCardData[] {
           status:
             (latestPayment?.status as PersonaCardData["services"][number]["status"]) ??
             null,
+          available_credit: creditMap.get(`${m.id}:${sm.service_id}`) ?? 0,
         };
       });
 
@@ -86,6 +99,10 @@ export function buildPersonaCards(data: PersonasDataInput): PersonaCardData[] {
       (sum, s) => sum + s.amount_due,
       0,
     );
+    const totalCredit = memberServices.reduce(
+      (sum, s) => sum + s.available_credit,
+      0,
+    );
 
     return {
       id: m.id,
@@ -97,6 +114,7 @@ export function buildPersonaCards(data: PersonasDataInput): PersonaCardData[] {
       services: memberServices,
       total_debt: totalDebt,
       monthly_amount: monthlyAmount,
+      available_credit: totalCredit,
     };
   });
 }

@@ -294,7 +294,7 @@ export const getCachedSettings = cache(async (userId: string) => {
 
 export const getCachedPersonasData = cache(async (userId: string) => {
   const supabase = await createClient();
-  const [membersRes, serviceMembersRes, paymentsRes, servicesRes] =
+  const [membersRes, serviceMembersRes, paymentsRes, servicesRes, creditsRes] =
     await Promise.all([
       supabase
         .from("members")
@@ -317,6 +317,11 @@ export const getCachedPersonasData = cache(async (userId: string) => {
         .from("services")
         .select("id, name, color, icon_url, monthly_cost")
         .eq("owner_id", userId),
+      supabase
+        .from("member_credits")
+        .select("member_id, service_id, amount_remaining")
+        .eq("owner_id", userId)
+        .eq("status", "available"),
     ]);
 
   return {
@@ -324,5 +329,6 @@ export const getCachedPersonasData = cache(async (userId: string) => {
     serviceMembers: serviceMembersRes.data ?? [],
     payments: paymentsRes.data ?? [],
     services: servicesRes.data ?? [],
+    credits: creditsRes.data ?? [],
   };
 });

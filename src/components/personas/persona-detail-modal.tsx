@@ -166,7 +166,12 @@ export function PersonaDetailModal({
         <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-5">
           {/* Financial Overview — unified card */}
           <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden">
-            <div className="grid grid-cols-2 divide-x divide-neutral-800/60">
+            <div
+              className={cn(
+                "grid divide-x divide-neutral-800/60",
+                persona.available_credit > 0 ? "grid-cols-3" : "grid-cols-2",
+              )}
+            >
               <div className="px-4 py-3.5">
                 <div className="flex items-center gap-1.5 mb-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
@@ -203,6 +208,19 @@ export function PersonaDetailModal({
                   {formatCurrency(persona.total_debt)}
                 </span>
               </div>
+              {persona.available_credit > 0 && (
+                <div className="px-4 py-3.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">
+                      A favor
+                    </span>
+                  </div>
+                  <span className="text-xl font-bold tabular-nums tracking-tight text-emerald-400">
+                    {formatCurrency(persona.available_credit)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -254,16 +272,27 @@ export function PersonaDetailModal({
                           {formatCurrency(s.amount_due)}/mes
                         </span>
                       </div>
-                      {sStatus && (
-                        <span
-                          className={cn(
-                            "px-2 py-0.5 rounded-full text-[9px] font-medium",
-                            sStatus.badgeClass,
-                          )}
-                        >
-                          {sStatus.label}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {s.available_credit > 0 && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1">
+                            <Icon
+                              icon="solar:wallet-money-bold"
+                              width={9}
+                            />
+                            {formatCurrency(s.available_credit)}
+                          </span>
+                        )}
+                        {sStatus && (
+                          <span
+                            className={cn(
+                              "px-2 py-0.5 rounded-full text-[9px] font-medium",
+                              sStatus.badgeClass,
+                            )}
+                          >
+                            {sStatus.label}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

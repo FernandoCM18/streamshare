@@ -324,6 +324,7 @@ export interface ServiceInfo {
   service_icon: string | null;
   amount_due: number;
   status: PaymentStatus | null;
+  available_credit: number;
 }
 
 export interface PersonaCardData {
@@ -336,6 +337,7 @@ export interface PersonaCardData {
   services: ServiceInfo[];
   total_debt: number;
   monthly_amount: number;
+  available_credit: number;
 }
 
 export interface PendingDebtor {
