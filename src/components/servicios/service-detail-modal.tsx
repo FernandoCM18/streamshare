@@ -439,19 +439,47 @@ export default function ServiceDetailModal({
     }
   }
 
-  // Sort payments: current cycle first, then by status priority within same cycle
-  const statusPriority: Record<string, number> = {
-    overdue: 0,
-    pending: 1,
-    partial: 2,
-    paid: 3,
-    confirmed: 4,
-  };
+  // Historial: ciclo más reciente primero; sin pago registrado arriba del ciclo; luego por actividad
+  function periodStartMs(p: MemberPayment): number {
+    const s = p.billing_cycles?.period_start;
+    if (!s) return 0;
+    const t = new Date(s).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  }
+  function activityMs(p: MemberPayment): number {
+    const iso = p.confirmed_at ?? p.paid_at;
+    if (!iso) return 0;
+    const t = new Date(iso).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  }
+  function dueMs(p: MemberPayment): number {
+    const t = new Date(p.due_date).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  }
+  function memberNameKey(p: MemberPayment): string {
+    const m = p.members;
+    const row = Array.isArray(m) ? m[0] : m;
+    return (row?.name ?? "").toLowerCase();
+  }
   const sortedPayments = [...payments].sort((a, b) => {
-    const periodA = a.billing_cycles?.period_start ?? "";
-    const periodB = b.billing_cycles?.period_start ?? "";
-    if (periodB !== periodA) return periodB.localeCompare(periodA);
-    return (statusPriority[a.status] ?? 5) - (statusPriority[b.status] ?? 5);
+    const byPeriod = periodStartMs(b) - periodStartMs(a);
+    if (byPeriod !== 0) return byPeriod;
+
+    const aSinPago = Number(a.amount_paid) <= 0;
+    const bSinPago = Number(b.amount_paid) <= 0;
+    if (aSinPago !== bSinPago) return aSinPago ? -1 : 1;
+
+    if (aSinPago && bSinPago) {
+      const byDueAsc = dueMs(a) - dueMs(b);
+      if (byDueAsc !== 0) return byDueAsc;
+      return memberNameKey(a).localeCompare(memberNameKey(b), "es");
+    }
+
+    const byActivity = activityMs(b) - activityMs(a);
+    if (byActivity !== 0) return byActivity;
+    const byDue = dueMs(b) - dueMs(a);
+    if (byDue !== 0) return byDue;
+    return memberNameKey(a).localeCompare(memberNameKey(b), "es");
   });
 
   return (
