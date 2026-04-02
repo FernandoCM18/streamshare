@@ -17,6 +17,7 @@ import {
 } from "@/app/(dashboard)/dashboard/actions";
 import {
   normalize,
+  paymentObligation,
   type MemberPayment,
 } from "@/components/dashboard/service-card-utils";
 
@@ -33,8 +34,7 @@ export function VerificationClaimRow({ payment }: { payment: MemberPayment }) {
   } | null;
   if (!member || dismissed) return null;
 
-  const totalOwed =
-    Number(payment.amount_due) + Number(payment.accumulated_debt);
+  const totalOwed = paymentObligation(payment);
   const claimedAmount = Number(payment.amount_paid);
 
   function handleConfirm() {

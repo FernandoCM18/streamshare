@@ -3,23 +3,15 @@
 import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { cn, formatCurrency, getInitials } from "@/lib/utils";
-import type { PersonaCardData, ServiceInfo } from "@/types/database";
+import type { PersonaCardData } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { deletePersona } from "@/app/(dashboard)/personas/actions";
 import { RemindDrawer } from "@/components/dashboard/remind-drawer";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { personaStatusConfig } from "@/lib/status-config";
+import { personaStatusConfig, getOverallStatus } from "@/lib/status-config";
 import Image from "next/image";
-
-function getOverallStatus(services: ServiceInfo[]): string {
-  if (services.length === 0) return "none";
-  if (services.some((s) => s.status === "overdue")) return "overdue";
-  if (services.some((s) => s.status === "pending" || s.status === "partial"))
-    return "pending";
-  return "confirmed";
-}
 
 function getGlowColor(status: string): string {
   if (status === "overdue") return "bg-red-600/5";

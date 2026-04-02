@@ -23,7 +23,10 @@ export function SemicircularGauge({
   const prefersReducedMotion = useReducedMotion();
 
   const formatDisplay = (v: number) =>
-    `$${new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 }).format(v)}`;
+    `$${new Intl.NumberFormat("es-MX", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(v)}`;
 
   const normalizedCollected = Math.max(0, collectedAmount);
   const normalizedTotal = Math.max(0, totalAmount);
@@ -38,13 +41,12 @@ export function SemicircularGauge({
     stiffness: 100,
     damping: 30,
   });
-  const displayRemaining = useTransform(springRemaining, (v) => {
-    const hasD = Math.abs(v % 1) > Number.EPSILON;
-    return `$${new Intl.NumberFormat("es-MX", {
-      minimumFractionDigits: hasD ? 2 : 0,
+  const displayRemaining = useTransform(springRemaining, (v) =>
+    `$${new Intl.NumberFormat("es-MX", {
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(v)}`;
-  });
+    }).format(v)}`,
+  );
 
   useEffect(() => {
     motionRemaining.set(normalizedRemaining);

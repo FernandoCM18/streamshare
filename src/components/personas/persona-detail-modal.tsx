@@ -7,49 +7,24 @@ import {
   DialogClose,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn, formatCurrency, getInitials } from "@/lib/utils";
-import type { PersonaCardData, ServiceInfo } from "@/types/database";
-
-const statusConfig: Record<
-  string,
-  { label: string; badgeClass: string; dotClass?: string; icon?: string }
-> = {
-  overdue: {
-    label: "Vencido",
-    badgeClass: "bg-red-500/10 border border-red-500/20 text-red-400",
-    dotClass: "bg-red-500 animate-pulse",
-  },
-  pending: {
-    label: "Pendiente",
-    badgeClass: "bg-orange-500/10 border border-orange-500/20 text-orange-400",
-    dotClass: "bg-orange-500 animate-pulse",
-  },
-  partial: {
-    label: "Parcial",
-    badgeClass: "bg-orange-500/10 border border-orange-500/20 text-orange-400",
-    dotClass: "bg-orange-500",
-  },
-  confirmed: {
-    label: "Al dia",
-    badgeClass:
-      "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
-    icon: "solar:check-circle-bold",
-  },
-  paid: {
-    label: "Pagado",
-    badgeClass:
-      "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
-    icon: "solar:check-circle-bold",
-  },
-};
-
-function getOverallStatus(services: ServiceInfo[]): string {
-  if (services.length === 0) return "none";
-  if (services.some((s) => s.status === "overdue")) return "overdue";
-  if (services.some((s) => s.status === "pending" || s.status === "partial"))
-    return "pending";
-  return "confirmed";
-}
+import {
+  cn,
+  formatCurrency,
+  formatPaymentDate,
+  formatPeriod,
+  getInitials,
+} from "@/lib/utils";
+import type { PersonaCardData, PersonaPayment } from "@/types/database";
+import {
+  paymentStatusConfig,
+  personaStatusConfig,
+  getOverallStatus,
+} from "@/lib/status-config";
+import {
+  paymentObligation,
+  paymentRemaining,
+  sortPaymentsForHistory,
+} from "@/lib/payment-utils";
 
 // ── Component ─────────────────────────────────────────────────
 
@@ -57,17 +32,25 @@ interface PersonaDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   persona: PersonaCardData;
+  payments: PersonaPayment[];
 }
 
 export function PersonaDetailModal({
   open,
   onOpenChange,
   persona,
+  payments,
 }: PersonaDetailModalProps) {
   const overallStatus = getOverallStatus(persona.services);
-  const status = statusConfig[overallStatus] ?? statusConfig.pending;
+  const status =
+    personaStatusConfig[overallStatus] ?? personaStatusConfig.pending;
 
   const accentColor = persona.profile_id ? "#8b5cf6" : "#737373";
+
+  // Filter and sort payments for this persona
+  const personaPayments = sortPaymentsForHistory(
+    payments.filter((p) => p.member_id === persona.id),
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -112,7 +95,7 @@ export function PersonaDetailModal({
                   </DialogTitle>
                   <div
                     className={cn(
-                      "px-2.5 py-1 rounded-full text-[10px] font-medium flex items-center gap-1.5",
+                      "px-2.5 py-1 rounded-full border text-[10px] font-medium flex items-center gap-1.5",
                       status.badgeClass,
                     )}
                   >
@@ -238,7 +221,9 @@ export function PersonaDetailModal({
             {persona.services.length > 0 ? (
               <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden divide-y divide-neutral-800/40">
                 {persona.services.map((s) => {
-                  const sStatus = s.status ? statusConfig[s.status] : null;
+                  const sStatus = s.status
+                    ? (paymentStatusConfig[s.status] ?? null)
+                    : null;
 
                   return (
                     <div
@@ -275,10 +260,7 @@ export function PersonaDetailModal({
                       <div className="flex items-center gap-1.5 shrink-0">
                         {s.available_credit > 0 && (
                           <span className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1">
-                            <Icon
-                              icon="solar:wallet-money-bold"
-                              width={9}
-                            />
+                            <Icon icon="solar:wallet-money-bold" width={9} />
                             {formatCurrency(s.available_credit)}
                           </span>
                         )}
@@ -308,6 +290,169 @@ export function PersonaDetailModal({
                 </div>
                 <p className="text-xs text-neutral-500">
                   Sin servicios asignados
+                </p>
+              </div>
+            )}
+          </section>
+
+          {/* Payment History */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
+                Historial de pagos
+              </h2>
+              <span className="text-[11px] font-medium text-neutral-600 tabular-nums">
+                {personaPayments.length}{" "}
+                {personaPayments.length === 1 ? "pago" : "pagos"}
+              </span>
+            </div>
+            {personaPayments.length > 0 ? (
+              <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden divide-y divide-neutral-800/40">
+                {personaPayments.map((p) => {
+                  const cfg =
+                    paymentStatusConfig[p.status] ??
+                    paymentStatusConfig.pending;
+                  const bc = Array.isArray(p.billing_cycles)
+                    ? p.billing_cycles[0]
+                    : p.billing_cycles;
+                  const period = bc?.period_start
+                    ? formatPeriod(bc.period_start)
+                    : null;
+                  const activityDate = p.confirmed_at ?? p.paid_at;
+                  const obligation = paymentObligation(p);
+                  const remaining = paymentRemaining(p);
+                  const hasPaid =
+                    Number(p.amount_paid) > 0 ||
+                    Number(p.credit_amount_used) > 0;
+                  const isCreditCovered =
+                    (p.status === "confirmed" || p.status === "paid") &&
+                    Number(p.amount_paid) === 0 &&
+                    Number(p.credit_amount_used) > 0;
+
+                  // Find the service info from persona.services
+                  const svcInfo = persona.services.find(
+                    (s) => s.service_id === p.service_id,
+                  );
+
+                  return (
+                    <div key={p.id} className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        {/* Service icon */}
+                        <div
+                          className="w-8 h-8 rounded-lg bg-black/80 border border-neutral-700/50 flex items-center justify-center shrink-0"
+                          style={
+                            svcInfo
+                              ? {
+                                  boxShadow: `0 2px 8px ${svcInfo.service_color}15`,
+                                }
+                              : undefined
+                          }
+                        >
+                          {svcInfo?.service_icon ? (
+                            <Icon
+                              icon={svcInfo.service_icon}
+                              width={14}
+                              style={{ color: svcInfo.service_color }}
+                            />
+                          ) : (
+                            <span
+                              className="w-2.5 h-2.5 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  svcInfo?.service_color ?? "#6366f1",
+                              }}
+                            />
+                          )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[12px] font-medium text-neutral-200 truncate">
+                              {svcInfo?.service_name ?? "—"}
+                            </span>
+                            <span
+                              className={cn(
+                                "px-1.5 py-0.5 rounded-full text-[9px] font-medium border shrink-0",
+                                cfg.bgClass,
+                                cfg.borderClass,
+                                cfg.textClass,
+                              )}
+                            >
+                              {cfg.label}
+                            </span>
+                            {isCreditCovered && (
+                              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-violet-500/10 border border-violet-500/20 text-violet-400 shrink-0">
+                                Crédito
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            {activityDate ? (
+                              <span className="text-[10px] text-neutral-500">
+                                {formatPaymentDate(activityDate)}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-neutral-600">
+                                Vence {formatPaymentDate(p.due_date)}
+                              </span>
+                            )}
+                            {period && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-neutral-700" />
+                                <span className="text-[10px] text-neutral-600">
+                                  {period}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Amount */}
+                        <div className="text-right shrink-0">
+                          <span
+                            className={cn(
+                              "text-[13px] font-semibold tabular-nums",
+                              p.status === "confirmed"
+                                ? "text-emerald-400"
+                                : p.status === "paid"
+                                  ? "text-emerald-400/70"
+                                  : remaining > 0
+                                    ? "text-neutral-400"
+                                    : "text-neutral-500",
+                            )}
+                          >
+                            {hasPaid
+                              ? formatCurrency(
+                                  Number(p.amount_paid) ||
+                                    Number(p.credit_amount_used),
+                                )
+                              : formatCurrency(obligation)}
+                          </span>
+                          {hasPaid &&
+                            Number(p.amount_paid) > 0 &&
+                            Number(p.amount_paid) < obligation && (
+                              <p className="text-[9px] text-neutral-600">
+                                de {formatCurrency(obligation)}
+                              </p>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/10 p-8 text-center">
+                <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center mx-auto mb-3">
+                  <Icon
+                    icon="solar:wallet-money-linear"
+                    width={20}
+                    className="text-neutral-600"
+                  />
+                </div>
+                <p className="text-xs text-neutral-500">
+                  Sin pagos registrados
                 </p>
               </div>
             )}

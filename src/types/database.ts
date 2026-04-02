@@ -340,6 +340,25 @@ export interface PersonaCardData {
   available_credit: number;
 }
 
+export interface PersonaPayment {
+  id: string;
+  member_id: string;
+  service_id: string;
+  amount_due: number;
+  amount_paid: number;
+  accumulated_debt: number;
+  credit_amount_used: number;
+  status: PaymentStatus;
+  created_at: string;
+  due_date: string;
+  paid_at: string | null;
+  confirmed_at: string | null;
+  billing_cycles:
+    | { period_start: string; period_end: string }
+    | { period_start: string; period_end: string }[]
+    | null;
+}
+
 export interface PendingDebtor {
   id: string;
   name: string;

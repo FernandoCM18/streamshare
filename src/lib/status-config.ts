@@ -97,6 +97,17 @@ export interface PersonaStatusEntry {
   icon?: string;
 }
 
+/** Calcula el estado general de una persona a partir del estado de sus servicios. */
+export function getOverallStatus(
+  services: { status: string | null }[],
+): string {
+  if (services.length === 0) return "none";
+  if (services.some((s) => s.status === "overdue")) return "overdue";
+  if (services.some((s) => s.status === "pending" || s.status === "partial"))
+    return "pending";
+  return "confirmed";
+}
+
 export const personaStatusConfig: Record<string, PersonaStatusEntry> = {
   overdue: {
     label: "Vencido",

@@ -1,6 +1,9 @@
 import { formatPaymentDate, formatRelativeTime } from "@/lib/utils";
 import type { PaymentStatus, StatusBadgeConfig } from "@/types/database";
 
+// Re-export calculation utils so existing imports keep working
+export { paymentObligation, paymentRemaining } from "@/lib/payment-utils";
+
 export interface MemberPayment {
   id: string;
   service_id: string;
@@ -8,6 +11,8 @@ export interface MemberPayment {
   amount_due: number;
   amount_paid: number;
   accumulated_debt: number;
+  /** Crédito aplicado al generar ciclo / RPC (no forma parte de amount_paid). */
+  credit_amount_used?: number;
   status: PaymentStatus;
   due_date: string;
   paid_at: string | null;

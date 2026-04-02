@@ -102,6 +102,7 @@ export function Header({
             if (!open) setSelectedPersona(null);
           }}
           persona={selectedPersona}
+          payments={[]}
         />
       )}
 

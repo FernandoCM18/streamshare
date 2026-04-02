@@ -1,5 +1,6 @@
 import type { DashboardSummary, PendingDebtor } from "@/types/database";
 import { getInitials } from "@/lib/utils";
+import { paymentObligation, paymentRemaining } from "@/lib/payment-utils";
 
 /** Minimal payment shape needed for dashboard computation. */
 interface PaymentForDashboard {
@@ -9,6 +10,7 @@ interface PaymentForDashboard {
   amount_due: number;
   amount_paid: number;
   accumulated_debt: number;
+  credit_amount_used?: number;
   status: string;
   members: { name: string } | { name: string }[] | null;
   services: { name: string } | { name: string }[] | null;
@@ -56,25 +58,15 @@ export function computeDashboardFromPayments(
     serviceIds.add(p.service_id);
     memberIds.add(p.member_id);
 
-    const amountDue = p.amount_due ?? 0;
-    const amountPaid = p.amount_paid ?? 0;
-    const accDebt = p.accumulated_debt ?? 0;
-    const fullOwed = amountDue + accDebt;
+    const amountPaid = Number(p.amount_paid ?? 0);
+    const accDebt = Number(p.accumulated_debt ?? 0);
+    const creditUsed = Number(p.credit_amount_used ?? 0);
+    const obligation = paymentObligation(p);
+    // Efectivamente cubierto este ciclo (pagos + crédito aplicado; el RPC no suma crédito a amount_paid)
+    const satisfied = Math.min(obligation, amountPaid + creditUsed);
 
-    // Every payment contributes to receivable (what was expected)
-    totalReceivable += fullOwed;
-
-    if (p.status === "confirmed") {
-      // Confirmed = owner verified receipt → counts as collected
-      totalCollected += amountPaid;
-    } else if (p.status === "paid") {
-      // Paid = member says they paid, owner hasn't confirmed
-      // Count partial collection (amount_paid) as collected for gauge accuracy
-      totalCollected += amountPaid;
-    } else {
-      // pending, partial, overdue → count any partial payments
-      totalCollected += amountPaid;
-    }
+    totalReceivable += obligation;
+    totalCollected += satisfied;
 
     if (p.status === "overdue") {
       overdueCount++;
@@ -100,7 +92,7 @@ export function computeDashboardFromPayments(
         initials: getInitials(memberName),
         status:
           p.status === "overdue" ? ("overdue" as const) : ("pending" as const),
-        amount: amountDue - amountPaid + accDebt,
+        amount: paymentRemaining(p),
         serviceName: getName(p.services),
       });
     }

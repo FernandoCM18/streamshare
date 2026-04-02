@@ -7,6 +7,7 @@ export const metadata: Metadata = {
 import { getCachedPersonasData } from "@/lib/queries";
 import { PersonasClient } from "./personas-client";
 import { buildPersonaCards } from "@/lib/build-persona-cards";
+import type { PersonaPayment } from "@/types/database";
 
 export default async function PersonasPage() {
   const user = await getRequiredUser();
@@ -14,5 +15,10 @@ export default async function PersonasPage() {
 
   const personas = buildPersonaCards(personasData);
 
-  return <PersonasClient personas={personas} />;
+  return (
+    <PersonasClient
+      personas={personas}
+      payments={personasData.payments as unknown as PersonaPayment[]}
+    />
+  );
 }

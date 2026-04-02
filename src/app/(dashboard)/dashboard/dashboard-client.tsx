@@ -9,6 +9,7 @@ import { getGreeting, formatDate } from "@/lib/utils";
 import { TvIcon } from "@/components/icons/TvIcon";
 import { EmptyStateCard } from "@/components/shared/empty-state-card";
 import type { ServiceSummary } from "@/types/database";
+import { latestPaymentsPerMemberForService } from "@/lib/latest-payment-per-member";
 
 interface DashboardClientProps {
   services: ServiceSummary[];
@@ -32,6 +33,11 @@ export function DashboardClient({
     const list = paymentsByService.get(p.service_id) ?? [];
     list.push(p);
     paymentsByService.set(p.service_id, list);
+  }
+  for (const sid of paymentsByService.keys()) {
+    const list = paymentsByService.get(sid);
+    if (list)
+      paymentsByService.set(sid, latestPaymentsPerMemberForService(list));
   }
 
   // Count pending verifications (status = 'paid' means awaiting owner confirmation)

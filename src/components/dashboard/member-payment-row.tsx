@@ -22,6 +22,8 @@ import { RemindDrawer } from "@/components/dashboard/remind-drawer";
 import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
 import {
   normalize,
+  paymentObligation,
+  paymentRemaining,
   type MemberPayment,
 } from "@/components/dashboard/service-card-utils";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
@@ -59,7 +61,9 @@ const memberStatusConfig: Record<
   },
   partial: {
     label: (p) =>
-      `Parcial — ${formatCurrency(p.amount_paid)} de ${formatCurrency(p.amount_due)}`,
+      `Parcial — ${formatCurrency(p.amount_paid)} de ${formatCurrency(
+        paymentObligation(p),
+      )}`,
     textClass: "text-orange-400",
     dotClass: "bg-orange-500",
     iconName: "solar:clock-circle-bold",
@@ -94,10 +98,7 @@ export function MemberPaymentRow({
   if (!member) return null;
 
   const config = memberStatusConfig[payment.status];
-  const totalOwed =
-    Number(payment.amount_due) + Number(payment.accumulated_debt);
-  const remaining =
-    Math.round((totalOwed - Number(payment.amount_paid)) * 100) / 100;
+  const remaining = paymentRemaining(payment);
   const isActionable =
     payment.status === "pending" ||
     payment.status === "partial" ||

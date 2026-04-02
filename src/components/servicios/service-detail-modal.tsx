@@ -26,6 +26,11 @@ import {
 import type { ServiceSummary, ServiceMemberInfo } from "@/types/database";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
 import {
+  paymentObligation,
+  paymentRemaining,
+} from "@/components/dashboard/service-card-utils";
+import { sortPaymentsForHistory } from "@/lib/payment-utils";
+import {
   addPaymentNote,
   updatePaymentNote,
   deletePaymentNote,
@@ -148,7 +153,23 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
   const period = payment.billing_cycles
     ? formatPeriod(payment.billing_cycles.period_start)
     : null;
-  const hasPaid = Number(payment.amount_paid) > 0;
+  const hasPaid =
+    Number(payment.amount_paid) > 0 ||
+    Number(payment.credit_amount_used ?? 0) > 0;
+
+  // Detect late payment: paid/confirmed after the billing cycle's period ended
+  const isLatePayment = (() => {
+    if (!paidDate || !payment.billing_cycles?.period_end) return false;
+    const paid = new Date(paidDate).getTime();
+    const periodEnd = new Date(payment.billing_cycles.period_end).getTime();
+    return paid > periodEnd;
+  })();
+
+  // Detect credit-covered payment: confirmed but amount_paid = 0
+  const isCreditCovered =
+    (payment.status === "confirmed" || payment.status === "paid") &&
+    Number(payment.amount_paid) === 0 &&
+    Number(payment.credit_amount_used ?? 0) > 0;
 
   function handleVoid() {
     startTransition(async () => {
@@ -214,7 +235,7 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
               {statusCfg.label}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             {paidDate ? (
               <span className="text-[10px] text-neutral-500">
                 {formatPaymentDate(paidDate)}
@@ -227,6 +248,16 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
                 <span className="w-1 h-1 rounded-full bg-neutral-700" />
                 <span className="text-[10px] text-neutral-600">{period}</span>
               </>
+            )}
+            {isLatePayment && (
+              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
+                Tardío
+              </span>
+            )}
+            {isCreditCovered && (
+              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-violet-500/10 border border-violet-500/20 text-violet-400 shrink-0">
+                Crédito
+              </span>
             )}
           </div>
         </div>
@@ -245,7 +276,9 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
               )}
             >
               {formatCurrency(
-                Number(payment.amount_paid) || Number(payment.amount_due),
+                Number(payment.amount_paid) ||
+                  Number(payment.credit_amount_used ?? 0) ||
+                  Number(payment.amount_due),
               )}
             </span>
             {Number(payment.amount_paid) > 0 &&
@@ -418,10 +451,52 @@ export default function ServiceDetailModal({
   const status =
     serviceStatusConfig[service.status] ?? serviceStatusConfig.pending;
 
+  // Find the most recent billing cycle period_start across all payments
+  const latestPeriodStart = payments.reduce((best, p) => {
+    const ps = p.billing_cycles?.period_start ?? "";
+    return ps > best ? ps : best;
+  }, "");
+
+  // Only consider payments from the current (most recent) cycle for the summary numbers.
+  // This mirrors what the service_summary view does, but also includes credit_amount_used.
+  const currentCyclePayments =
+    latestPeriodStart !== ""
+      ? payments.filter(
+          (p) => (p.billing_cycles?.period_start ?? "") === latestPeriodStart,
+        )
+      : payments;
+
+  // Recalculate collected/pending from current-cycle payments to account for
+  // credit_amount_used, which the service_summary view does not include.
+  const { computedCollected, computedPending } = (() => {
+    if (currentCyclePayments.length === 0) {
+      return {
+        computedCollected: service.collected_amount,
+        computedPending: service.pending_amount,
+      };
+    }
+    let collected = 0;
+    let pending = 0;
+    for (const p of currentCyclePayments) {
+      const obligation = paymentObligation(p);
+      const remaining = paymentRemaining(p);
+      collected += obligation - remaining;
+      pending += remaining;
+    }
+    return {
+      computedCollected: Math.round(collected * 100) / 100,
+      computedPending: Math.round(pending * 100) / 100,
+    };
+  })();
+
   const totalCost = service.monthly_cost;
+  const totalObligation =
+    currentCyclePayments.length > 0
+      ? currentCyclePayments.reduce((sum, p) => sum + paymentObligation(p), 0)
+      : totalCost;
   const collectedPercent =
-    totalCost > 0
-      ? Math.min(100, Math.round((service.collected_amount / totalCost) * 100))
+    totalObligation > 0
+      ? Math.min(100, Math.round((computedCollected / totalObligation) * 100))
       : 0;
 
   // Map member_id → their most recent cycle payment
@@ -440,47 +515,7 @@ export default function ServiceDetailModal({
   }
 
   // Historial: ciclo más reciente primero; sin pago registrado arriba del ciclo; luego por actividad
-  function periodStartMs(p: MemberPayment): number {
-    const s = p.billing_cycles?.period_start;
-    if (!s) return 0;
-    const t = new Date(s).getTime();
-    return Number.isNaN(t) ? 0 : t;
-  }
-  function activityMs(p: MemberPayment): number {
-    const iso = p.confirmed_at ?? p.paid_at;
-    if (!iso) return 0;
-    const t = new Date(iso).getTime();
-    return Number.isNaN(t) ? 0 : t;
-  }
-  function dueMs(p: MemberPayment): number {
-    const t = new Date(p.due_date).getTime();
-    return Number.isNaN(t) ? 0 : t;
-  }
-  function memberNameKey(p: MemberPayment): string {
-    const m = p.members;
-    const row = Array.isArray(m) ? m[0] : m;
-    return (row?.name ?? "").toLowerCase();
-  }
-  const sortedPayments = [...payments].sort((a, b) => {
-    const byPeriod = periodStartMs(b) - periodStartMs(a);
-    if (byPeriod !== 0) return byPeriod;
-
-    const aSinPago = Number(a.amount_paid) <= 0;
-    const bSinPago = Number(b.amount_paid) <= 0;
-    if (aSinPago !== bSinPago) return aSinPago ? -1 : 1;
-
-    if (aSinPago && bSinPago) {
-      const byDueAsc = dueMs(a) - dueMs(b);
-      if (byDueAsc !== 0) return byDueAsc;
-      return memberNameKey(a).localeCompare(memberNameKey(b), "es");
-    }
-
-    const byActivity = activityMs(b) - activityMs(a);
-    if (byActivity !== 0) return byActivity;
-    const byDue = dueMs(b) - dueMs(a);
-    if (byDue !== 0) return byDue;
-    return memberNameKey(a).localeCompare(memberNameKey(b), "es");
-  });
+  const sortedPayments = sortPaymentsForHistory(payments);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -548,12 +583,12 @@ export default function ServiceDetailModal({
                 <span
                   className={cn(
                     "text-xl font-bold tabular-nums tracking-tight",
-                    service.pending_amount > 0
+                    computedPending > 0
                       ? "text-orange-400"
                       : "text-neutral-500",
                   )}
                 >
-                  {formatCurrency(service.pending_amount)}
+                  {formatCurrency(computedPending)}
                 </span>
               </div>
               <div className="px-4 py-3">
@@ -566,12 +601,12 @@ export default function ServiceDetailModal({
                 <span
                   className={cn(
                     "text-xl font-bold tabular-nums tracking-tight",
-                    service.collected_amount > 0
+                    computedCollected > 0
                       ? "text-emerald-400"
                       : "text-neutral-500",
                   )}
                 >
-                  {formatCurrency(service.collected_amount)}
+                  {formatCurrency(computedCollected)}
                 </span>
               </div>
             </div>

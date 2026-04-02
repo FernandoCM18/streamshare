@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
 import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
-import type { MemberPayment } from "@/components/dashboard/service-card-utils";
+import {
+  paymentObligation,
+  paymentRemaining,
+  type MemberPayment,
+} from "@/components/dashboard/service-card-utils";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 
 const guestStatusConfig: Record<
@@ -32,7 +36,7 @@ const guestStatusConfig: Record<
   },
   partial: {
     label: (p) =>
-      `Pago parcial — ${formatCurrency(p.amount_paid)} de ${formatCurrency(Number(p.amount_due) + Number(p.accumulated_debt))}`,
+      `Pago parcial — ${formatCurrency(p.amount_paid)} de ${formatCurrency(paymentObligation(p))}`,
     textClass: "text-orange-400",
     iconName: "solar:clock-circle-bold",
   },
@@ -53,18 +57,13 @@ export function GuestPaymentRow({
   const [isPending, startTransition] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
 
-  const totalOwed =
-    Number(payment.amount_due) + Number(payment.accumulated_debt);
   const config = guestStatusConfig[payment.status];
   const canPay =
     payment.status === "pending" ||
     payment.status === "partial" ||
     payment.status === "overdue";
 
-  const remaining =
-    payment.status === "partial"
-      ? totalOwed - Number(payment.amount_paid)
-      : totalOwed;
+  const remaining = paymentRemaining(payment);
 
   function handleMarkPaid(amount: number, note?: string) {
     startTransition(async () => {
@@ -112,8 +111,8 @@ export function GuestPaymentRow({
             </p>
             <p className="text-[10px] text-neutral-500">
               {payment.status === "partial"
-                ? `Restante: ${formatCurrency(totalOwed - Number(payment.amount_paid))} • Vence ${formatPaymentDate(payment.due_date)}`
-                : `${formatCurrency(totalOwed)} • Vence ${formatPaymentDate(payment.due_date)}`}
+                ? `Restante: ${formatCurrency(remaining)} • Vence ${formatPaymentDate(payment.due_date)}`
+                : `${formatCurrency(remaining)} • Vence ${formatPaymentDate(payment.due_date)}`}
             </p>
           </div>
         </div>

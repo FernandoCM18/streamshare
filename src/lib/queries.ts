@@ -205,7 +205,7 @@ export const getCachedPayments = cache(async (userId: string) => {
   const { data } = await supabase
     .from("payments")
     .select(
-      "id, service_id, member_id, amount_due, amount_paid, accumulated_debt, status, due_date, paid_at, confirmed_at, requires_confirmation, members!inner(id, name, email, phone, avatar_url, profile_id), services!inner(name), billing_cycles!inner(id, period_start, period_end), payment_notes(id, content, author_id, is_edited, created_at, profiles!payment_notes_author_id_fkey(display_name, avatar_url))",
+      "id, service_id, member_id, amount_due, amount_paid, accumulated_debt, credit_amount_used, status, due_date, paid_at, confirmed_at, requires_confirmation, members!inner(id, name, email, phone, avatar_url, profile_id), services!inner(name), billing_cycles!inner(id, period_start, period_end), payment_notes(id, content, author_id, is_edited, created_at, profiles!payment_notes_author_id_fkey(display_name, avatar_url))",
     )
     .eq("owner_id", userId)
     .in("status", ["pending", "partial", "paid", "overdue", "confirmed"]);
@@ -221,9 +221,13 @@ export interface PaymentLite {
   amount_due: number;
   amount_paid: number;
   accumulated_debt: number;
+  /** Crédito del miembro aplicado a este pago (apply_credits no suma a amount_paid). */
+  credit_amount_used: number;
   status: string;
+  created_at: string;
   members: { name: string } | { name: string }[];
   services: { name: string } | { name: string }[];
+  billing_cycles: { period_start: string } | { period_start: string }[];
 }
 
 export const getCachedPaymentsLite = cache(async (userId: string) => {
@@ -231,7 +235,7 @@ export const getCachedPaymentsLite = cache(async (userId: string) => {
   const { data } = await supabase
     .from("payments")
     .select(
-      "id, service_id, member_id, amount_due, amount_paid, accumulated_debt, status, members!inner(name), services!inner(name)",
+      "id, service_id, member_id, amount_due, amount_paid, accumulated_debt, credit_amount_used, status, created_at, members!inner(name), services!inner(name), billing_cycles!inner(period_start)",
     )
     .eq("owner_id", userId)
     .in("status", ["pending", "partial", "paid", "overdue", "confirmed"]);
@@ -308,7 +312,7 @@ export const getCachedPersonasData = cache(async (userId: string) => {
       supabase
         .from("payments")
         .select(
-          "member_id, service_id, amount_due, amount_paid, accumulated_debt, status",
+          "id, member_id, service_id, amount_due, amount_paid, accumulated_debt, credit_amount_used, status, created_at, due_date, paid_at, confirmed_at, billing_cycles(period_start, period_end)",
         )
         .eq("owner_id", userId)
         .in("status", ["pending", "partial", "overdue", "paid", "confirmed"])

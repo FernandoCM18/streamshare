@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Icon } from "@iconify/react";
 import { PersonaCard } from "@/components/personas/persona-card";
 import { EmptyStateCard } from "@/components/shared/empty-state-card";
-import type { PersonaCardData } from "@/types/database";
+import type { PersonaCardData, PersonaPayment } from "@/types/database";
 
 const PersonaModal = dynamic(
   () =>
@@ -26,9 +26,10 @@ const PersonaDetailModal = dynamic(
 
 interface PersonasGridProps {
   personas: PersonaCardData[];
+  payments: PersonaPayment[];
 }
 
-export function PersonasGrid({ personas }: PersonasGridProps) {
+export function PersonasGrid({ personas, payments }: PersonasGridProps) {
   const [editingPersona, setEditingPersona] = useState<PersonaCardData | null>(
     null,
   );
@@ -106,6 +107,7 @@ export function PersonasGrid({ personas }: PersonasGridProps) {
             if (!open) setViewingPersona(null);
           }}
           persona={viewingPersona}
+          payments={payments}
         />
       )}
     </>

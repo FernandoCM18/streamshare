@@ -1,4 +1,5 @@
 import type { PersonaCardData } from "@/types/database";
+import { paymentRemaining } from "@/lib/payment-utils";
 
 interface PersonasDataInput {
   members: {
@@ -16,12 +17,19 @@ interface PersonasDataInput {
     is_active: boolean;
   }[];
   payments: {
+    id?: string;
     member_id: string;
     service_id: string;
     amount_due: number;
     amount_paid: number;
     accumulated_debt: number;
+    credit_amount_used: number;
     status: string;
+    created_at: string;
+    due_date?: string;
+    paid_at?: string | null;
+    confirmed_at?: string | null;
+    billing_cycles?: unknown;
   }[];
   services: {
     id: string;
@@ -62,14 +70,28 @@ export function buildPersonaCards(data: PersonasDataInput): PersonaCardData[] {
     creditMap.set(key, (creditMap.get(key) ?? 0) + c.amount_remaining);
   }
 
+  const openForDebt = new Set(["pending", "overdue", "partial", "paid"]);
+  const latestOpenByPair = new Map<string, (typeof data.payments)[number]>();
+  for (const p of data.payments) {
+    if (!openForDebt.has(p.status)) continue;
+    const key = `${p.member_id}:${p.service_id}`;
+    const cur = latestOpenByPair.get(key);
+    if (!cur || p.created_at > cur.created_at) latestOpenByPair.set(key, p);
+  }
+
+  const latestAnyByPair = new Map<string, (typeof data.payments)[number]>();
+  for (const p of data.payments) {
+    const key = `${p.member_id}:${p.service_id}`;
+    const cur = latestAnyByPair.get(key);
+    if (!cur || p.created_at > cur.created_at) latestAnyByPair.set(key, p);
+  }
+
   return data.members.map((m) => {
     const memberServices = data.serviceMembers
       .filter((sm) => sm.member_id === m.id)
       .map((sm) => {
         const svc = svcMap.get(sm.service_id);
-        const latestPayment = data.payments.find(
-          (p) => p.member_id === m.id && p.service_id === sm.service_id,
-        );
+        const latestPayment = latestAnyByPair.get(`${m.id}:${sm.service_id}`);
         const memberCount = memberCountByService.get(sm.service_id) ?? 0;
         return {
           service_id: sm.service_id,
@@ -86,15 +108,9 @@ export function buildPersonaCards(data: PersonasDataInput): PersonaCardData[] {
         };
       });
 
-    const memberPayments = data.payments.filter(
-      (p) =>
-        p.member_id === m.id &&
-        ["pending", "overdue", "partial"].includes(p.status),
-    );
-    const totalDebt = memberPayments.reduce(
-      (sum, p) => sum + (p.amount_due - p.amount_paid + p.accumulated_debt),
-      0,
-    );
+    const totalDebt = [...latestOpenByPair.entries()]
+      .filter(([key]) => key.startsWith(`${m.id}:`))
+      .reduce((sum, [, p]) => sum + paymentRemaining(p), 0);
     const monthlyAmount = memberServices.reduce(
       (sum, s) => sum + s.amount_due,
       0,

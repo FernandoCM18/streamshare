@@ -4,13 +4,14 @@ import { useState } from "react";
 import { PersonasHeader } from "@/components/personas/personas-header";
 import { PersonasGrid } from "@/components/personas/personas-grid";
 import { PersonasFilters } from "@/components/personas/personas-filters";
-import type { PersonaCardData } from "@/types/database";
+import type { PersonaCardData, PersonaPayment } from "@/types/database";
 
 interface PersonasClientProps {
   personas: PersonaCardData[];
+  payments: PersonaPayment[];
 }
 
-export function PersonasClient({ personas }: PersonasClientProps) {
+export function PersonasClient({ personas, payments }: PersonasClientProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [accountFilter, setAccountFilter] = useState("all");
 
@@ -77,7 +78,7 @@ export function PersonasClient({ personas }: PersonasClientProps) {
           unlinked: unlinkedCount,
         }}
       />
-      <PersonasGrid personas={filtered} />
+      <PersonasGrid personas={filtered} payments={payments} />
     </div>
   );
 }
