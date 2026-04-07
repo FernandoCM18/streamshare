@@ -47,7 +47,7 @@ The owner tracks which people (members) share each service, how much each owes, 
 | Date picker | react-day-picker |
 | Command palette | cmdk |
 | Drawers | Vaul |
-| Confetti | canvas-confetti |
+| Confetti | canvas-confetti (dynamic `import()` in callbacks, never top-level) |
 | PWA | Serwist (disabled in dev, active in prod only) |
 | Package manager | pnpm |
 
@@ -101,10 +101,11 @@ src/
 │   ├── queries.ts              # React.cache() wrapped data queries
 │   ├── revalidate.ts           # Granular revalidation helpers
 │   ├── compute-dashboard.ts    # Dashboard summary computed from payments
+│   ├── payment-utils.ts        # paymentObligation(), paymentRemaining(), sortPaymentsForHistory()
 │   ├── build-persona-cards.ts  # Transform raw data → PersonaCardData[]
-│   ├── status-config.ts        # Status label/color/icon config objects
+│   ├── status-config.ts        # Status label/color/icon config objects (centralized — do not define locally)
 │   ├── utils.ts                # cn(), formatCurrency(), formatDate(), etc.
-│   └── mock-data.ts            # Test/seed data
+│   └── mock-data.ts            # Seed data (NOT imported anywhere — kept for reference only)
 ├── types/
 │   └── database.ts             # Full schema types + composed types + helpers
 ├── hooks/
@@ -444,10 +445,15 @@ const user = await getRequiredUser()
 
 ### Cached queries — deduplicated within same request
 ```typescript
-import { getCachedServices, getCachedPayments, getCachedProfile } from '@/lib/queries'
+import { getCachedServices, getCachedPayments, getCachedPaymentsLite, getCachedProfile } from '@/lib/queries'
 
 // Layout + page share the same request, so identical queries run only once
 const services = await getCachedServices(user.id)
+
+// Use getCachedPaymentsLite for dashboard (no payment_notes join, reduced payload)
+const payments = await getCachedPaymentsLite(user.id)  // dashboard only
+
+// Use getCachedPayments full for service/persona detail views (includes notes)
 const payments = await getCachedPayments(user.id)
 ```
 
@@ -504,13 +510,26 @@ export async function myAction(formData: FormData) {
 - 2-space indent, 80 char width
 - RSC by default — add `'use client'` only when necessary
 
-### Status config — use centralized configs
+### Status config — use centralized configs, never define locally
 ```typescript
-import { paymentStatusConfig, serviceStatusConfig, personaStatusConfig } from '@/lib/status-config'
+import { paymentStatusConfig, serviceStatusConfig, personaStatusConfig, getOverallStatus } from '@/lib/status-config'
 
 // Each entry has: label, badgeClass, textClass, bgClass, borderClass, icon, description
 paymentStatusConfig['confirmed'].label  // "Confirmado"
 paymentStatusConfig['overdue'].badgeClass  // "bg-red-500/10 border ..."
+
+// Calculate overall persona status from their services
+getOverallStatus(services)  // returns 'overdue' | 'pending' | 'active' | 'inactive'
+```
+
+### Payment calculations — use centralized utils
+```typescript
+import { paymentObligation, paymentRemaining, sortPaymentsForHistory } from '@/lib/payment-utils'
+
+// Never compute these inline — always use these helpers
+paymentObligation(payment)          // amount_due + accumulated_debt
+paymentRemaining(payment)           // max(0, obligation - paid - credit)
+sortPaymentsForHistory(payments)    // sort for history display (most recent cycle first)
 ```
 
 ### Utility functions (from `@/lib/utils`)
@@ -543,6 +562,10 @@ isNoteAuthor(note, userId)            // note.author_id === userId
 - **Solar icons** — use `@iconify/react` with `solar:*` icon names
 - **Spanish UI** — all labels, routes, and messages are in Spanish (es-MX locale)
 - **"Members" not "personas"** — DB tables use `members` and `member_credits`, though UI still shows "Personas"
+- **`mock-data.ts` is dead code** — file exists but is not imported anywhere; never import it in new code
+- **Dynamic imports for modals** — all heavy modals use `next/dynamic({ ssr: false })`; `canvas-confetti` uses `await import()` inside callbacks
+- **`PersonaPayment` type** — defined in `src/types/database.ts`, used by `PersonaDetailModal` for payment history
+- **Payment utils are canonical** — `paymentObligation`, `paymentRemaining`, `sortPaymentsForHistory` live in `payment-utils.ts`; never duplicate this logic inline
 
 ### Environment variables
 ```
