@@ -151,7 +151,9 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
   const paidDate = payment.confirmed_at ?? payment.paid_at;
   const notes = payment.payment_notes ?? [];
   const period = payment.billing_cycles
-    ? formatPeriod(payment.billing_cycles.period_start)
+    ? formatPeriod(
+        payment.billing_cycles.period_end ?? payment.billing_cycles.period_start,
+      )
     : null;
   const hasPaid =
     Number(payment.amount_paid) > 0 ||
@@ -239,6 +241,14 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
             {paidDate ? (
               <span className="text-[10px] text-neutral-500">
                 {formatPaymentDate(paidDate)}
+              </span>
+            ) : isCreditCovered ? (
+              <span className="text-[10px] text-violet-400/70">
+                Saldo a favor
+              </span>
+            ) : Number(payment.credit_amount_used ?? 0) > 0 ? (
+              <span className="text-[10px] text-violet-400/70">
+                Crédito: {formatCurrency(Number(payment.credit_amount_used))}
               </span>
             ) : (
               <span className="text-[10px] text-neutral-600">Sin pagar</span>

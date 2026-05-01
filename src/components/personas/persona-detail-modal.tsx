@@ -315,8 +315,8 @@ export function PersonaDetailModal({
                   const bc = Array.isArray(p.billing_cycles)
                     ? p.billing_cycles[0]
                     : p.billing_cycles;
-                  const period = bc?.period_start
-                    ? formatPeriod(bc.period_start)
+                  const period = bc
+                    ? formatPeriod(bc.period_end ?? bc.period_start)
                     : null;
                   const activityDate = p.confirmed_at ?? p.paid_at;
                   const obligation = paymentObligation(p);
@@ -391,6 +391,14 @@ export function PersonaDetailModal({
                             {activityDate ? (
                               <span className="text-[10px] text-neutral-500">
                                 {formatPaymentDate(activityDate)}
+                              </span>
+                            ) : isCreditCovered ? (
+                              <span className="text-[10px] text-violet-400/70">
+                                Saldo a favor
+                              </span>
+                            ) : Number(p.credit_amount_used) > 0 ? (
+                              <span className="text-[10px] text-violet-400/70">
+                                Crédito: {formatCurrency(Number(p.credit_amount_used))}
                               </span>
                             ) : (
                               <span className="text-[10px] text-neutral-600">
