@@ -191,6 +191,7 @@ export default function RootLayout({
         <div
           id="streamshare-loader"
           aria-hidden="true"
+          suppressHydrationWarning
           style={{
             position: "fixed",
             inset: 0,
