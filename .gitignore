@@ -45,5 +45,6 @@ public/sw.js
 
 # claude code skills
 .claude/skills/
+.claude/commands/
 .agents/
 skills-lock.json
