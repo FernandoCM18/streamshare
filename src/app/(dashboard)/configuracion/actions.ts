@@ -5,6 +5,7 @@ import { getAuthenticatedClient } from "@/lib/supabase/auth-action";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { revalidateSettings } from "@/lib/revalidate";
+import { toActionError } from "@/lib/action-error";
 
 // ── Schemas ──────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ export async function updateProfile(
     })
     .eq("id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidateSettings();
   return { success: true };
@@ -77,7 +78,7 @@ export async function updateSettings(
     .update(parsed.data)
     .eq("id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidateSettings();
   return { success: true };

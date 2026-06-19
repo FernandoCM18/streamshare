@@ -3,6 +3,7 @@
 import { getAuthenticatedClient } from "@/lib/supabase/auth-action";
 import { z } from "zod";
 import { revalidateServices, revalidateServiceMembers } from "@/lib/revalidate";
+import { toActionError } from "@/lib/action-error";
 import type { UpdateService } from "@/types/database";
 
 // ── Schemas ──────────────────────────────────────────────────────
@@ -35,6 +36,8 @@ const updateServiceSchema = z.object({
   removed_members: z.string().optional(),
   amount_updates: z.string().optional(),
 });
+
+const customAmountsSchema = z.record(z.string().uuid(), z.number().positive());
 
 const addedMemberSchema = z.array(
   z.object({
@@ -96,19 +99,21 @@ export async function createService(
     .select("id")
     .single();
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   // Parse member IDs if provided
   if (parsed.data.member_ids && data) {
     const ids = parsed.data.member_ids.split(",").filter(Boolean);
 
-    // Parse custom amounts JSON if split_type is custom
+    // Parse and validate custom amounts JSON if split_type is custom
     let customAmounts: Record<string, number> = {};
     if (parsed.data.custom_amounts) {
       try {
-        customAmounts = JSON.parse(parsed.data.custom_amounts);
+        const raw = JSON.parse(parsed.data.custom_amounts);
+        const validated = customAmountsSchema.safeParse(raw);
+        if (validated.success) customAmounts = validated.data;
       } catch {
-        // ignore parse errors, amounts will be null
+        // ignore malformed JSON, amounts fall back to null
       }
     }
 
@@ -195,7 +200,7 @@ export async function updateService(
       .eq("id", serviceId)
       .eq("owner_id", user.id);
 
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: toActionError(error) };
   }
 
   // Process member additions
@@ -294,7 +299,7 @@ export async function toggleServiceStatus(
     .eq("id", idParsed.data)
     .eq("owner_id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidateServices();
   return { success: true, newStatus: statusParsed.data };
@@ -341,7 +346,7 @@ export async function addServiceMember(
       })
       .eq("id", existing.id)
       .eq("owner_id", user.id);
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: toActionError(error) };
     serviceMemberId = existing.id;
   } else {
     // Insert new record
@@ -355,7 +360,7 @@ export async function addServiceMember(
       })
       .select("id")
       .single();
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: toActionError(error) };
     serviceMemberId = data.id;
   }
 
@@ -398,7 +403,7 @@ export async function removeServiceMember(
     .eq("member_id", parsed.data.memberId)
     .eq("owner_id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   // Delete pending/partial payments for this member in this service
   await supabase
@@ -435,7 +440,7 @@ export async function updateMemberAmount(
     .eq("member_id", parsed.data.memberId)
     .eq("owner_id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidateServiceMembers();
   return { success: true };
@@ -455,7 +460,7 @@ export async function deleteService(
     .eq("id", parsed.data)
     .eq("owner_id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidateServices();
   return { success: true };

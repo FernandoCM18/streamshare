@@ -429,67 +429,81 @@ export interface Database {
         Row: Profile;
         Insert: InsertProfile;
         Update: Partial<Omit<Profile, "id" | "created_at" | "updated_at">>;
+        Relationships: never[];
       };
       services: {
         Row: Service;
         Insert: InsertService;
         Update: UpdateService;
+        Relationships: never[];
       };
       members: {
         Row: Member;
         Insert: InsertMember;
         Update: UpdateMember;
+        Relationships: never[];
       };
       service_members: {
         Row: ServiceMember;
         Insert: InsertServiceMember;
         Update: Partial<InsertServiceMember>;
+        Relationships: never[];
       };
       billing_cycles: {
         Row: BillingCycle;
         Insert: Omit<BillingCycle, "id" | "created_at">;
-        Update: never;
+        Update: Record<string, never>; // mutations via RPCs only
+        Relationships: never[];
       };
       payments: {
         Row: Payment;
-        Insert: never; // solo se crean via generate_billing_cycle()
+        Insert: Record<string, never>; // solo se crean via generate_billing_cycle()
         Update: Partial<
-          Pick<Payment, "status" | "amount_paid" | "paid_at" | "confirmed_at">
+          Pick<Payment, "status" | "amount_paid" | "paid_at" | "confirmed_at" | "amount_due">
         >;
+        Relationships: never[];
       };
       member_credits: {
         Row: MemberCredit;
-        Insert: never; // solo se crean via register_payment()
+        Insert: Record<string, never>; // solo se crean via register_payment()
         Update: Partial<Pick<MemberCredit, "status" | "notes">>;
+        Relationships: never[];
       };
       payment_notes: {
         Row: PaymentNote;
         Insert: InsertPaymentNote;
         Update: UpdatePaymentNote;
+        Relationships: never[];
       };
       activity_log: {
         Row: ActivityLog;
-        Insert: never; // solo se crean via funciones internas
-        Update: never;
+        Insert: Record<string, never>; // solo se crean via funciones internas
+        Update: Record<string, never>;
+        Relationships: never[];
       };
       user_settings: {
         Row: UserSettings;
         Insert: Omit<UserSettings, "updated_at">;
         Update: Partial<Omit<UserSettings, "id" | "updated_at">>;
+        Relationships: never[];
       };
     };
     Views: {
       service_summary: {
         Row: ServiceSummary;
+        Relationships: never[];
       };
       dashboard_summary: {
         Row: DashboardSummary;
+        Relationships: never[];
       };
       member_debt_summary: {
         Row: MemberDebtSummary;
+        Relationships: never[];
       };
       my_payments: {
         Row: MyPayment;
+        Relationships: never[];
       };
     };
     Functions: {
@@ -541,5 +555,6 @@ export interface Database {
       split_type: SplitType;
       credit_status: CreditStatus;
     };
+    CompositeTypes: Record<string, never>;
   };
 }

@@ -3,6 +3,7 @@
 import { getAuthenticatedClient } from "@/lib/supabase/auth-action";
 import { z } from "zod";
 import { revalidatePersonas } from "@/lib/revalidate";
+import { toActionError } from "@/lib/action-error";
 
 // ── Schemas ──────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ export async function createPersona(formData: FormData): Promise<{
     .select("id, name, email")
     .single();
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidatePersonas();
   return {
@@ -102,7 +103,7 @@ export async function updatePersona(
     .eq("id", id)
     .eq("owner_id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidatePersonas();
   return { success: true };
@@ -122,7 +123,7 @@ export async function deletePersona(
     .eq("id", parsed.data)
     .eq("owner_id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidatePersonas();
   return { success: true };

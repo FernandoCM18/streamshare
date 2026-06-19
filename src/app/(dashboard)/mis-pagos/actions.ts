@@ -3,6 +3,7 @@
 import { getAuthenticatedClient } from "@/lib/supabase/auth-action";
 import { z } from "zod";
 import { revalidateMyPayments } from "@/lib/revalidate";
+import { toActionError } from "@/lib/action-error";
 
 // ── Schemas ──────────────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ export async function markMyPaymentAsPaid(
     p_claimed_amount: parsed.data.customAmount ?? 0,
   });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   // Insert payment note if provided
   if (parsed.data.note) {
@@ -51,9 +52,7 @@ export async function markMyPaymentAsPaid(
       owner_id: payment?.owner_id ?? user.id,
       content: parsed.data.note,
     });
-    if (noteError) {
-      console.error("Error inserting payment note:", noteError);
-    }
+    if (noteError) return { success: false, error: toActionError(noteError) };
   }
 
   revalidateMyPayments();

@@ -50,7 +50,7 @@ export const cleanupOrphanedPayments = cache(async (userId: string) => {
   //    (caused by re-adding members that triggered add_member_to_active_cycles again)
   const { data: pendingPayments } = await supabase
     .from("payments")
-    .select("id, member_id, service_id, billing_cycle_id, created_at")
+    .select("id, member_id, service_id, cycle_id, created_at")
     .eq("owner_id", userId)
     .in("status", ["pending", "partial", "overdue"])
     .order("created_at", { ascending: true });
@@ -60,7 +60,7 @@ export const cleanupOrphanedPayments = cache(async (userId: string) => {
     const duplicateIds: string[] = [];
 
     for (const p of pendingPayments) {
-      const key = `${p.member_id}:${p.service_id}:${p.billing_cycle_id}`;
+      const key = `${p.member_id}:${p.service_id}:${p.cycle_id}`;
       if (seen.has(key)) {
         // This is a duplicate — cancel it
         duplicateIds.push(p.id);

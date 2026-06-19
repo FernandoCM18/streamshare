@@ -3,6 +3,7 @@
 import { getAuthenticatedClient } from "@/lib/supabase/auth-action";
 import { z } from "zod";
 import { revalidatePayments, revalidateNotes } from "@/lib/revalidate";
+import { toActionError } from "@/lib/action-error";
 import type {
   RegisterPaymentResult,
   EditPaymentResult,
@@ -37,7 +38,7 @@ export async function registerPayment(
     p_amount_paid: parsed.data.amountPaid,
   });
 
-  if (error) return { success: false, error: error.message, result: null };
+  if (error) return { success: false, error: toActionError(error), result: null };
 
   revalidatePayments();
   return { success: true, result: data };
@@ -85,7 +86,7 @@ export async function registerAndConfirmPayment(
     return {
       success: false,
       confirmed: false,
-      error: error.message,
+      error: toActionError(error),
       result: null,
     };
   }
@@ -100,7 +101,7 @@ export async function registerAndConfirmPayment(
       p_payment_id: cycle.payment_id,
     });
     if (err) {
-      confirmError = err.message;
+      confirmError = toActionError(err);
       break;
     }
   }
@@ -129,7 +130,7 @@ export async function confirmPayment(paymentId: string) {
     p_payment_id: parsed.data,
   });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidatePayments();
   return { success: true };
@@ -156,7 +157,7 @@ export async function updatePaymentNote(
     .eq("id", parsed.data.noteId)
     .eq("author_id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidateNotes();
   return { success: true };
@@ -176,7 +177,7 @@ export async function deletePaymentNote(
     .eq("id", parsed.data)
     .eq("owner_id", user.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidateNotes();
   return { success: true };
@@ -208,7 +209,7 @@ export async function addPaymentNote(
     content: parsed.data.content,
   });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidateNotes();
   return { success: true };
@@ -226,7 +227,7 @@ export async function voidPayment(
     p_payment_id: parsed.data,
   });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidatePayments();
   return { success: true };
@@ -253,7 +254,7 @@ export async function editPaymentAmount(
     p_new_amount: parsed.data.newAmount,
   });
 
-  if (error) return { success: false, error: error.message, result: null };
+  if (error) return { success: false, error: toActionError(error), result: null };
 
   revalidatePayments();
   return { success: true, result: data };
@@ -271,7 +272,7 @@ export async function rejectPaymentClaim(
     p_payment_id: parsed.data,
   });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: toActionError(error) };
 
   revalidatePayments();
   return { success: true };
