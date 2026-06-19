@@ -10,6 +10,7 @@ import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-moda
 import type { MyPayment } from "@/types/database";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 import { paymentStatusConfig } from "@/lib/status-config";
+import { paymentRemaining, derivePaymentStatus } from "@/lib/payment-utils";
 import { ModalHeader } from "@/components/shared/modal-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { PaymentProgressBar } from "@/components/shared/payment-progress-bar";
@@ -40,15 +41,15 @@ export function MyPaymentDetailModal({
   const [isPending, startTransition] = useTransition();
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
-  const remaining =
-    payment.amount_due + payment.accumulated_debt - payment.amount_paid;
+  // Derive status and remaining from amounts — never trust persisted status directly
+  const effectiveStatus = derivePaymentStatus(payment);
+  const remaining = paymentRemaining(payment);
   const actionable =
-    payment.status === "pending" ||
-    payment.status === "partial" ||
-    payment.status === "overdue";
+    effectiveStatus === "pending" ||
+    effectiveStatus === "partial" ||
+    effectiveStatus === "overdue";
   const status =
-    paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] ??
-    paymentStatusConfig.pending;
+    paymentStatusConfig[effectiveStatus] ?? paymentStatusConfig.pending;
 
   function handleMarkPaid(amount: number, note?: string) {
     startTransition(async () => {
@@ -93,7 +94,7 @@ export function MyPaymentDetailModal({
             <StatusBadge
               badgeClass={status.badgeClass}
               label={
-                payment.status === "paid" ? "En verificacion" : status.label
+                effectiveStatus === "paid" ? "En verificacion" : status.label
               }
             />
           }
@@ -172,7 +173,7 @@ export function MyPaymentDetailModal({
                   Restante
                 </span>
                 <span className="text-lg font-bold text-white tabular-nums tracking-tight">
-                  {formatCurrency(Math.max(0, remaining))}
+                  {formatCurrency(remaining)}
                 </span>
               </div>
             </div>
@@ -222,7 +223,7 @@ export function MyPaymentDetailModal({
             <PaymentConfirmModal
               open={confirmModalOpen}
               onOpenChange={setConfirmModalOpen}
-              defaultAmount={Math.max(0, remaining)}
+              defaultAmount={remaining}
               memberName="Mi pago"
               serviceName={payment.service_name}
               isPending={isPending}

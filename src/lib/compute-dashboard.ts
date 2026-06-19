@@ -1,20 +1,10 @@
 import type { DashboardSummary, PendingDebtor } from "@/types/database";
 import { getInitials } from "@/lib/utils";
-import { paymentObligation, paymentRemaining } from "@/lib/payment-utils";
-
-/** Minimal payment shape needed for dashboard computation. */
-interface PaymentForDashboard {
-  id: string;
-  service_id: string;
-  member_id: string;
-  amount_due: number;
-  amount_paid: number;
-  accumulated_debt: number;
-  credit_amount_used?: number;
-  status: string;
-  members: { name: string } | { name: string }[] | null;
-  services: { name: string } | { name: string }[] | null;
-}
+import { derivePaymentStatus } from "@/lib/payment-utils";
+import {
+  computePaymentSummaries,
+  type PaymentInput,
+} from "@/lib/compute-payment-summaries";
 
 function getName(
   val: { name: string } | { name: string }[] | null | undefined,
@@ -24,17 +14,22 @@ function getName(
   return val.name;
 }
 
-/**
- * Compute dashboard summary and pending debtors from a single payments array.
- * This replaces the `dashboard_summary` Supabase view and `getCachedPendingDebtors`
- * to guarantee all numbers in the UI come from the same data source.
- */
 export function computeDashboardFromPayments(
-  payments: PaymentForDashboard[],
+  payments: PaymentInput[],
   activeServiceIds: Set<string>,
   activeServiceMemberPairs: Set<string>,
   ownerId: string,
 ): { dashboard: DashboardSummary; pendingDebtors: PendingDebtor[] } {
+  // Filter to active services and active member pairs only
+  const filteredPayments = payments.filter((p) => {
+    if (!activeServiceIds.has(p.service_id)) return false;
+    const pairKey = `${p.member_id}:${p.service_id}`;
+    if (!activeServiceMemberPairs.has(pairKey)) return false;
+    return true;
+  });
+
+  const summaries = computePaymentSummaries(filteredPayments);
+
   let totalReceivable = 0;
   let totalCollected = 0;
   let overdueCount = 0;
@@ -43,62 +38,43 @@ export function computeDashboardFromPayments(
   const serviceIds = new Set<string>();
   const memberIds = new Set<string>();
 
-  // Pending debtors tracking (deduplicated by member+service)
-  const debtorSeen = new Set<string>();
-  const pendingDebtors: PendingDebtor[] = [];
-
-  for (const p of payments) {
-    // Skip payments for inactive services
-    if (!activeServiceIds.has(p.service_id)) continue;
-
-    // Skip payments for inactive service members
-    const pairKey = `${p.member_id}:${p.service_id}`;
-    if (!activeServiceMemberPairs.has(pairKey)) continue;
-
+  for (const p of filteredPayments) {
     serviceIds.add(p.service_id);
     memberIds.add(p.member_id);
-
-    const amountPaid = Number(p.amount_paid ?? 0);
     const accDebt = Number(p.accumulated_debt ?? 0);
-    const creditUsed = Number(p.credit_amount_used ?? 0);
-    const obligation = paymentObligation(p);
-    // Efectivamente cubierto este ciclo (pagos + crédito aplicado; el RPC no suma crédito a amount_paid)
-    const satisfied = Math.min(obligation, amountPaid + creditUsed);
-
-    totalReceivable += obligation;
-    totalCollected += satisfied;
-
-    if (p.status === "overdue") {
-      overdueCount++;
-    }
-
-    if (accDebt > 0) {
-      totalAccumulatedDebt += accDebt;
-    }
-
-    // Build pending debtors list (only pending/partial/overdue)
-    if (
-      (p.status === "pending" ||
-        p.status === "partial" ||
-        p.status === "overdue") &&
-      !debtorSeen.has(pairKey)
-    ) {
-      debtorSeen.add(pairKey);
-      const memberName = getName(p.members);
-
-      pendingDebtors.push({
-        id: p.id,
-        name: memberName,
-        initials: getInitials(memberName),
-        status:
-          p.status === "overdue" ? ("overdue" as const) : ("pending" as const),
-        amount: paymentRemaining(p),
-        serviceName: getName(p.services),
-      });
-    }
+    if (accDebt > 0) totalAccumulatedDebt += accDebt;
   }
 
-  // Sort: overdue first, then by amount descending
+  // Gauge totals: use latest cycle per pair (from summaries)
+  for (const [, s] of summaries) {
+    const p = s.latestPayment;
+    const obligation =
+      Number(p.amount_due ?? 0) + Number(p.accumulated_debt ?? 0);
+    totalReceivable += obligation;
+    totalCollected += s.totalCollected;
+    if (derivePaymentStatus(p) === "overdue") overdueCount++;
+  }
+
+  // Pending debtors: use accumulated debt from all cycles
+  const pendingDebtors: PendingDebtor[] = [];
+  for (const [key, s] of summaries) {
+    if (s.totalDebt <= 0) continue;
+    if (s.status === "confirmed" || s.status === "paid") continue;
+    const p = s.latestPayment;
+    const memberName = getName(p.members);
+    const [memberId] = key.split(":");
+    pendingDebtors.push({
+      id: p.id,
+      name: memberName,
+      initials: getInitials(memberName),
+      status: s.status === "overdue" ? "overdue" : "pending",
+      amount: s.totalDebt,
+      serviceName: getName(p.services),
+    });
+    // Ensure member/service IDs are tracked even if filtered above
+    if (memberId) memberIds.add(memberId);
+  }
+
   pendingDebtors.sort((a, b) => {
     if (a.status === "overdue" && b.status !== "overdue") return -1;
     if (a.status !== "overdue" && b.status === "overdue") return 1;

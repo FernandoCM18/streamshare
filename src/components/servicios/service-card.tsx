@@ -44,6 +44,7 @@ export function ServiceCard({
   const blockedRef = useRef(false);
   const serviceMembers = service.members ?? [];
   const isInactive = service.status !== "active";
+  const hasDebt = service.pending_amount > 0;
   const status =
     serviceStatusConfig[service.status] ?? serviceStatusConfig.pending;
 
@@ -146,10 +147,20 @@ export function ServiceCard({
             )}
           </div>
           <StatusBadge
-            badgeClass={status.badgeClass}
-            label={service.status === "active" ? "Al día" : status.label}
-            icon={status.icon}
-            dotClass={status.dotClass}
+            badgeClass={
+              !isInactive && hasDebt
+                ? "bg-orange-400/10 border border-orange-400/20"
+                : status.badgeClass
+            }
+            label={
+              isInactive
+                ? status.label
+                : hasDebt
+                  ? "Pendiente"
+                  : "Al día"
+            }
+            icon={!isInactive && hasDebt ? "solar:clock-circle-bold" : status.icon}
+            dotClass={!isInactive && hasDebt ? "bg-orange-400" : status.dotClass}
           />
         </div>
 

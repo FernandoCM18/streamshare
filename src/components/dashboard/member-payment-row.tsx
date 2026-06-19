@@ -26,6 +26,7 @@ import {
   paymentRemaining,
   type MemberPayment,
 } from "@/components/dashboard/service-card-utils";
+import { derivePaymentStatus } from "@/lib/payment-utils";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 
 const memberStatusConfig: Record<
@@ -97,12 +98,13 @@ export function MemberPaymentRow({
   } | null;
   if (!member) return null;
 
-  const config = memberStatusConfig[payment.status];
+  const effectiveStatus = derivePaymentStatus(payment);
+  const config = memberStatusConfig[effectiveStatus];
   const remaining = paymentRemaining(payment);
   const isActionable =
-    payment.status === "pending" ||
-    payment.status === "partial" ||
-    payment.status === "overdue";
+    effectiveStatus === "pending" ||
+    effectiveStatus === "partial" ||
+    effectiveStatus === "overdue";
 
   function handleRegister(amount: number, note?: string) {
     startTransition(async () => {
@@ -190,8 +192,8 @@ export function MemberPaymentRow({
           {/* Confirmed/paid amount (non-actionable states) */}
           {!isActionable && (
             <div className="flex items-center gap-2 justify-end">
-              {(payment.status === "confirmed" ||
-                payment.status === "paid") && (
+              {(effectiveStatus === "confirmed" ||
+                effectiveStatus === "paid") && (
                 <Icon
                   icon="solar:check-circle-bold"
                   className="text-emerald-500"
@@ -231,7 +233,7 @@ export function MemberPaymentRow({
             ) : (
               <Icon icon="solar:check-circle-bold" width={12} />
             )}
-            {payment.status === "partial" ? "Pagó el resto" : "Pagó todo"}
+            {effectiveStatus === "partial" ? "Pagó el resto" : "Pagó todo"}
           </Button>
           <Button
             variant="ghost"

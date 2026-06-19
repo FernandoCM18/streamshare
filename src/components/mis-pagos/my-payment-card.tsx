@@ -8,6 +8,10 @@ import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 import { ServiceIconBox } from "@/components/shared/service-icon-box";
 import { paymentStatusConfig } from "@/lib/status-config";
+import {
+  paymentRemaining,
+  derivePaymentStatus,
+} from "@/lib/payment-utils";
 
 interface PaymentNote {
   id: string;
@@ -28,6 +32,10 @@ interface MyPaymentCardProps {
   amountDue: number;
   amountPaid: number;
   accumulatedDebt: number;
+  creditAmountUsed?: number;
+  requiresConfirmation?: boolean;
+  confirmedAt?: string | null;
+  paidAt?: string | null;
   notes?: PaymentNote[];
 }
 
@@ -42,17 +50,36 @@ export function MyPaymentCard({
   amountDue,
   amountPaid,
   accumulatedDebt,
+  creditAmountUsed = 0,
+  requiresConfirmation,
+  confirmedAt,
+  paidAt,
   notes = [],
 }: MyPaymentCardProps) {
   const [isPending, startTransition] = useTransition();
 
-  const remaining = amountDue + accumulatedDebt - amountPaid;
+  // Derive status and remaining from amounts — never trust persisted status directly
+  const paymentShape = {
+    amount_due: amountDue,
+    amount_paid: amountPaid,
+    accumulated_debt: accumulatedDebt,
+    credit_amount_used: creditAmountUsed,
+    requires_confirmation: requiresConfirmation,
+    confirmed_at: confirmedAt,
+    paid_at: paidAt,
+    due_date: dueDate,
+  };
+  const effectiveStatus = derivePaymentStatus(paymentShape);
+  const remaining = paymentRemaining(paymentShape);
   const actionable =
-    status === "pending" || status === "partial" || status === "overdue";
+    effectiveStatus === "pending" ||
+    effectiveStatus === "partial" ||
+    effectiveStatus === "overdue";
 
-  const statusCfg = paymentStatusConfig[status];
+  const statusCfg = paymentStatusConfig[effectiveStatus];
   const statusStyles = statusCfg.badgeClass;
-  const statusLabel = status === "paid" ? "En verificación" : statusCfg.label;
+  const statusLabel =
+    effectiveStatus === "paid" ? "En verificación" : statusCfg.label;
 
   function handleMarkPaid() {
     startTransition(async () => {
@@ -101,9 +128,9 @@ export function MyPaymentCard({
             Restante
           </p>
           <p className="text-xl font-semibold text-neutral-100">
-            {formatCurrency(Math.max(0, remaining))}
+            {formatCurrency(remaining)}
           </p>
-          {status === "partial" && amountPaid > 0 && (
+          {effectiveStatus === "partial" && amountPaid > 0 && (
             <p className="text-[10px] text-orange-400 mt-0.5">
               Pagado: {formatCurrency(amountPaid)} de{" "}
               {formatCurrency(amountDue + accumulatedDebt)}

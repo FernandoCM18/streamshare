@@ -90,23 +90,32 @@ export async function registerAndConfirmPayment(
     };
   }
 
-  // Then confirm it (owner action — skips double-verification)
-  const { error: confirmError } = await supabase.rpc("confirm_payment", {
-    p_payment_id: parsed.data.paymentId,
-  });
+  // Confirm each cycle that was actually paid (register_payment uses FIFO and
+  // may pay different cycles than the one passed in)
+  const cyclesPaid = data?.cycles_paid ?? [];
+  let confirmError: string | undefined;
+
+  for (const cycle of cyclesPaid) {
+    const { error: err } = await supabase.rpc("confirm_payment", {
+      p_payment_id: cycle.payment_id,
+    });
+    if (err) {
+      confirmError = err.message;
+      break;
+    }
+  }
+
+  revalidatePayments();
 
   if (confirmError) {
-    // Payment registered but not confirmed — still partial success
-    revalidatePayments();
     return {
       success: true,
       confirmed: false,
-      error: confirmError.message,
+      error: confirmError,
       result: data,
     };
   }
 
-  revalidatePayments();
   return { success: true, confirmed: true, result: data };
 }
 

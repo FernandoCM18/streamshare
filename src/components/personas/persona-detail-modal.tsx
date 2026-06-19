@@ -24,6 +24,7 @@ import {
   paymentObligation,
   paymentRemaining,
   sortPaymentsForHistory,
+  derivePaymentStatus,
 } from "@/lib/payment-utils";
 
 // ── Component ─────────────────────────────────────────────────
@@ -309,8 +310,9 @@ export function PersonaDetailModal({
             {personaPayments.length > 0 ? (
               <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/20 overflow-hidden divide-y divide-neutral-800/40">
                 {personaPayments.map((p) => {
+                  const effectiveStatus = derivePaymentStatus(p);
                   const cfg =
-                    paymentStatusConfig[p.status] ??
+                    paymentStatusConfig[effectiveStatus] ??
                     paymentStatusConfig.pending;
                   const bc = Array.isArray(p.billing_cycles)
                     ? p.billing_cycles[0]
@@ -325,7 +327,7 @@ export function PersonaDetailModal({
                     Number(p.amount_paid) > 0 ||
                     Number(p.credit_amount_used) > 0;
                   const isCreditCovered =
-                    (p.status === "confirmed" || p.status === "paid") &&
+                    (effectiveStatus === "confirmed" || effectiveStatus === "paid") &&
                     Number(p.amount_paid) === 0 &&
                     Number(p.credit_amount_used) > 0;
 
@@ -421,9 +423,9 @@ export function PersonaDetailModal({
                           <span
                             className={cn(
                               "text-[13px] font-semibold tabular-nums",
-                              p.status === "confirmed"
+                              effectiveStatus === "confirmed"
                                 ? "text-emerald-400"
-                                : p.status === "paid"
+                                : effectiveStatus === "paid"
                                   ? "text-emerald-400/70"
                                   : remaining > 0
                                     ? "text-neutral-400"

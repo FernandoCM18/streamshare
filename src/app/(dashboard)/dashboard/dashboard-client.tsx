@@ -9,7 +9,13 @@ import { getGreeting, formatDate } from "@/lib/utils";
 import { TvIcon } from "@/components/icons/TvIcon";
 import { EmptyStateCard } from "@/components/shared/empty-state-card";
 import type { ServiceSummary } from "@/types/database";
-import { latestPaymentsPerMemberForService } from "@/lib/latest-payment-per-member";
+import {
+  isAwaitingConfirmation,
+  isSettled,
+  isActionablePayment,
+  derivePaymentStatus,
+} from "@/lib/payment-utils";
+import { computePaymentSummaries } from "@/lib/compute-payment-summaries";
 
 interface DashboardClientProps {
   services: ServiceSummary[];
@@ -26,7 +32,11 @@ export function DashboardClient({
 
   const activeServices = services.filter((s) => s.status === "active");
 
-  // Group payments by service_id
+  // Use central summaries — single source of truth for debt across all cycles
+  const summaries = computePaymentSummaries(payments);
+
+  // Build paymentsByService: one entry per member per service (latest cycle),
+  // with amount_due replaced by the total accumulated debt across all open cycles
   const paymentsByService = new Map<string, MemberPayment[]>();
   for (const p of payments) {
     if (!p.service_id) continue;
@@ -35,57 +45,61 @@ export function DashboardClient({
     paymentsByService.set(p.service_id, list);
   }
   for (const sid of paymentsByService.keys()) {
-    const list = paymentsByService.get(sid);
-    if (list)
-      paymentsByService.set(sid, latestPaymentsPerMemberForService(list));
+    const list = paymentsByService.get(sid) ?? [];
+    const latestMap = new Map<string, MemberPayment>();
+    for (const p of list) {
+      const cur = latestMap.get(p.member_id);
+      const curPeriod = cur?.billing_cycles?.period_start ?? "";
+      const thisPeriod = p.billing_cycles?.period_start ?? "";
+      if (!cur || thisPeriod > curPeriod) latestMap.set(p.member_id, p);
+    }
+    const merged = Array.from(latestMap.values()).map((p) => {
+      const summary = summaries.get(`${p.member_id}:${p.service_id}`);
+      const totalDebt = summary?.totalDebt ?? 0;
+      const s = derivePaymentStatus(p);
+      const isActionable = s === "overdue" || s === "pending" || s === "partial";
+      if (isActionable && totalDebt > 0) {
+        return { ...p, amount_due: totalDebt, amount_paid: 0, accumulated_debt: 0, credit_amount_used: 0 };
+      }
+      return p;
+    });
+    paymentsByService.set(sid, merged);
   }
 
-  // Count pending verifications (status = 'paid' means awaiting owner confirmation)
-  const pendingVerifications = payments.filter(
-    (p) => p.status === "paid",
-  ).length;
+  // Count pending verifications (derived "paid" = awaiting owner confirmation)
+  const pendingVerifications = payments.filter(isAwaitingConfirmation).length;
 
-  // Compute filter counts
+  // Compute filter counts — always via derived status so chips match card badges
   const allPaidCount = activeServices.filter((s) => {
     const svcPayments = paymentsByService.get(s.id) ?? [];
-    return (
-      svcPayments.length > 0 &&
-      svcPayments.every((p) => p.status === "confirmed")
-    );
+    return svcPayments.length > 0 && svcPayments.every(isSettled);
   }).length;
 
   const hasPendingCount = activeServices.filter((s) => {
     const svcPayments = paymentsByService.get(s.id) ?? [];
     return svcPayments.some(
-      (p) =>
-        p.status === "pending" || p.status === "partial" || p.status === "paid",
+      (p) => isActionablePayment(p) || isAwaitingConfirmation(p),
     );
   }).length;
 
   const hasOverdueCount = activeServices.filter((s) => {
     const svcPayments = paymentsByService.get(s.id) ?? [];
-    return svcPayments.some((p) => p.status === "overdue");
+    return svcPayments.some((p) => derivePaymentStatus(p) === "overdue");
   }).length;
 
-  // Apply filter
+  // Apply filter — same derived-status predicates
   const filteredServices = activeServices.filter((s) => {
     const svcPayments = paymentsByService.get(s.id) ?? [];
     if (statusFilter === "allPaid") {
-      return (
-        svcPayments.length > 0 &&
-        svcPayments.every((p) => p.status === "confirmed")
-      );
+      return svcPayments.length > 0 && svcPayments.every(isSettled);
     }
     if (statusFilter === "hasPending") {
       return svcPayments.some(
-        (p) =>
-          p.status === "pending" ||
-          p.status === "partial" ||
-          p.status === "paid",
+        (p) => isActionablePayment(p) || isAwaitingConfirmation(p),
       );
     }
     if (statusFilter === "hasOverdue") {
-      return svcPayments.some((p) => p.status === "overdue");
+      return svcPayments.some((p) => derivePaymentStatus(p) === "overdue");
     }
     return true;
   });

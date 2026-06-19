@@ -7,6 +7,7 @@ import { MyPaymentCard } from "@/components/mis-pagos/my-payment-card";
 import { MisPagosFilters } from "@/components/mis-pagos/mis-pagos-filters";
 import { EmptyStateCard } from "@/components/shared/empty-state-card";
 import type { MyPayment } from "@/types/database";
+import { countByDerivedStatus, derivePaymentStatus } from "@/lib/payment-utils";
 
 export interface PaymentNoteData {
   id: string;
@@ -27,13 +28,12 @@ export function MisPagosClient({
 }: MisPagosClientProps) {
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const counts: Record<string, number> = { all: payments.length };
-  for (const p of payments) {
-    counts[p.status] = (counts[p.status] ?? 0) + 1;
-  }
+  // Use derived status for counts and filter — matches the badges on cards exactly
+  const counts = countByDerivedStatus(payments);
 
   const filtered = payments.filter((p) => {
-    if (statusFilter !== "all" && p.status !== statusFilter) return false;
+    if (statusFilter !== "all" && derivePaymentStatus(p) !== statusFilter)
+      return false;
     return true;
   });
 
@@ -84,6 +84,10 @@ export function MisPagosClient({
                   amountDue={payment.amount_due}
                   amountPaid={payment.amount_paid}
                   accumulatedDebt={payment.accumulated_debt}
+                  creditAmountUsed={payment.credit_amount_used ?? 0}
+                  requiresConfirmation={payment.requires_confirmation ?? false}
+                  confirmedAt={payment.confirmed_at}
+                  paidAt={payment.paid_at}
                   notes={notesMap[payment.id] ?? []}
                 />
               </motion.div>

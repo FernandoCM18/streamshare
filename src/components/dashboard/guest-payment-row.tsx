@@ -13,6 +13,7 @@ import {
   paymentRemaining,
   type MemberPayment,
 } from "@/components/dashboard/service-card-utils";
+import { derivePaymentStatus } from "@/lib/payment-utils";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 
 const guestStatusConfig: Record<
@@ -57,11 +58,12 @@ export function GuestPaymentRow({
   const [isPending, startTransition] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
 
-  const config = guestStatusConfig[payment.status];
+  const effectiveStatus = derivePaymentStatus(payment);
+  const config = guestStatusConfig[effectiveStatus];
   const canPay =
-    payment.status === "pending" ||
-    payment.status === "partial" ||
-    payment.status === "overdue";
+    effectiveStatus === "pending" ||
+    effectiveStatus === "partial" ||
+    effectiveStatus === "overdue";
 
   const remaining = paymentRemaining(payment);
 
@@ -110,7 +112,7 @@ export function GuestPaymentRow({
               {config.label(payment)}
             </p>
             <p className="text-[10px] text-neutral-500">
-              {payment.status === "partial"
+              {effectiveStatus === "partial"
                 ? `Restante: ${formatCurrency(remaining)} • Vence ${formatPaymentDate(payment.due_date)}`
                 : `${formatCurrency(remaining)} • Vence ${formatPaymentDate(payment.due_date)}`}
             </p>
@@ -161,7 +163,7 @@ export function GuestPaymentRow({
               width={14}
             />
             <span className="text-[10px] font-medium text-emerald-400">
-              {payment.status === "paid" ? "Enviado" : "Listo"}
+              {effectiveStatus === "paid" ? "Enviado" : "Listo"}
             </span>
           </div>
         )}

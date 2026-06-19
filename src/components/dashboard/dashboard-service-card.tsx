@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getServiceStatusBadge } from "@/components/dashboard/service-card-utils";
+import { derivePaymentStatus } from "@/lib/payment-utils";
 import { MemberPaymentRow } from "@/components/dashboard/member-payment-row";
 import { GuestPaymentRow } from "@/components/dashboard/guest-payment-row";
 import { VerificationClaimRow } from "@/components/dashboard/verification-claim-row";
@@ -31,13 +32,18 @@ export function DashboardServiceCard({
   isOwner = true,
 }: DashboardServiceCardProps) {
   const firstDueDate = payments[0]?.due_date;
-  const hasOverdue = payments.some((p) => p.status === "overdue");
+  const hasOverdue = payments.some(
+    (p) => derivePaymentStatus(p) === "overdue",
+  );
   const statusBadge = getServiceStatusBadge(firstDueDate, hasOverdue);
 
-  const pendingVerifications = payments.filter((p) => p.status === "paid");
-  const regularPayments = payments.filter(
-    (p) => p.status !== "paid" && p.status !== "confirmed",
+  const pendingVerifications = payments.filter(
+    (p) => derivePaymentStatus(p) === "paid",
   );
+  const regularPayments = payments.filter((p) => {
+    const s = derivePaymentStatus(p);
+    return s !== "paid" && s !== "confirmed";
+  });
 
   const isIndividual =
     payments.length === 0 && (service.members ?? []).length === 0;

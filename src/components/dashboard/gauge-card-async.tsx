@@ -5,7 +5,6 @@ import {
   getCachedActiveServiceMembers,
 } from "@/lib/queries";
 import { computeDashboardFromPayments } from "@/lib/compute-dashboard";
-import { latestPaymentsPerMemberForService } from "@/lib/latest-payment-per-member";
 import { GaugeCard } from "@/components/dashboard/gauge-card";
 
 /**
@@ -27,9 +26,8 @@ export async function GaugeCardAsync() {
   const activeServiceMemberPairs = new Set(
     activeMembers.map((m) => `${m.member_id}:${m.service_id}`),
   );
-  const paymentsDeduped = latestPaymentsPerMemberForService(payments);
   const { dashboard, pendingDebtors } = computeDashboardFromPayments(
-    paymentsDeduped,
+    payments,
     activeServiceIds,
     activeServiceMemberPairs,
     user.id,

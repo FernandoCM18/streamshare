@@ -29,7 +29,8 @@ import {
   paymentObligation,
   paymentRemaining,
 } from "@/components/dashboard/service-card-utils";
-import { sortPaymentsForHistory } from "@/lib/payment-utils";
+import { sortPaymentsForHistory, derivePaymentStatus } from "@/lib/payment-utils";
+import { computePaymentSummaries } from "@/lib/compute-payment-summaries";
 import {
   addPaymentNote,
   updatePaymentNote,
@@ -145,9 +146,9 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
         }[]
       )[0]
     : payment.members;
+  const effectiveStatus = derivePaymentStatus(payment);
   const statusCfg =
-    paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] ??
-    paymentStatusConfig.pending;
+    paymentStatusConfig[effectiveStatus] ?? paymentStatusConfig.pending;
   const paidDate = payment.confirmed_at ?? payment.paid_at;
   const notes = payment.payment_notes ?? [];
   const period = payment.billing_cycles
@@ -169,7 +170,7 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
 
   // Detect credit-covered payment: confirmed but amount_paid = 0
   const isCreditCovered =
-    (payment.status === "confirmed" || payment.status === "paid") &&
+    (effectiveStatus === "confirmed" || effectiveStatus === "paid") &&
     Number(payment.amount_paid) === 0 &&
     Number(payment.credit_amount_used ?? 0) > 0;
 
@@ -278,9 +279,9 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
             <span
               className={cn(
                 "text-[13px] font-semibold tabular-nums",
-                payment.status === "confirmed"
+                effectiveStatus === "confirmed"
                   ? "text-emerald-400"
-                  : payment.status === "paid"
+                  : effectiveStatus === "paid"
                     ? "text-emerald-400/70"
                     : "text-neutral-400",
               )}
@@ -461,14 +462,14 @@ export default function ServiceDetailModal({
   const status =
     serviceStatusConfig[service.status] ?? serviceStatusConfig.pending;
 
-  // Find the most recent billing cycle period_start across all payments
+  // Single source of truth — use central summaries for all totals
+  const summaries = computePaymentSummaries(payments);
+
   const latestPeriodStart = payments.reduce((best, p) => {
     const ps = p.billing_cycles?.period_start ?? "";
     return ps > best ? ps : best;
   }, "");
 
-  // Only consider payments from the current (most recent) cycle for the summary numbers.
-  // This mirrors what the service_summary view does, but also includes credit_amount_used.
   const currentCyclePayments =
     latestPeriodStart !== ""
       ? payments.filter(
@@ -476,10 +477,8 @@ export default function ServiceDetailModal({
         )
       : payments;
 
-  // Recalculate collected/pending from current-cycle payments to account for
-  // credit_amount_used, which the service_summary view does not include.
   const { computedCollected, computedPending } = (() => {
-    if (currentCyclePayments.length === 0) {
+    if (payments.length === 0) {
       return {
         computedCollected: service.collected_amount,
         computedPending: service.pending_amount,
@@ -487,11 +486,10 @@ export default function ServiceDetailModal({
     }
     let collected = 0;
     let pending = 0;
-    for (const p of currentCyclePayments) {
-      const obligation = paymentObligation(p);
-      const remaining = paymentRemaining(p);
-      collected += obligation - remaining;
-      pending += remaining;
+    for (const [key, s] of summaries) {
+      if (!key.endsWith(`:${service.id}`)) continue;
+      collected += s.totalCollected;
+      pending += s.totalDebt;
     }
     return {
       computedCollected: Math.round(collected * 100) / 100,
@@ -647,9 +645,7 @@ export default function ServiceDetailModal({
                     member.member_id,
                   );
                   const memberStatusCfg = latestPayment
-                    ? (paymentStatusConfig[
-                        latestPayment.status as keyof typeof paymentStatusConfig
-                      ] ?? null)
+                    ? (paymentStatusConfig[derivePaymentStatus(latestPayment)] ?? null)
                     : null;
 
                   return (
