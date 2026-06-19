@@ -15,25 +15,24 @@ import {
   isActionablePayment,
   derivePaymentStatus,
 } from "@/lib/payment-utils";
-import { computePaymentSummaries } from "@/lib/compute-payment-summaries";
+import type { PairSummary } from "@/lib/compute-payment-summaries";
 
 interface DashboardClientProps {
   services: ServiceSummary[];
   payments: MemberPayment[];
+  summaries: Record<string, PairSummary>;
   displayName: string;
 }
 
 export function DashboardClient({
   services,
   payments,
+  summaries,
   displayName,
 }: DashboardClientProps) {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const activeServices = services.filter((s) => s.status === "active");
-
-  // Use central summaries — single source of truth for debt across all cycles
-  const summaries = computePaymentSummaries(payments);
 
   // Build paymentsByService: one entry per member per service (latest cycle),
   // with amount_due replaced by the total accumulated debt across all open cycles
@@ -54,7 +53,7 @@ export function DashboardClient({
       if (!cur || thisPeriod > curPeriod) latestMap.set(p.member_id, p);
     }
     const merged = Array.from(latestMap.values()).map((p) => {
-      const summary = summaries.get(`${p.member_id}:${p.service_id}`);
+      const summary = summaries[`${p.member_id}:${p.service_id}`];
       const totalDebt = summary?.totalDebt ?? 0;
       const s = derivePaymentStatus(p);
       const isActionable = s === "overdue" || s === "pending" || s === "partial";

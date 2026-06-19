@@ -9,6 +9,7 @@ import {
   getCachedPayments,
   getCachedProfile,
 } from "@/lib/queries";
+import { computePaymentSummaries } from "@/lib/compute-payment-summaries";
 import { DashboardClient } from "./dashboard-client";
 
 export default async function DashboardPage() {
@@ -21,11 +22,14 @@ export default async function DashboardPage() {
   ]);
 
   const displayName = profile?.display_name ?? "Usuario";
+  const summariesMap = computePaymentSummaries(payments);
+  const summaries = Object.fromEntries(summariesMap);
 
   return (
     <DashboardClient
       services={services}
       payments={payments}
+      summaries={summaries}
       displayName={displayName}
     />
   );

@@ -145,7 +145,7 @@ export const getCachedProfile = cache(async (userId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, display_name, email, avatar_url, currency, created_at, updated_at")
     .eq("id", userId)
     .single();
   return data as Profile | null;
@@ -169,7 +169,9 @@ export const getCachedServices = cache(async (userId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("service_summary")
-    .select("*")
+    .select(
+      "id, owner_id, name, icon_url, color, monthly_cost, billing_day, split_type, status, member_count, members, pending_amount, collected_amount",
+    )
     .eq("owner_id", userId);
   return (data ?? []) as ServiceSummary[];
 });
@@ -250,7 +252,9 @@ export const getCachedMyPayments = cache(async (userId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("my_payments")
-    .select("*")
+    .select(
+      "id, status, amount_due, amount_paid, accumulated_debt, due_date, paid_at, confirmed_at, requires_confirmation, credit_amount_used, service_id, service_name, service_color, service_icon, owner_name, cycle_id, period_start, period_end",
+    )
     .order("due_date", { ascending: true });
   return (data ?? []) as MyPayment[];
 });
@@ -279,7 +283,7 @@ export const getCachedSettings = cache(async (userId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("user_settings")
-    .select("*")
+    .select("id, notify_before_days, notify_overdue, default_currency, auto_generate_cycles, updated_at")
     .eq("id", userId)
     .single();
 

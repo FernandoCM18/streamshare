@@ -9,17 +9,20 @@ import { EmptyStateCard } from "@/components/shared/empty-state-card";
 import { TvIcon } from "@/components/icons/TvIcon";
 import type { ServiceSummary } from "@/types/database";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
+import type { PairSummary } from "@/lib/compute-payment-summaries";
 
 interface ServiciosClientProps {
   services: ServiceSummary[];
   members: { id: string; name: string; email: string | null }[];
   payments: MemberPayment[];
+  summaries: Record<string, PairSummary>;
 }
 
 export function ServiciosClient({
   services,
   members,
   payments,
+  summaries,
 }: ServiciosClientProps) {
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -73,6 +76,7 @@ export function ServiciosClient({
                   service={service}
                   members={members}
                   payments={payments.filter((p) => p.service_id === service.id)}
+                  summaries={summaries}
                   isOwner={true}
                 />
               </motion.div>

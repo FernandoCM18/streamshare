@@ -9,6 +9,7 @@ import {
   getCachedPersonasData,
   getCachedPayments,
 } from "@/lib/queries";
+import { computePaymentSummaries } from "@/lib/compute-payment-summaries";
 import { ServiciosClient } from "./servicios-client";
 
 export default async function ServiciosPage() {
@@ -26,11 +27,14 @@ export default async function ServiciosPage() {
     email: m.email,
   }));
 
+  const summaries = Object.fromEntries(computePaymentSummaries(payments));
+
   return (
     <ServiciosClient
       services={services}
       members={members}
       payments={payments}
+      summaries={summaries}
     />
   );
 }

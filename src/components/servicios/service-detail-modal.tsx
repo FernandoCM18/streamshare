@@ -30,7 +30,7 @@ import {
   paymentRemaining,
 } from "@/components/dashboard/service-card-utils";
 import { sortPaymentsForHistory, derivePaymentStatus } from "@/lib/payment-utils";
-import { computePaymentSummaries } from "@/lib/compute-payment-summaries";
+import type { PairSummary } from "@/lib/compute-payment-summaries";
 import {
   addPaymentNote,
   updatePaymentNote,
@@ -450,6 +450,7 @@ interface ServiceDetailModalProps {
   onOpenChange: (open: boolean) => void;
   service: ServiceSummary;
   payments?: MemberPayment[];
+  summaries?: Record<string, PairSummary>;
 }
 
 export default function ServiceDetailModal({
@@ -457,13 +458,11 @@ export default function ServiceDetailModal({
   onOpenChange,
   service,
   payments = [],
+  summaries = {},
 }: ServiceDetailModalProps) {
   const viewMembers: ServiceMemberInfo[] = service.members ?? [];
   const status =
     serviceStatusConfig[service.status] ?? serviceStatusConfig.pending;
-
-  // Single source of truth — use central summaries for all totals
-  const summaries = computePaymentSummaries(payments);
 
   const latestPeriodStart = payments.reduce((best, p) => {
     const ps = p.billing_cycles?.period_start ?? "";
@@ -486,7 +485,7 @@ export default function ServiceDetailModal({
     }
     let collected = 0;
     let pending = 0;
-    for (const [key, s] of summaries) {
+    for (const [key, s] of Object.entries(summaries)) {
       if (!key.endsWith(`:${service.id}`)) continue;
       collected += s.totalCollected;
       pending += s.totalDebt;

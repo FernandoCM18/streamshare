@@ -25,11 +25,13 @@ const EditServiceDrawer = dynamic(() => import("./edit-service-drawer"), {
 });
 import type { ServiceSummary, Member } from "@/types/database";
 import type { MemberPayment } from "@/components/dashboard/service-card-utils";
+import type { PairSummary } from "@/lib/compute-payment-summaries";
 
 interface ServiceCardProps {
   service: ServiceSummary;
   members: Pick<Member, "id" | "name" | "email">[];
   payments?: MemberPayment[];
+  summaries?: Record<string, PairSummary>;
   isOwner: boolean;
 }
 
@@ -37,6 +39,7 @@ export function ServiceCard({
   service,
   members,
   payments = [],
+  summaries,
   isOwner,
 }: ServiceCardProps) {
   const [showDetail, setShowDetail] = useState(false);
@@ -178,19 +181,24 @@ export function ServiceCard({
         </div>
       </article>
 
-      <ServiceDetailModal
-        open={showDetail}
-        onOpenChange={setShowDetail}
-        service={service}
-        payments={payments}
-      />
+      {showDetail && (
+        <ServiceDetailModal
+          open={showDetail}
+          onOpenChange={setShowDetail}
+          service={service}
+          payments={payments}
+          summaries={summaries}
+        />
+      )}
 
-      <EditServiceDrawer
-        open={showEditDrawer}
-        onOpenChange={setShowEditDrawer}
-        service={service}
-        members={members}
-      />
+      {showEditDrawer && (
+        <EditServiceDrawer
+          open={showEditDrawer}
+          onOpenChange={setShowEditDrawer}
+          service={service}
+          members={members}
+        />
+      )}
     </>
   );
 }
