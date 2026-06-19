@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
 import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
+import type { MemberPayment } from "@/components/dashboard/service-card-utils";
 import {
   paymentObligation,
   paymentRemaining,
-  type MemberPayment,
-} from "@/components/dashboard/service-card-utils";
-import { derivePaymentStatus } from "@/lib/payment-utils";
+  derivePaymentStatus,
+} from "@/lib/payment-utils";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 
 const guestStatusConfig: Record<

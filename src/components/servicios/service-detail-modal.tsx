@@ -28,8 +28,9 @@ import type { MemberPayment } from "@/components/dashboard/service-card-utils";
 import {
   paymentObligation,
   paymentRemaining,
-} from "@/components/dashboard/service-card-utils";
-import { sortPaymentsForHistory, derivePaymentStatus } from "@/lib/payment-utils";
+  sortPaymentsForHistory,
+  derivePaymentStatus,
+} from "@/lib/payment-utils";
 import type { PairSummary } from "@/lib/compute-payment-summaries";
 import {
   addPaymentNote,

@@ -22,11 +22,13 @@ import { RemindDrawer } from "@/components/dashboard/remind-drawer";
 import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
 import {
   normalize,
-  paymentObligation,
-  paymentRemaining,
   type MemberPayment,
 } from "@/components/dashboard/service-card-utils";
-import { derivePaymentStatus } from "@/lib/payment-utils";
+import {
+  paymentObligation,
+  paymentRemaining,
+  derivePaymentStatus,
+} from "@/lib/payment-utils";
 import { PaymentNotesSection } from "@/components/dashboard/payment-notes-section";
 
 const memberStatusConfig: Record<

@@ -17,9 +17,9 @@ import {
 } from "@/app/(dashboard)/dashboard/actions";
 import {
   normalize,
-  paymentObligation,
   type MemberPayment,
 } from "@/components/dashboard/service-card-utils";
+import { paymentObligation } from "@/lib/payment-utils";
 
 export function VerificationClaimRow({ payment }: { payment: MemberPayment }) {
   const [isPending, startTransition] = useTransition();
