@@ -71,6 +71,12 @@ export function MyPaymentCard({
   };
   const effectiveStatus = derivePaymentStatus(paymentShape);
   const remaining = paymentRemaining(paymentShape);
+  // Restante propio del mes (sin arrastre): cada ciclo ya tiene su propia
+  // tarjeta, mostrar el encadenado duplicaría la deuda visualmente
+  const ownRemaining = Math.max(
+    0,
+    Math.round((amountDue - amountPaid - creditAmountUsed) * 100) / 100,
+  );
   const actionable =
     effectiveStatus === "pending" ||
     effectiveStatus === "partial" ||
@@ -128,8 +134,13 @@ export function MyPaymentCard({
             Restante
           </p>
           <p className="text-xl font-semibold text-neutral-100">
-            {formatCurrency(remaining)}
+            {formatCurrency(ownRemaining)}
           </p>
+          {accumulatedDebt > 0 && remaining > 0 && (
+            <p className="text-[10px] text-red-400 mt-0.5">
+              + {formatCurrency(accumulatedDebt)} deuda anterior
+            </p>
+          )}
           {effectiveStatus === "partial" && amountPaid > 0 && (
             <p className="text-[10px] text-orange-400 mt-0.5">
               Pagado: {formatCurrency(amountPaid)} de{" "}

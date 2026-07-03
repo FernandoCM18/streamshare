@@ -33,6 +33,20 @@ export interface PairSummary {
   latestPayment: PaymentInput;
 }
 
+/**
+ * Neto propio del ciclo: cuota del mes menos lo cubierto, SIN accumulated_debt.
+ * accumulated_debt es solo el arrastre de ciclos anteriores (ya contados como
+ * filas propias), así que incluirlo al sumar varios ciclos duplica la deuda.
+ * Puede ser negativo (sobrepago) para compensar otros ciclos al sumar.
+ */
+function cycleNet(p: PaymentInput): number {
+  return (
+    Number(p.amount_due ?? 0) -
+    Number(p.amount_paid ?? 0) -
+    Number(p.credit_amount_used ?? 0)
+  );
+}
+
 function periodStart(p: PaymentInput): string {
   const bc = p.billing_cycles;
   if (!bc) return p.created_at ?? "";
@@ -52,7 +66,9 @@ const STATUS_RANK: Record<string, number> = {
  * Single source of truth for payment summaries across the whole app.
  *
  * Returns a Map keyed by "memberId:serviceId" with:
- * - totalDebt: sum of paymentRemaining() across ALL open cycles
+ * - totalDebt: real net debt across all cycles. Suma el neto propio de cada
+ *   ciclo (sin accumulated_debt, que duplicaría el arrastre encadenado) más
+ *   el arrastre del ciclo más antiguo visible (deuda previa a la ventana).
  * - totalCollected: amount collected in the most recent cycle
  * - status: worst status across all open cycles
  * - latestPayment: most recent payment by period_start (for display/actions)
@@ -74,12 +90,28 @@ export function computePaymentSummaries(
     if (ps > cur) latestPeriodByPair.set(key, ps);
   }
 
+  // Net debt per pair: sum of per-cycle nets (can offset overpayments) plus
+  // the carry entering the window (accumulated_debt of the OLDEST cycle, which
+  // represents debt from cycles not present in the input). Counting the carry
+  // of every row would duplicate the chained debt. Clamped to >= 0 at the end.
+  const netByPair = new Map<string, number>();
+  const oldestByPair = new Map<string, { period: string; carry: number }>();
+
   for (const p of payments) {
     const key = `${p.member_id}:${p.service_id}`;
     const derived = derivePaymentStatus(p);
     const remaining = paymentRemaining(p);
     const ps = periodStart(p);
     const isLatestCycle = ps === (latestPeriodByPair.get(key) ?? "");
+
+    netByPair.set(key, (netByPair.get(key) ?? 0) + cycleNet(p));
+    const oldest = oldestByPair.get(key);
+    if (!oldest || ps < oldest.period) {
+      oldestByPair.set(key, {
+        period: ps,
+        carry: Number(p.accumulated_debt ?? 0),
+      });
+    }
 
     const existing = map.get(key);
 
@@ -95,15 +127,12 @@ export function computePaymentSummaries(
         : 0;
 
       map.set(key, {
-        totalDebt: remaining,
+        totalDebt: 0,
         totalCollected: collected,
         status: derived as PairSummary["status"],
         latestPayment: p,
       });
     } else {
-      // Accumulate debt from all open cycles
-      existing.totalDebt = Math.round((existing.totalDebt + remaining) * 100) / 100;
-
       // Collected only from latest cycle
       if (isLatestCycle) {
         existing.totalCollected = Math.max(
@@ -123,6 +152,17 @@ export function computePaymentSummaries(
       if (ps > periodStart(existing.latestPayment)) {
         existing.latestPayment = p;
       }
+    }
+  }
+
+  for (const [key, net] of netByPair) {
+    const summary = map.get(key);
+    if (summary) {
+      const carryIn = oldestByPair.get(key)?.carry ?? 0;
+      summary.totalDebt = Math.max(
+        0,
+        Math.round((net + carryIn) * 100) / 100,
+      );
     }
   }
 

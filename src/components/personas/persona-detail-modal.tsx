@@ -323,6 +323,10 @@ export function PersonaDetailModal({
                   const activityDate = p.confirmed_at ?? p.paid_at;
                   const obligation = paymentObligation(p);
                   const remaining = paymentRemaining(p);
+                  // Monto propio del mes; el arrastre se muestra aparte para
+                  // no inflar cada fila con la deuda de meses anteriores
+                  const ownDue = Number(p.amount_due ?? 0);
+                  const carry = Number(p.accumulated_debt ?? 0);
                   const hasPaid =
                     Number(p.amount_paid) > 0 ||
                     Number(p.credit_amount_used) > 0;
@@ -437,7 +441,7 @@ export function PersonaDetailModal({
                                   Number(p.amount_paid) ||
                                     Number(p.credit_amount_used),
                                 )
-                              : formatCurrency(obligation)}
+                              : formatCurrency(ownDue)}
                           </span>
                           {hasPaid &&
                             Number(p.amount_paid) > 0 &&
@@ -446,6 +450,11 @@ export function PersonaDetailModal({
                                 de {formatCurrency(obligation)}
                               </p>
                             )}
+                          {!hasPaid && carry > 0 && remaining > 0 && (
+                            <p className="text-[9px] text-neutral-600">
+                              + {formatCurrency(carry)} deuda anterior
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

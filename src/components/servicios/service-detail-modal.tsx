@@ -299,6 +299,12 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
                   de {formatCurrency(payment.amount_due)}
                 </p>
               )}
+            {!hasPaid && Number(payment.accumulated_debt ?? 0) > 0 && (
+              <p className="text-[9px] text-neutral-600">
+                + {formatCurrency(Number(payment.accumulated_debt))} deuda
+                anterior
+              </p>
+            )}
           </div>
 
           {/* Edit/Delete buttons — only for payments with amount_paid > 0 */}

@@ -41,15 +41,16 @@ export function computeDashboardFromPayments(
   for (const p of filteredPayments) {
     serviceIds.add(p.service_id);
     memberIds.add(p.member_id);
-    const accDebt = Number(p.accumulated_debt ?? 0);
-    if (accDebt > 0) totalAccumulatedDebt += accDebt;
   }
 
-  // Gauge totals: use latest cycle per pair (from summaries)
+  // Gauge totals: use latest cycle per pair (from summaries).
+  // accumulated_debt solo del ciclo más reciente por par: cada fila ya
+  // encadena el arrastre de las anteriores, sumarlas todas duplica.
   for (const [, s] of summaries) {
     const p = s.latestPayment;
-    const obligation =
-      Number(p.amount_due ?? 0) + Number(p.accumulated_debt ?? 0);
+    const accDebt = Number(p.accumulated_debt ?? 0);
+    if (accDebt > 0) totalAccumulatedDebt += accDebt;
+    const obligation = Number(p.amount_due ?? 0) + accDebt;
     totalReceivable += obligation;
     totalCollected += s.totalCollected;
     if (derivePaymentStatus(p) === "overdue") overdueCount++;

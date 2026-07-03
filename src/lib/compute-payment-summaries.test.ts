@@ -60,7 +60,7 @@ describe("computePaymentSummaries", () => {
     expect(map.get("m1:s1")!.status).toBe("confirmed");
   });
 
-  it("totalDebt suma TODOS los ciclos abiertos", () => {
+  it("totalDebt suma el neto propio de cada ciclo abierto", () => {
     // Ciclo anterior vencido + ciclo actual pending
     const p1 = makePayment("p1", "m1", "s1", "2024-05-01", {
       accumulated_debt: 0,
@@ -72,6 +72,53 @@ describe("computePaymentSummaries", () => {
     }); // pending
     const map = computePaymentSummaries([p1, p2]);
     expect(map.get("m1:s1")!.totalDebt).toBe(200);
+  });
+
+  it("cadena reconciliada (accumulated_debt encadenado) NO duplica la deuda", () => {
+    // Caso real: 3 ciclos impagos de 49.75 con arrastre encadenado por la DB.
+    // Deuda real = 149.25 (el restante del ciclo más reciente), no la suma
+    // de los restantes encadenados (298.50).
+    const p1 = makePayment("p1", "m1", "s1", "2026-04-13", {
+      amount_due: 49.75,
+      accumulated_debt: 0,
+      due_date: PAST,
+    });
+    const p2 = makePayment("p2", "m1", "s1", "2026-05-13", {
+      amount_due: 49.75,
+      accumulated_debt: 49.75,
+      due_date: PAST,
+    });
+    const p3 = makePayment("p3", "m1", "s1", "2026-06-13", {
+      amount_due: 49.75,
+      accumulated_debt: 99.5,
+    });
+    const map = computePaymentSummaries([p1, p2, p3]);
+    expect(map.get("m1:s1")!.totalDebt).toBe(149.25);
+    expect(map.get("m1:s1")!.status).toBe("overdue");
+  });
+
+  it("arrastre del ciclo más antiguo visible se incluye (deuda pre-ventana)", () => {
+    // Solo llega el ciclo vigente con arrastre de ciclos que no están en el input
+    const p = makePayment("p1", "m1", "s1", "2026-06-13", {
+      amount_due: 49.75,
+      accumulated_debt: 99.5,
+    });
+    const map = computePaymentSummaries([p]);
+    expect(map.get("m1:s1")!.totalDebt).toBe(149.25);
+  });
+
+  it("sobrepago en un ciclo compensa la deuda de otro", () => {
+    const p1 = makePayment("p1", "m1", "s1", "2024-05-01", {
+      amount_due: 100,
+      amount_paid: 0,
+      due_date: PAST,
+    }); // debe 100
+    const p2 = makePayment("p2", "m1", "s1", "2024-06-01", {
+      amount_due: 100,
+      amount_paid: 160,
+    }); // sobrepagó 60
+    const map = computePaymentSummaries([p1, p2]);
+    expect(map.get("m1:s1")!.totalDebt).toBe(40);
   });
 
   it("totalCollected viene solo del ciclo más reciente", () => {
