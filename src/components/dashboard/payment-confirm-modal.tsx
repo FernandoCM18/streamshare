@@ -54,7 +54,7 @@ export function PaymentConfirmModal({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="max-h-[92vh] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 flex flex-col overflow-hidden sm:max-w-md data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
+        className="max-h-[92dvh] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 flex flex-col overflow-hidden sm:max-w-md data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
         showCloseButton={false}
       >
         {/* Drag Handle (mobile) */}
@@ -82,8 +82,8 @@ export function PaymentConfirmModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          <div className="p-5 sm:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+          <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
             {/* Amount field */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">

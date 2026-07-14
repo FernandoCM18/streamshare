@@ -69,7 +69,7 @@ export function DashboardServiceCard({
 
       {/* Header */}
       <CardHeader className="flex items-center justify-between gap-4 rounded-t-none p-6 pb-0">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
           <div
             className="w-14 h-14 shrink-0 rounded-2xl bg-black border border-neutral-800 flex items-center justify-center shadow-lg"
             style={{
@@ -86,11 +86,11 @@ export function DashboardServiceCard({
               />
             )}
           </div>
-          <div>
-            <h3 className="text-lg font-medium text-neutral-200">
+          <div className="min-w-0">
+            <h3 className="text-lg font-medium text-neutral-200 truncate">
               {service.name}
             </h3>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-neutral-500 mt-0.5 truncate">
               Día {service.billing_day} •
               {" " + formatCurrency(service.monthly_cost)}
               /mes

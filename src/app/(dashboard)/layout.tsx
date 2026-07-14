@@ -45,7 +45,9 @@ export default async function DashboardLayout({
             <GaugeCardAsync />
           </Suspense>
         </aside>
-        <main className="flex-1 lg:ml-85 pb-24">{children}</main>
+        <main className="flex-1 lg:ml-85 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+          {children}
+        </main>
       </div>
     </AppShell>
   );

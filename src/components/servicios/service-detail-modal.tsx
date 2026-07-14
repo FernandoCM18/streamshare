@@ -3,7 +3,10 @@
 import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  ResponsiveModal,
+  ResponsiveModalContent,
+} from "@/components/shared/responsive-modal";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -154,7 +157,8 @@ function PaymentRow({ payment }: { payment: MemberPayment }) {
   const notes = payment.payment_notes ?? [];
   const period = payment.billing_cycles
     ? formatPeriod(
-        payment.billing_cycles.period_end ?? payment.billing_cycles.period_start,
+        payment.billing_cycles.period_end ??
+          payment.billing_cycles.period_start,
       )
     : null;
   const hasPaid =
@@ -532,16 +536,8 @@ export default function ServiceDetailModal({
   const sortedPayments = sortPaymentsForHistory(payments);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-h-[92vh] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 flex flex-col overflow-hidden sm:max-w-2xl sm:max-h-[90vh] data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
-        showCloseButton={false}
-      >
-        {/* Drag Handle (mobile only) */}
-        <div className="flex justify-center pt-2 pb-0 sm:hidden">
-          <div className="w-9 h-1 rounded-full bg-neutral-700" />
-        </div>
-
+    <ResponsiveModal open={open} onOpenChange={onOpenChange}>
+      <ResponsiveModalContent dialogClassName="sm:max-w-2xl">
         {/* Header with colored accent */}
         <ModalHeader
           color={service.color}
@@ -651,7 +647,9 @@ export default function ServiceDetailModal({
                     member.member_id,
                   );
                   const memberStatusCfg = latestPayment
-                    ? (paymentStatusConfig[derivePaymentStatus(latestPayment)] ?? null)
+                    ? (paymentStatusConfig[
+                        derivePaymentStatus(latestPayment)
+                      ] ?? null)
                     : null;
 
                   return (
@@ -742,7 +740,7 @@ export default function ServiceDetailModal({
             )}
           </section>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveModalContent>
+    </ResponsiveModal>
   );
 }

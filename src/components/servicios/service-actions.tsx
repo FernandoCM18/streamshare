@@ -66,7 +66,7 @@ export function ServiceActions({
 
   if (!isOwner) {
     return (
-      <span className="col-span-5 text-center text-[10px] text-neutral-500 py-1">
+      <span className="col-span-full text-center text-[10px] text-neutral-500 py-1">
         Solo lectura
       </span>
     );

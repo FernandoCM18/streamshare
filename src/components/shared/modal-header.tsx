@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { Icon } from "@iconify/react";
-import { DialogClose, DialogTitle } from "@/components/ui/dialog";
+import {
+  ResponsiveModalClose,
+  ResponsiveModalTitle,
+} from "@/components/shared/responsive-modal";
 import { ServiceIconBox } from "./service-icon-box";
 
 interface ModalHeaderProps {
@@ -37,9 +40,9 @@ export function ModalHeader({
           />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <DialogTitle className="text-lg font-bold text-white tracking-tight">
+              <ResponsiveModalTitle className="text-lg font-bold text-white tracking-tight">
                 {title}
-              </DialogTitle>
+              </ResponsiveModalTitle>
               {badge}
             </div>
             {subtitle && (
@@ -49,9 +52,9 @@ export function ModalHeader({
             )}
           </div>
         </div>
-        <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 shrink-0 mt-0.5">
+        <ResponsiveModalClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 shrink-0 mt-0.5">
           <Icon icon="solar:close-square-linear" width={15} />
-        </DialogClose>
+        </ResponsiveModalClose>
       </div>
     </div>
   );

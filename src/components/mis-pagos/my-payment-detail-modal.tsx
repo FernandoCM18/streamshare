@@ -3,7 +3,10 @@
 import { useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  ResponsiveModal,
+  ResponsiveModalContent,
+} from "@/components/shared/responsive-modal";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { markMyPaymentAsPaid } from "@/app/(dashboard)/mis-pagos/actions";
 import { PaymentConfirmModal } from "@/components/dashboard/payment-confirm-modal";
@@ -75,16 +78,8 @@ export function MyPaymentDetailModal({
       : 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-h-[92vh] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 flex flex-col overflow-hidden sm:max-w-md sm:max-h-[90vh] data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
-        showCloseButton={false}
-      >
-        {/* Drag Handle (mobile) */}
-        <div className="flex justify-center pt-2 pb-0 sm:hidden">
-          <div className="w-9 h-1 rounded-full bg-neutral-700" />
-        </div>
-
+    <ResponsiveModal open={open} onOpenChange={onOpenChange}>
+      <ResponsiveModalContent dialogClassName="sm:max-w-md">
         {/* Header with colored accent */}
         <ModalHeader
           color={payment.service_color}
@@ -231,7 +226,7 @@ export function MyPaymentDetailModal({
             />
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </ResponsiveModalContent>
+    </ResponsiveModal>
   );
 }

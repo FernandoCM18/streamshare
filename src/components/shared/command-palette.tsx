@@ -127,7 +127,7 @@ export function CommandPalette({
         {/* Content */}
         <DialogPrimitive.Content
           className={cn(
-            "fixed left-1/2 top-[15%] z-50 w-full max-w-[560px] -translate-x-1/2",
+            "fixed left-1/2 top-[15%] z-50 w-[calc(100%-2rem)] max-w-[560px] -translate-x-1/2",
             "data-open:animate-in data-closed:animate-out",
             "data-closed:fade-out-0 data-open:fade-in-0",
             "data-closed:zoom-out-98 data-open:zoom-in-98",

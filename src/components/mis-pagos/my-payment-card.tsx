@@ -105,22 +105,24 @@ export function MyPaymentCard({
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <ServiceIconBox
             iconUrl={serviceIcon}
             color={serviceColor}
             size="sm"
           />
-          <div>
-            <p className="text-sm font-medium text-neutral-100">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-neutral-100 truncate">
               {serviceName}
             </p>
-            <p className="text-xs text-neutral-500">Propietario: {ownerName}</p>
+            <p className="text-xs text-neutral-500 truncate">
+              Propietario: {ownerName}
+            </p>
           </div>
         </div>
         <span
           className={cn(
-            "rounded-full border px-2.5 py-1 text-[10px] font-medium",
+            "rounded-full border px-2.5 py-1 text-[10px] font-medium shrink-0",
             statusStyles,
           )}
         >

@@ -14,5 +14,7 @@ export function Breadcrumbs() {
   const pathname = usePathname();
   const name = routeNames[pathname] ?? "Panel General";
 
-  return <span className="text-sm text-white/50">{name}</span>;
+  return (
+    <span className="text-sm text-white/50 truncate block min-w-0">{name}</span>
+  );
 }

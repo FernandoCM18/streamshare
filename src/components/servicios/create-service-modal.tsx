@@ -7,11 +7,11 @@ import { z } from "zod";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogClose,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalClose,
+  ResponsiveModalTitle,
+} from "@/components/shared/responsive-modal";
 import {
   Popover,
   PopoverContent,
@@ -373,24 +373,16 @@ export default function CreateServiceModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-h-[92vh] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 flex flex-col overflow-hidden sm:max-w-xl sm:max-h-[90vh] data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
-        showCloseButton={false}
-      >
-        {/* Drag Handle (mobile only) */}
-        <div className="flex justify-center pt-2 pb-0 sm:hidden">
-          <div className="w-9 h-1 rounded-full bg-neutral-700" />
-        </div>
-
+    <ResponsiveModal open={open} onOpenChange={onOpenChange}>
+      <ResponsiveModalContent dialogClassName="sm:max-w-xl">
         {/* Modal Header */}
         <div className="sm:px-6 flex shrink-0 bg-neutral-950/80 border-neutral-800/80 border-b pt-3 pr-5 pb-4 pl-5 sm:pt-4 backdrop-blur-xl items-center justify-between">
-          <DialogTitle className="text-lg font-medium text-white tracking-tight">
+          <ResponsiveModalTitle className="text-lg font-medium text-white tracking-tight">
             {isEdit ? "Editar Servicio" : "Agregar Servicio"}
-          </DialogTitle>
-          <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70">
+          </ResponsiveModalTitle>
+          <ResponsiveModalClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70">
             <Icon icon="solar:close-square-linear" width={15} />
-          </DialogClose>
+          </ResponsiveModalClose>
         </div>
 
         {/* Modal Body (Scrollable) */}
@@ -1113,7 +1105,7 @@ export default function CreateServiceModal({
             </button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveModalContent>
+    </ResponsiveModal>
   );
 }

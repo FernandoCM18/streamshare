@@ -283,7 +283,7 @@ export default function EditServiceDrawer({
         showCloseButton={false}
         className={cn(
           "bg-neutral-950 border-neutral-800 p-0 gap-0 flex flex-col",
-          isDesktop ? "sm:max-w-md h-full" : "max-h-[92vh] rounded-t-2xl",
+          isDesktop ? "sm:max-w-md h-full" : "max-h-[92dvh] rounded-t-2xl",
         )}
       >
         {/* Drag Handle (mobile only) */}

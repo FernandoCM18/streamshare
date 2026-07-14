@@ -74,7 +74,7 @@ export function PersonaCard({
           }
         }}
         className={cn(
-          "group relative flex flex-col justify-between p-5 rounded-[1.5rem] border transition-colors cursor-pointer h-full backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
+          "group relative flex flex-col justify-between overflow-hidden p-5 rounded-[1.5rem] border transition-colors cursor-pointer h-full backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
           isInactive
             ? "bg-neutral-900/10 border-dashed border-neutral-800 opacity-80 hover:opacity-100 hover:border-neutral-600 hover:bg-neutral-900/30"
             : "bg-neutral-900/30 border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/50",
@@ -93,10 +93,10 @@ export function PersonaCard({
 
         {/* Header: avatar + name + amount */}
         <div className="flex items-start justify-between relative z-10">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <div
               className={cn(
-                "relative w-10 h-10 rounded-full border flex items-center justify-center text-xs font-medium shadow-lg",
+                "relative w-10 h-10 shrink-0 rounded-full border flex items-center justify-center text-xs font-medium shadow-lg",
                 isInactive
                   ? "bg-neutral-900 border-neutral-800 text-neutral-500 shadow-sm grayscale group-hover:grayscale-0 transition-all"
                   : "bg-neutral-800 border-neutral-700 text-neutral-300",
@@ -116,10 +116,10 @@ export function PersonaCard({
                 </span>
               )}
             </div>
-            <div>
+            <div className="min-w-0">
               <h3
                 className={cn(
-                  "text-sm font-semibold leading-tight tracking-tight",
+                  "text-sm font-semibold leading-tight tracking-tight truncate",
                   isInactive
                     ? "text-neutral-400 group-hover:text-neutral-200 transition-colors"
                     : "text-neutral-200",
@@ -130,7 +130,7 @@ export function PersonaCard({
               {persona.email && (
                 <p
                   className={cn(
-                    "text-[11px] mt-0.5 font-normal",
+                    "text-[11px] mt-0.5 font-normal truncate",
                     isInactive ? "text-neutral-600" : "text-neutral-500",
                   )}
                 >
@@ -140,10 +140,10 @@ export function PersonaCard({
             </div>
           </div>
 
-          <div className="text-right">
+          <div className="text-right shrink-0">
             <div
               className={cn(
-                "mb-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-medium mr-2",
+                "mb-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-medium",
                 persona.profile_id
                   ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                   : "border-neutral-700 bg-neutral-800 text-neutral-500",
@@ -279,7 +279,7 @@ export function PersonaCard({
               <Icon icon="solar:trash-bin-trash-bold" width={12} />
             </Button>
           ) : hasPending ? (
-            <div onClick={(e) => e.stopPropagation()}>
+            <div className="col-span-1" onClick={(e) => e.stopPropagation()}>
               <RemindDrawer
                 memberName={persona.name}
                 memberPhone={persona.phone}
@@ -292,7 +292,7 @@ export function PersonaCard({
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  className="col-span-1 h-8 w-full rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-neutral-400 hover:text-white"
+                  className="h-8 w-full rounded-lg bg-neutral-800/40 hover:bg-neutral-700/60 border-transparent hover:border-neutral-600 text-neutral-400 hover:text-white"
                   title="Enviar recordatorio"
                 >
                   <Icon icon="solar:bell-bing-bold" width={12} />

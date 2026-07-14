@@ -93,7 +93,7 @@ export function RemindDrawer({
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="bg-neutral-950 border-neutral-800 rounded-t-2xl pb-safe"
+        className="bg-neutral-950 border-neutral-800 rounded-t-2xl max-h-[calc(100dvh-3rem)] overflow-y-auto pb-safe"
       >
         <div className="mx-auto w-full max-w-sm pb-6">
           {/* Drag handle visual indicator */}

@@ -56,7 +56,7 @@ export function PersonaModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-[420px] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
+        className="sm:max-w-[420px] max-h-[90dvh] overflow-y-auto bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
         showCloseButton={false}
       >
         {/* Drag Handle (mobile) */}

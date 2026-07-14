@@ -35,7 +35,7 @@ export function BottomDock() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="fixed bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2"
+      className="fixed bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 max-w-[calc(100vw-0.75rem)]"
     >
       <div className="flex items-center gap-1 rounded-full border border-neutral-800/60 bg-neutral-900/80 p-1.5 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] backdrop-blur-xl">
         {tabs.map((tab) => {
@@ -65,8 +65,8 @@ export function BottomDock() {
               <motion.div
                 className="relative z-10 flex items-center gap-2"
                 animate={{
-                  paddingLeft: isActive ? 20 : 0,
-                  paddingRight: isActive ? 20 : 0,
+                  paddingLeft: isActive ? 16 : 0,
+                  paddingRight: isActive ? 16 : 0,
                   paddingTop: isActive ? 10 : 0,
                   paddingBottom: isActive ? 10 : 0,
                 }}
@@ -102,7 +102,7 @@ export function BottomDock() {
                               opacity: { duration: 0.15 },
                             }
                       }
-                      className="overflow-hidden whitespace-nowrap font-sans text-sm tracking-tight text-neutral-100"
+                      className="overflow-hidden whitespace-nowrap max-w-[76px] truncate font-sans text-sm tracking-tight text-neutral-100"
                     >
                       {tab.label}
                     </motion.span>

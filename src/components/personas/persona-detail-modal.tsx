@@ -2,11 +2,11 @@
 
 import { Icon } from "@iconify/react";
 import {
-  Dialog,
-  DialogContent,
-  DialogClose,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalClose,
+  ResponsiveModalTitle,
+} from "@/components/shared/responsive-modal";
 import {
   cn,
   formatCurrency,
@@ -54,16 +54,8 @@ export function PersonaDetailModal({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-h-[92vh] bg-neutral-950 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-0 gap-0 flex flex-col overflow-hidden sm:max-w-lg sm:max-h-[90vh] data-closed:slide-out-to-bottom-4 data-open:slide-in-from-bottom-4 duration-200"
-        showCloseButton={false}
-      >
-        {/* Drag Handle (mobile) */}
-        <div className="flex justify-center pt-2 pb-0 sm:hidden">
-          <div className="w-9 h-1 rounded-full bg-neutral-700" />
-        </div>
-
+    <ResponsiveModal open={open} onOpenChange={onOpenChange}>
+      <ResponsiveModalContent dialogClassName="sm:max-w-lg">
         {/* Header with colored accent */}
         <div className="relative shrink-0 overflow-hidden">
           <div
@@ -91,9 +83,9 @@ export function PersonaDetailModal({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <DialogTitle className="text-lg font-bold text-white tracking-tight">
+                  <ResponsiveModalTitle className="text-lg font-bold text-white tracking-tight">
                     {persona.name}
-                  </DialogTitle>
+                  </ResponsiveModalTitle>
                   <div
                     className={cn(
                       "px-2.5 py-1 rounded-full border text-[10px] font-medium flex items-center gap-1.5",
@@ -140,9 +132,9 @@ export function PersonaDetailModal({
               </div>
             </div>
 
-            <DialogClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 shrink-0 mt-0.5">
+            <ResponsiveModalClose className="w-8 h-8 flex items-center justify-center rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-700/60 hover:border-neutral-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 shrink-0 mt-0.5">
               <Icon icon="solar:close-square-linear" width={15} />
-            </DialogClose>
+            </ResponsiveModalClose>
           </div>
         </div>
 
@@ -331,7 +323,8 @@ export function PersonaDetailModal({
                     Number(p.amount_paid) > 0 ||
                     Number(p.credit_amount_used) > 0;
                   const isCreditCovered =
-                    (effectiveStatus === "confirmed" || effectiveStatus === "paid") &&
+                    (effectiveStatus === "confirmed" ||
+                      effectiveStatus === "paid") &&
                     Number(p.amount_paid) === 0 &&
                     Number(p.credit_amount_used) > 0;
 
@@ -404,7 +397,8 @@ export function PersonaDetailModal({
                               </span>
                             ) : Number(p.credit_amount_used) > 0 ? (
                               <span className="text-[10px] text-violet-400/70">
-                                Crédito: {formatCurrency(Number(p.credit_amount_used))}
+                                Crédito:{" "}
+                                {formatCurrency(Number(p.credit_amount_used))}
                               </span>
                             ) : (
                               <span className="text-[10px] text-neutral-600">
@@ -477,7 +471,7 @@ export function PersonaDetailModal({
             )}
           </section>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveModalContent>
+    </ResponsiveModal>
   );
 }

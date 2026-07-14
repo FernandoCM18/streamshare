@@ -66,7 +66,7 @@ export function ServiceCard({
           }
         }}
         className={cn(
-          "group relative flex flex-col justify-between p-5 rounded-[1.5rem] border transition-colors cursor-pointer backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
+          "group relative flex flex-col justify-between overflow-hidden p-5 rounded-[1.5rem] border transition-colors cursor-pointer backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70",
           isInactive
             ? "bg-neutral-900/10 border-dashed border-neutral-800 opacity-70 hover:opacity-100 hover:border-neutral-600 hover:bg-neutral-900/30"
             : "bg-neutral-900/30 border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/50",
@@ -87,10 +87,10 @@ export function ServiceCard({
               inactive={isInactive}
               className="group-hover:scale-105 transition-transform duration-300"
             />
-            <div>
+            <div className="min-w-0">
               <h3
                 className={cn(
-                  "text-sm font-semibold leading-tight tracking-tight",
+                  "text-sm font-semibold leading-tight tracking-tight truncate",
                   isInactive
                     ? "text-neutral-400 group-hover:text-neutral-200"
                     : "text-neutral-200",
@@ -100,7 +100,7 @@ export function ServiceCard({
               </h3>
               <p
                 className={cn(
-                  "text-[11px] mt-0.5 font-normal",
+                  "text-[11px] mt-0.5 font-normal truncate",
                   isInactive ? "text-neutral-600" : "text-neutral-500",
                 )}
               >
@@ -155,20 +155,23 @@ export function ServiceCard({
                 ? "bg-orange-400/10 border border-orange-400/20"
                 : status.badgeClass
             }
-            label={
-              isInactive
-                ? status.label
-                : hasDebt
-                  ? "Pendiente"
-                  : "Al día"
+            label={isInactive ? status.label : hasDebt ? "Pendiente" : "Al día"}
+            icon={
+              !isInactive && hasDebt ? "solar:clock-circle-bold" : status.icon
             }
-            icon={!isInactive && hasDebt ? "solar:clock-circle-bold" : status.icon}
-            dotClass={!isInactive && hasDebt ? "bg-orange-400" : status.dotClass}
+            dotClass={
+              !isInactive && hasDebt ? "bg-orange-400" : status.dotClass
+            }
           />
         </div>
 
         {/* Action buttons */}
-        <div className="grid grid-cols-5 gap-2 relative z-10 pt-3 border-t border-neutral-800/50">
+        <div
+          className={cn(
+            "grid gap-2 relative z-10 pt-3 border-t border-neutral-800/50",
+            service.status === "active" ? "grid-cols-4" : "grid-cols-5",
+          )}
+        >
           <ServiceActions
             service={service}
             members={members}

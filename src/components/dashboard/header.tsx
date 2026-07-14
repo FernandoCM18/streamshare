@@ -116,9 +116,9 @@ export function Header({
         />
       )}
 
-      <header className="fixed inset-x-0 top-0 z-40 px-6 flex items-center justify-between border-b border-neutral-800/80 bg-neutral-950/80 backdrop-blur-xl h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]">
+      <header className="fixed inset-x-0 top-0 z-40 px-4 sm:px-6 flex items-center justify-between gap-2 sm:gap-3 border-b border-neutral-800/80 bg-neutral-950/80 backdrop-blur-xl h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]">
         {/* Logo y Breadcrumbs */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
             href="/dashboard"
             aria-label="Ir al inicio"
@@ -133,7 +133,7 @@ export function Header({
           <Breadcrumbs />
         </div>
         {/* Buscador */}
-        <div className="w-auto sm:w-full sm:max-w-md">
+        <div className="w-auto shrink-0 sm:shrink sm:w-full sm:max-w-md">
           <button
             onClick={() => setCommandOpen(true)}
             className="flex hover:bg-neutral-800/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 group text-sm text-neutral-500 bg-neutral-900/40 w-auto sm:w-full border-neutral-800/80 border rounded-lg py-1.5 px-2 sm:px-3 items-center justify-between gap-2"
@@ -156,7 +156,7 @@ export function Header({
           </button>
         </div>
         {/* Notificaciones y Usuario */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             aria-label="Notificaciones"
             className="relative p-2 rounded-lg hover:bg-neutral-800/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
